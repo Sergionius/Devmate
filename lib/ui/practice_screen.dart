@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../domain/question.dart';
@@ -94,7 +95,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(widget.topic.title)),
+    appBar: AppBar(
+      title: Text(widget.topic.title),
+      // На web назад ведёт кнопка браузера; на мобильных — системная кнопка.
+      automaticallyImplyLeading: !kIsWeb,
+    ),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),

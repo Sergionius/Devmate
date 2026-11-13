@@ -1,9 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../domain/question.dart';
 import 'design_system.dart';
 import 'home_screen.dart';
-import 'practice_screen.dart';
 import 'training_view_model.dart';
 
 class TopicScreen extends StatefulWidget {
@@ -26,7 +27,11 @@ class _TopicScreenState extends State<TopicScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Направление')),
+    appBar: AppBar(
+      title: const Text('Направление'),
+      // На web назад ведёт кнопка браузера; на мобильных — системная кнопка.
+      automaticallyImplyLeading: !kIsWeb,
+    ),
     body: ListenableBuilder(
       listenable: widget.viewModel,
       builder: (context, _) => Center(
@@ -178,14 +183,6 @@ class _TopicScreenState extends State<TopicScreen> {
   );
 
   void _openPractice(BuildContext context, int index) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PracticeScreen(
-          topic: widget.topic,
-          initialIndex: index,
-          viewModel: widget.viewModel,
-        ),
-      ),
-    );
+    context.push('/topic/${widget.topic.id}/practice/$index');
   }
 }

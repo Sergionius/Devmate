@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/question_catalog.dart';
 import '../domain/question.dart';
 import 'design_system.dart';
-import 'practice_screen.dart';
-import 'topic_screen.dart';
 import 'training_view_model.dart';
 
 IconData iconForTopic(String id) => switch (id) {
@@ -179,14 +178,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   completed: widget.viewModel.completedIn(
                                     topic,
                                   ),
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => TopicScreen(
-                                        topic: topic,
-                                        viewModel: widget.viewModel,
-                                      ),
-                                    ),
-                                  ),
+                                  onTap: () =>
+                                      context.push('/topic/${topic.id}'),
                                 );
                               },
                             );
@@ -210,27 +203,12 @@ class _HomeScreenState extends State<HomeScreen> {
         (question) => widget.viewModel.scoreFor(question) == null,
       );
       if (next >= 0) {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => PracticeScreen(
-              topic: topic,
-              initialIndex: next,
-              viewModel: widget.viewModel,
-            ),
-          ),
-        );
+        context.push('/topic/${topic.id}/practice/$next');
         return;
       }
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PracticeScreen(
-          topic: questionCatalog.first,
-          initialIndex: 0,
-          viewModel: widget.viewModel,
-        ),
-      ),
-    );
+    final topic = questionCatalog.first;
+    context.push('/topic/${topic.id}/practice/0');
   }
 }
 

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/progress_repository.dart';
+import 'router.dart';
 import 'ui/design_system.dart';
-import 'ui/home_screen.dart';
 import 'ui/training_view_model.dart';
 
 void main() {
@@ -18,15 +19,16 @@ void main() {
 }
 
 class DevmateApp extends StatelessWidget {
-  const DevmateApp({super.key, required this.viewModel});
+  DevmateApp({super.key, required TrainingViewModel viewModel})
+    : router = createRouter(viewModel);
 
-  final TrainingViewModel viewModel;
+  final GoRouter router;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => MaterialApp.router(
     title: 'Devmate',
     debugShowCheckedModeBanner: false,
     theme: devmateTheme(),
-    home: HomeScreen(viewModel: viewModel),
+    routerConfig: router,
   );
 }

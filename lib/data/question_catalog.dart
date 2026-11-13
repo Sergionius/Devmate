@@ -187,3 +187,10 @@ const questionCatalog = <InterviewTopic>[
     ),
   ]),
 ];
+
+InterviewTopic? topicById(String id) {
+  for (final topic in questionCatalog) {
+    if (topic.id == id) return topic;
+  }
+  return null;
+}
