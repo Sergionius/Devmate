@@ -44,11 +44,11 @@ void main() {
     expect(model.error, isNotNull);
   });
 
-  test('catalog has unique ids and answers in every topic', () {
+  test('catalog has 10 topics x 12 questions with unique ids and answers', () {
     final ids = <String>{};
     expect(questionCatalog.length, 10);
     for (final topic in questionCatalog) {
-      expect(topic.questions, isNotEmpty);
+      expect(topic.questions.length, 12);
       for (final question in topic.questions) {
         expect(ids.add(question.id), isTrue);
         expect(question.prompt.trim(), isNotEmpty);
