@@ -20,9 +20,22 @@ IconData iconForTopic(String id) => switch (id) {
   _ => Icons.hub_rounded,
 };
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.viewModel});
   final TrainingViewModel viewModel;
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,16 +46,18 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: viewModel,
+          listenable: widget.viewModel,
           builder: (context, _) {
-            if (viewModel.loading) {
+            if (widget.viewModel.loading) {
               return const Center(child: CircularProgressIndicator());
             }
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1080),
                 child: Scrollbar(
+                  controller: _scrollController,
                   child: CustomScrollView(
+                    controller: _scrollController,
                     slivers: [
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
@@ -56,9 +71,9 @@ class HomeScreen extends StatelessWidget {
                                   onStart: () => _continue(context),
                                 );
                                 final progress = _ProgressPanel(
-                                  completed: viewModel.completed,
+                                  completed: widget.viewModel.completed,
                                   total: total,
-                                  points: viewModel.points,
+                                  points: widget.viewModel.points,
                                 );
                                 if (constraints.maxWidth < 700) {
                                   return Column(
@@ -81,7 +96,7 @@ class HomeScreen extends StatelessWidget {
                                 );
                               },
                             ),
-                            if (viewModel.error != null) ...[
+                            if (widget.viewModel.error != null) ...[
                               const SizedBox(height: 16),
                               Card(
                                 child: Padding(
@@ -93,9 +108,11 @@ class HomeScreen extends StatelessWidget {
                                         color: Colors.orangeAccent,
                                       ),
                                       const SizedBox(width: 12),
-                                      Expanded(child: Text(viewModel.error!)),
+                                      Expanded(
+                                        child: Text(widget.viewModel.error!),
+                                      ),
                                       TextButton(
-                                        onPressed: viewModel.load,
+                                        onPressed: widget.viewModel.load,
                                         child: const Text('Повторить'),
                                       ),
                                     ],
@@ -159,12 +176,14 @@ class HomeScreen extends StatelessWidget {
                                 return _TopicTile(
                                   topic: topic,
                                   number: index + 1,
-                                  completed: viewModel.completedIn(topic),
+                                  completed: widget.viewModel.completedIn(
+                                    topic,
+                                  ),
                                   onTap: () => Navigator.of(context).push(
                                     MaterialPageRoute<void>(
                                       builder: (_) => TopicScreen(
                                         topic: topic,
-                                        viewModel: viewModel,
+                                        viewModel: widget.viewModel,
                                       ),
                                     ),
                                   ),
@@ -188,7 +207,7 @@ class HomeScreen extends StatelessWidget {
   void _continue(BuildContext context) {
     for (final topic in questionCatalog) {
       final next = topic.questions.indexWhere(
-        (question) => viewModel.scoreFor(question) == null,
+        (question) => widget.viewModel.scoreFor(question) == null,
       );
       if (next >= 0) {
         Navigator.of(context).push(
@@ -196,7 +215,7 @@ class HomeScreen extends StatelessWidget {
             builder: (_) => PracticeScreen(
               topic: topic,
               initialIndex: next,
-              viewModel: viewModel,
+              viewModel: widget.viewModel,
             ),
           ),
         );
@@ -208,7 +227,7 @@ class HomeScreen extends StatelessWidget {
         builder: (_) => PracticeScreen(
           topic: questionCatalog.first,
           initialIndex: 0,
-          viewModel: viewModel,
+          viewModel: widget.viewModel,
         ),
       ),
     );

@@ -6,21 +6,36 @@ import 'home_screen.dart';
 import 'practice_screen.dart';
 import 'training_view_model.dart';
 
-class TopicScreen extends StatelessWidget {
+class TopicScreen extends StatefulWidget {
   const TopicScreen({super.key, required this.topic, required this.viewModel});
   final InterviewTopic topic;
   final TrainingViewModel viewModel;
 
   @override
+  State<TopicScreen> createState() => _TopicScreenState();
+}
+
+class _TopicScreenState extends State<TopicScreen> {
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Направление')),
     body: ListenableBuilder(
-      listenable: viewModel,
+      listenable: widget.viewModel,
       builder: (context, _) => Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
           child: Scrollbar(
+            controller: _scrollController,
             child: ListView(
+              controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(24, 18, 24, 40),
               children: [
                 Row(
@@ -28,7 +43,7 @@ class TopicScreen extends StatelessWidget {
                     const Eyebrow('БИБЛИОТЕКА / ТЕМА'),
                     const Spacer(),
                     Icon(
-                      iconForTopic(topic.id),
+                      iconForTopic(widget.topic.id),
                       color: DevmateColors.lavender,
                       size: 28,
                     ),
@@ -36,22 +51,24 @@ class TopicScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  topic.title,
+                  widget.topic.title,
                   style: Theme.of(context).textTheme.headlineLarge,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  topic.description,
+                  widget.topic.description,
                   style: Theme.of(context).textTheme.bodyLarge
                       ?.copyWith(color: DevmateColors.muted),
                 ),
                 const SizedBox(height: 24),
                 ProgressTrack(
-                  value: viewModel.completedIn(topic) / topic.questions.length,
+                  value:
+                      widget.viewModel.completedIn(widget.topic) /
+                      widget.topic.questions.length,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${viewModel.completedIn(topic)} из ${topic.questions.length} вопросов пройдено',
+                  '${widget.viewModel.completedIn(widget.topic)} из ${widget.topic.questions.length} вопросов пройдено',
                   style: const TextStyle(
                     color: DevmateColors.muted,
                     fontSize: 13,
@@ -60,14 +77,15 @@ class TopicScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   onPressed: () {
-                    final next = topic.questions.indexWhere(
-                      (q) => viewModel.scoreFor(q) == null,
+                    final next = widget.topic.questions.indexWhere(
+                      (q) => widget.viewModel.scoreFor(q) == null,
                     );
                     _openPractice(context, next < 0 ? 0 : next);
                   },
                   icon: const Icon(Icons.arrow_forward_rounded),
                   label: Text(
-                    viewModel.completedIn(topic) == topic.questions.length
+                    widget.viewModel.completedIn(widget.topic) ==
+                            widget.topic.questions.length
                         ? 'Повторить тему'
                         : 'Продолжить тренировку',
                   ),
@@ -77,7 +95,7 @@ class TopicScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 for (
                   var index = 0;
-                  index < topic.questions.length;
+                  index < widget.topic.questions.length;
                   index++
                 ) ...[
                   Material(
@@ -110,21 +128,21 @@ class TopicScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    topic.questions[index].prompt,
+                                    widget.topic.questions[index].prompt,
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       height: 1.35,
                                     ),
                                   ),
-                                  if (viewModel.scoreFor(
-                                        topic.questions[index],
+                                  if (widget.viewModel.scoreFor(
+                                        widget.topic.questions[index],
                                       ) !=
                                       null) ...[
                                     const SizedBox(height: 6),
                                     Text(
-                                      viewModel.scoreFor(
-                                                topic.questions[index],
+                                      widget.viewModel.scoreFor(
+                                                widget.topic.questions[index],
                                               ) ==
                                               10
                                           ? 'Знаю · 10 XP'
@@ -163,9 +181,9 @@ class TopicScreen extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => PracticeScreen(
-          topic: topic,
+          topic: widget.topic,
           initialIndex: index,
-          viewModel: viewModel,
+          viewModel: widget.viewModel,
         ),
       ),
     );
