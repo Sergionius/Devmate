@@ -38,11 +38,21 @@ class LlmSettings {
 }
 
 class LlmPreset {
-  const LlmPreset(this.id, this.label, this.baseUrl, this.defaultModel);
+  const LlmPreset(
+    this.id,
+    this.label,
+    this.baseUrl,
+    this.defaultModel, {
+    this.worksInBrowser = false,
+  });
   final String id;
   final String label;
   final String baseUrl;
   final String defaultModel;
+
+  /// Whether the provider sends CORS headers and can be called from a web
+  /// build directly. Native iOS/Android apps work with all providers.
+  final bool worksInBrowser;
 }
 
 const llmPresets = <LlmPreset>[
@@ -52,12 +62,19 @@ const llmPresets = <LlmPreset>[
     'https://api.z.ai/api/paas/v4',
     'glm-5.3-flash',
   ),
-  LlmPreset('openai', 'OpenAI', 'https://api.openai.com/v1', 'gpt-4.1-mini'),
+  LlmPreset(
+    'openai',
+    'OpenAI',
+    'https://api.openai.com/v1',
+    'gpt-4.1-mini',
+    worksInBrowser: true,
+  ),
   LlmPreset(
     'openrouter',
     'OpenRouter',
     'https://openrouter.ai/api/v1',
     'openai/gpt-4o-mini',
+    worksInBrowser: true,
   ),
   LlmPreset(
     'deepseek',
@@ -70,6 +87,7 @@ const llmPresets = <LlmPreset>[
     'Groq',
     'https://api.groq.com/openai/v1',
     'llama-3.3-70b-versatile',
+    worksInBrowser: true,
   ),
   LlmPreset(
     'ollama',

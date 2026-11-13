@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/llm_chat_provider.dart';
@@ -137,9 +138,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Ключ хранится только на этом устройстве и уходит напрямую выбранному провайдеру. На web провайдер должен разрешать CORS.',
+                    'Ключ хранится только на этом устройстве и уходит напрямую выбранному провайдеру.',
                     style: TextStyle(color: DevmateColors.muted, height: 1.5),
                   ),
+                  if (kIsWeb) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      'На web работают только провайдеры с CORS: OpenAI, OpenRouter, Groq. '
+                      'z.ai и DeepSeek блокируют запросы из браузера — используйте приложение на iOS/Android '
+                      'или другой провайдер.',
+                      style: TextStyle(
+                        color: DevmateColors.lavender,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   DropdownButtonFormField<LlmPreset>(
                     initialValue: _preset,
@@ -147,7 +160,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       for (final preset in llmPresets)
                         DropdownMenuItem(
                           value: preset,
-                          child: Text(preset.label),
+                          child: Text(
+                            kIsWeb && preset.worksInBrowser
+                                ? '${preset.label} · работает в браузере'
+                                : preset.label,
+                          ),
                         ),
                     ],
                     onChanged: (preset) => _applyPreset(preset!),
