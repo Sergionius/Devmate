@@ -1,0 +1,168 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+class LlmSettings {
+  const LlmSettings({
+    required this.baseUrl,
+    required this.model,
+    required this.apiKey,
+  });
+
+  final String baseUrl;
+  final String model;
+  final String apiKey;
+
+  bool get isConfigured =>
+      apiKey.trim().isNotEmpty &&
+      baseUrl.trim().isNotEmpty &&
+      model.trim().isNotEmpty;
+
+  LlmSettings copyWith({String? baseUrl, String? model, String? apiKey}) =>
+      LlmSettings(
+        baseUrl: baseUrl ?? this.baseUrl,
+        model: model ?? this.model,
+        apiKey: apiKey ?? this.apiKey,
+      );
+
+  Map<String, String> toMap() => {
+    'baseUrl': baseUrl,
+    'model': model,
+    'apiKey': apiKey,
+  };
+
+  static LlmSettings fromMap(Map<String, String> map) => LlmSettings(
+    baseUrl: map['baseUrl'] ?? '',
+    model: map['model'] ?? '',
+    apiKey: map['apiKey'] ?? '',
+  );
+}
+
+class LlmPreset {
+  const LlmPreset(
+    this.id,
+    this.label,
+    this.baseUrl,
+    this.defaultModel, {
+    this.worksInBrowser = false,
+  });
+  final String id;
+  final String label;
+  final String baseUrl;
+  final String defaultModel;
+
+  /// Whether the provider sends CORS headers and can be called from a web
+  /// build directly. Native iOS/Android apps work with all providers.
+  final bool worksInBrowser;
+}
+
+const llmPresets = <LlmPreset>[
+  LlmPreset(
+    'zai',
+    'z.ai (GLM)',
+    'https://api.z.ai/api/paas/v4',
+    'glm-5.3-flash',
+  ),
+  LlmPreset(
+    'openai',
+    'OpenAI',
+    'https://api.openai.com/v1',
+    'gpt-4.1-mini',
+    worksInBrowser: true,
+  ),
+  LlmPreset(
+    'openrouter',
+    'OpenRouter',
+    'https://openrouter.ai/api/v1',
+    'openai/gpt-4o-mini',
+    worksInBrowser: true,
+  ),
+  LlmPreset(
+    'deepseek',
+    'DeepSeek',
+    'https://api.deepseek.com/v1',
+    'deepseek-chat',
+  ),
+  LlmPreset(
+    'groq',
+    'Groq',
+    'https://api.groq.com/openai/v1',
+    'llama-3.3-70b-versatile',
+    worksInBrowser: true,
+  ),
+  LlmPreset(
+    'ollama',
+    'Ollama (локально)',
+    'http://localhost:11434/v1',
+    'llama3.1',
+  ),
+  LlmPreset('custom', 'Свой endpoint', '', ''),
+];
+
+LlmPreset? presetById(String id) {
+  for (final preset in llmPresets) {
+    if (preset.id == id) return preset;
+  }
+  return null;
+}
+
+/// Reads LLM settings from .env for defaults and stores user edits in
+/// secure storage (iOS Keychain / Android Keystore; web — local storage).
+class LlmSettingsRepository {
+  LlmSettingsRepository({FlutterSecureStorage? storage})
+    : _storage = storage ?? const FlutterSecureStorage();
+
+  static const _baseUrlKey = 'llm.baseUrl';
+  static const _modelKey = 'llm.model';
+  static const _apiKeyKey = 'llm.apiKey';
+  static const _baseUrlEnv = 'LLM_BASE_URL';
+  static const _modelEnv = 'LLM_MODEL';
+  static const _apiKeyEnv = 'LLM_API_KEY';
+
+  final FlutterSecureStorage _storage;
+
+  /// Defaults from .env; empty strings when values (or the file) are missing.
+  LlmSettings fromEnv() {
+    try {
+      return LlmSettings(
+        baseUrl: dotenv.env[_baseUrlEnv] ?? '',
+        model: dotenv.env[_modelEnv] ?? '',
+        apiKey: dotenv.env[_apiKeyEnv] ?? '',
+      );
+    } catch (_) {
+      return const LlmSettings(baseUrl: '', model: '', apiKey: '');
+    }
+  }
+
+  LlmPreset? detectPreset(LlmSettings settings) {
+    for (final preset in llmPresets) {
+      if (preset.id != 'custom' && preset.baseUrl == settings.baseUrl.trim()) {
+        return preset;
+      }
+    }
+    return presetById('custom');
+  }
+
+  Future<LlmSettings> load() async {
+    final env = fromEnv();
+    final baseUrl = await _storage.read(key: _baseUrlKey);
+    final model = await _storage.read(key: _modelKey);
+    final apiKey = await _storage.read(key: _apiKeyKey);
+    return LlmSettings(
+      baseUrl: baseUrl ?? env.baseUrl,
+      model: model ?? env.model,
+      apiKey: apiKey ?? env.apiKey,
+    );
+  }
+
+  Future<void> save(LlmSettings settings) async {
+    await _storage.write(key: _baseUrlKey, value: settings.baseUrl.trim());
+    await _storage.write(key: _modelKey, value: settings.model.trim());
+    await _storage.write(key: _apiKeyKey, value: settings.apiKey.trim());
+  }
+
+  Future<void> clear() async {
+    await _storage.delete(key: _baseUrlKey);
+    await _storage.delete(key: _modelKey);
+    await _storage.delete(key: _apiKeyKey);
+  }
+}

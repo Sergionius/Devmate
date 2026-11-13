@@ -1,3 +1,4 @@
+import 'package:devmate/data/llm_settings.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/main.dart';
 import 'package:devmate/ui/training_view_model.dart';
@@ -23,7 +24,9 @@ void main() {
     final repository = MemoryProgressRepository();
     final model = TrainingViewModel(repository);
     await model.load();
-    await tester.pumpWidget(DevmateApp(viewModel: model));
+    await tester.pumpWidget(
+      DevmateApp(viewModel: model, llmSettings: LlmSettingsRepository()),
+    );
 
     expect(find.text('Выбери тему'), findsOneWidget);
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -350));

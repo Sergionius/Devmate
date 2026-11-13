@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/llm_settings.dart';
 import '../data/question_catalog.dart';
 import '../domain/question.dart';
 import 'design_system.dart';
@@ -20,8 +21,13 @@ IconData iconForTopic(String id) => switch (id) {
 };
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.viewModel});
+  const HomeScreen({
+    super.key,
+    required this.viewModel,
+    required this.settingsRepository,
+  });
   final TrainingViewModel viewModel;
+  final LlmSettingsRepository settingsRepository;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -62,7 +68,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
                         sliver: SliverList.list(
                           children: [
-                            const _BrandHeader(),
+                            _BrandHeader(
+                              onOpenSettings: () => context.push('/settings'),
+                            ),
                             const SizedBox(height: 38),
                             LayoutBuilder(
                               builder: (context, constraints) {
@@ -213,7 +221,8 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _BrandHeader extends StatelessWidget {
-  const _BrandHeader();
+  const _BrandHeader({required this.onOpenSettings});
+  final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -246,6 +255,16 @@ class _BrandHeader extends StatelessWidget {
           fontSize: 11,
           letterSpacing: 1.4,
           fontWeight: FontWeight.w700,
+        ),
+      ),
+      const SizedBox(width: 10),
+      IconButton(
+        tooltip: 'Настройки AI',
+        onPressed: onOpenSettings,
+        icon: const Icon(
+          Icons.settings_rounded,
+          size: 21,
+          color: DevmateColors.muted,
         ),
       ),
     ],
