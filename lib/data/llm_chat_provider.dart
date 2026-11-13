@@ -45,6 +45,13 @@ String describeLlmError(Object error) {
   if (text.contains('429')) {
     return 'Слишком много запросов (429). Подождите или проверьте квоту.';
   }
+  final lower = text.toLowerCase();
+  if (lower.contains('insufficient balance') ||
+      lower.contains('no resource package') ||
+      lower.contains('billing')) {
+    return 'На аккаунте провайдера нет средств или тарифного пакета. '
+        'Пополните баланс или выберите другого провайдера.';
+  }
   return kIsWeb
       ? 'Ошибка соединения с провайдером. На web работают только провайдеры с CORS '
             '(OpenAI, OpenRouter, Groq). Проверьте настройки и интернет.'

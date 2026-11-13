@@ -27,7 +27,7 @@ flutter run -d android   # Android: нужен SDK и эмулятор/устр�
 
 На главной откройте **Настройки AI**, выберите провайдера или укажите свой OpenAI-совместимый **Base URL**, имя модели и ключ. Кнопка «Проверить соединение» отправляет короткий платный/тарифицируемый запрос провайдеру. Затем откройте AI-чат с экрана темы или вопроса. Запросы идут **напрямую** выбранному провайдеру; собственного сервера Devmate нет. Настройки сохраняются в `flutter_secure_storage` (iOS Keychain, Android шифрованное хранилище, Web WebCrypto/LocalStorage в текущем браузере).
 
-Необязательные начальные значения можно задать так:
+Необязательные начальные значения можно задать так (важно: именно `assets/config/.env`, файл в корне проекта приложение не читает):
 
 ```sh
 cp .env.example assets/config/.env
@@ -46,9 +46,12 @@ flutter run
 | OpenAI | ✅ |
 | OpenRouter | ✅ |
 | Groq | ✅ |
-| z.ai (GLM) | ❌ — только iOS/Android |
+| z.ai GLM Coding (подписка) | ✅ iOS/Android, endpoint `api.z.ai/api/coding/paas/v4` |
+| z.ai API (оплата за токены) | ❌ на web; iOS/Android требуют баланс на аккаунте |
 | DeepSeek | ❌ — только iOS/Android |
 | Ollama | только с `OLLAMA_ORIGINS=*` |
+
+Подписка GLM Coding Plan работает через отдельный endpoint `https://api.z.ai/api/coding/paas/v4` — у пресета «z.ai GLM Coding (подписка)». Обычный `https://api.z.ai/api/paas/v4` списывает токены с баланса и при нуле возвращает ошибку 1113 «Insufficient balance»; приложение показывает это как понятное сообщение о балансе.
 
 В нативных приложениях iOS и Android работают все провайдеры: ограничение касается только web. Для z.ai/DeepSeek в браузере нужен собственный прокси-сервер.
 
