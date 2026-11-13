@@ -98,197 +98,202 @@ class _PracticeScreenState extends State<PracticeScreen> {
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
-        child: ListView(
+        child: Scrollbar(
           controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 40),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Eyebrow(
-                    'ВОПРОС ${_index + 1} / ${widget.topic.questions.length}',
+          child: ListView(
+            controller: _scroll,
+            padding: const EdgeInsets.fromLTRB(24, 18, 24, 40),
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Eyebrow(
+                      'ВОПРОС ${_index + 1} / ${widget.topic.questions.length}',
+                    ),
+                  ),
+                  const Icon(
+                    Icons.bolt_rounded,
+                    color: DevmateColors.accent,
+                    size: 19,
+                  ),
+                  Text(
+                    '${widget.viewModel.points} XP',
+                    style: const TextStyle(
+                      color: DevmateColors.accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              ProgressTrack(
+                value: (_index + 1) / widget.topic.questions.length,
+              ),
+              const SizedBox(height: 40),
+              Text(
+                _question.prompt,
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontSize: 28, height: 1.22),
+              ),
+              const SizedBox(height: 28),
+              if (_stage == _Stage.answer) ...[
+                const Eyebrow('01 / ТВОЙ ОТВЕТ', color: DevmateColors.muted),
+                const SizedBox(height: 10),
+                const Text(
+                  'Сформулируй своими словами. Здесь нет автоматической проверки — сначала попробуй вспомнить сам.',
+                  style: TextStyle(color: DevmateColors.muted, height: 1.5),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  key: const Key('answer-field'),
+                  controller: _answer,
+                  maxLines: 6,
+                  minLines: 4,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Твой ответ',
+                    alignLabelWithHint: true,
+                    hintText: 'Начни писать здесь...',
                   ),
                 ),
-                const Icon(
-                  Icons.bolt_rounded,
-                  color: DevmateColors.accent,
-                  size: 19,
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _hasAnswer
+                      ? () {
+                          FocusScope.of(context).unfocus();
+                          setState(() => _stage = _Stage.compare);
+                          _scrollToTop();
+                        }
+                      : null,
+                  child: const Text('Сверить с эталоном'),
                 ),
+              ] else if (_stage == _Stage.compare) ...[
+                const Eyebrow('02 / СРАВНЕНИЕ', color: DevmateColors.muted),
+                const SizedBox(height: 16),
+                _AnswerCard(label: 'ТВОЙ ОТВЕТ', text: _answer.text),
+                const SizedBox(height: 12),
+                _AnswerCard(
+                  label: 'ЭТАЛОННЫЙ ОТВЕТ',
+                  text: _question.answer,
+                  highlight: true,
+                ),
+                const SizedBox(height: 26),
                 Text(
-                  '${widget.viewModel.points} XP',
-                  style: const TextStyle(
-                    color: DevmateColors.accent,
-                    fontWeight: FontWeight.w700,
+                  'Насколько близко получилось?',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 14),
+                ListenableBuilder(
+                  listenable: widget.viewModel,
+                  builder: (context, _) => Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: widget.viewModel.saving
+                              ? null
+                              : () => _finish(true),
+                          icon: const Icon(Icons.check_rounded),
+                          label: const Text('Знал ответ · +10 XP'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: widget.viewModel.saving
+                              ? null
+                              : () {
+                                  setState(() => _stage = _Stage.rewrite);
+                                  _scrollToTop();
+                                },
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Нужно повторить'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (_stage == _Stage.rewrite) ...[
+                const Eyebrow('03 / ЗАКРЕПЛЕНИЕ'),
+                const SizedBox(height: 12),
+                const Text(
+                  'Вспомни эталонный ответ и запиши его снова своими словами. Мы не сравниваем формулировки автоматически.',
+                  style: TextStyle(color: DevmateColors.muted, height: 1.5),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  key: const Key('rewrite-field'),
+                  controller: _rewrite,
+                  maxLines: 6,
+                  minLines: 4,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Что важно запомнить?',
+                    alignLabelWithHint: true,
+                    hintText: 'Запиши суть ответа...',
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListenableBuilder(
+                  listenable: widget.viewModel,
+                  builder: (context, _) => FilledButton(
+                    onPressed: _hasRewrite && !widget.viewModel.saving
+                        ? () => _finish(false)
+                        : null,
+                    child: const Text('Закрепить · +5 XP'),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() => _stage = _Stage.compare);
+                    _scrollToTop();
+                  },
+                  child: const Text('Посмотреть эталон снова'),
+                ),
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: DevmateColors.surface,
+                    border: Border.all(color: DevmateColors.border),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 40,
+                        color: DevmateColors.accent,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        _knewAnswer
+                            ? 'Отлично. Ответ засчитан.'
+                            : 'Сложное становится понятнее.',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Прогресс сохранён на этом устройстве.',
+                        style: TextStyle(color: DevmateColors.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _next,
+                  child: Text(
+                    _index + 1 == widget.topic.questions.length
+                        ? 'К теме'
+                        : 'Следующий вопрос',
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 14),
-            ProgressTrack(value: (_index + 1) / widget.topic.questions.length),
-            const SizedBox(height: 40),
-            Text(
-              _question.prompt,
-              style: Theme.of(context).textTheme.headlineSmall
-                  ?.copyWith(fontSize: 28, height: 1.22),
-            ),
-            const SizedBox(height: 28),
-            if (_stage == _Stage.answer) ...[
-              const Eyebrow('01 / ТВОЙ ОТВЕТ', color: DevmateColors.muted),
-              const SizedBox(height: 10),
-              const Text(
-                'Сформулируй своими словами. Здесь нет автоматической проверки — сначала попробуй вспомнить сам.',
-                style: TextStyle(color: DevmateColors.muted, height: 1.5),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                key: const Key('answer-field'),
-                controller: _answer,
-                maxLines: 6,
-                minLines: 4,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Твой ответ',
-                  alignLabelWithHint: true,
-                  hintText: 'Начни писать здесь...',
-                ),
-              ),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _hasAnswer
-                    ? () {
-                        FocusScope.of(context).unfocus();
-                        setState(() => _stage = _Stage.compare);
-                        _scrollToTop();
-                      }
-                    : null,
-                child: const Text('Сверить с эталоном'),
-              ),
-            ] else if (_stage == _Stage.compare) ...[
-              const Eyebrow('02 / СРАВНЕНИЕ', color: DevmateColors.muted),
-              const SizedBox(height: 16),
-              _AnswerCard(label: 'ТВОЙ ОТВЕТ', text: _answer.text),
-              const SizedBox(height: 12),
-              _AnswerCard(
-                label: 'ЭТАЛОННЫЙ ОТВЕТ',
-                text: _question.answer,
-                highlight: true,
-              ),
-              const SizedBox(height: 26),
-              Text(
-                'Насколько близко получилось?',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 14),
-              ListenableBuilder(
-                listenable: widget.viewModel,
-                builder: (context, _) => Column(
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: widget.viewModel.saving
-                            ? null
-                            : () => _finish(true),
-                        icon: const Icon(Icons.check_rounded),
-                        label: const Text('Знал ответ · +10 XP'),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: widget.viewModel.saving
-                            ? null
-                            : () {
-                                setState(() => _stage = _Stage.rewrite);
-                                _scrollToTop();
-                              },
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Нужно повторить'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else if (_stage == _Stage.rewrite) ...[
-              const Eyebrow('03 / ЗАКРЕПЛЕНИЕ'),
-              const SizedBox(height: 12),
-              const Text(
-                'Вспомни эталонный ответ и запиши его снова своими словами. Мы не сравниваем формулировки автоматически.',
-                style: TextStyle(color: DevmateColors.muted, height: 1.5),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                key: const Key('rewrite-field'),
-                controller: _rewrite,
-                maxLines: 6,
-                minLines: 4,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Что важно запомнить?',
-                  alignLabelWithHint: true,
-                  hintText: 'Запиши суть ответа...',
-                ),
-              ),
-              const SizedBox(height: 20),
-              ListenableBuilder(
-                listenable: widget.viewModel,
-                builder: (context, _) => FilledButton(
-                  onPressed: _hasRewrite && !widget.viewModel.saving
-                      ? () => _finish(false)
-                      : null,
-                  child: const Text('Закрепить · +5 XP'),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() => _stage = _Stage.compare);
-                  _scrollToTop();
-                },
-                child: const Text('Посмотреть эталон снова'),
-              ),
-            ] else ...[
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: DevmateColors.surface,
-                  border: Border.all(color: DevmateColors.border),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      size: 40,
-                      color: DevmateColors.accent,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      _knewAnswer
-                          ? 'Отлично. Ответ засчитан.'
-                          : 'Сложное становится понятнее.',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Прогресс сохранён на этом устройстве.',
-                      style: TextStyle(color: DevmateColors.muted),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _next,
-                child: Text(
-                  _index + 1 == widget.topic.questions.length
-                      ? 'К теме'
-                      : 'Следующий вопрос',
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     ),

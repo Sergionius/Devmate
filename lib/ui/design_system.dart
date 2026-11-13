@@ -122,6 +122,11 @@ ThemeData devmateTheme() {
       color: DevmateColors.accent,
       linearTrackColor: DevmateColors.border,
     ),
+    scrollbarTheme: const ScrollbarThemeData(
+      thumbColor: WidgetStatePropertyAll(DevmateColors.border),
+      crossAxisMargin: 6,
+      mainAxisMargin: 6,
+    ),
   );
 }
 

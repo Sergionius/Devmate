@@ -41,138 +41,141 @@ class HomeScreen extends StatelessWidget {
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1080),
-                child: CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
-                      sliver: SliverList.list(
-                        children: [
-                          const _BrandHeader(),
-                          const SizedBox(height: 38),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final intro = _Intro(
-                                onStart: () => _continue(context),
-                              );
-                              final progress = _ProgressPanel(
-                                completed: viewModel.completed,
-                                total: total,
-                                points: viewModel.points,
-                              );
-                              if (constraints.maxWidth < 700) {
-                                return Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
+                child: Scrollbar(
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
+                        sliver: SliverList.list(
+                          children: [
+                            const _BrandHeader(),
+                            const SizedBox(height: 38),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final intro = _Intro(
+                                  onStart: () => _continue(context),
+                                );
+                                final progress = _ProgressPanel(
+                                  completed: viewModel.completed,
+                                  total: total,
+                                  points: viewModel.points,
+                                );
+                                if (constraints.maxWidth < 700) {
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      intro,
+                                      const SizedBox(height: 24),
+                                      progress,
+                                    ],
+                                  );
+                                }
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    intro,
-                                    const SizedBox(height: 24),
-                                    progress,
+                                    Expanded(flex: 6, child: intro),
+                                    const SizedBox(width: 32),
+                                    Expanded(flex: 4, child: progress),
                                   ],
                                 );
-                              }
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(flex: 6, child: intro),
-                                  const SizedBox(width: 32),
-                                  Expanded(flex: 4, child: progress),
-                                ],
-                              );
-                            },
-                          ),
-                          if (viewModel.error != null) ...[
-                            const SizedBox(height: 16),
-                            Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.error_outline,
-                                      color: Colors.orangeAccent,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(child: Text(viewModel.error!)),
-                                    TextButton(
-                                      onPressed: viewModel.load,
-                                      child: const Text('Повторить'),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              },
                             ),
-                          ],
-                          const SizedBox(height: 40),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Eyebrow(
-                                      'БИБЛИОТЕКА / 10 НАПРАВЛЕНИЙ',
-                                      color: DevmateColors.muted,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Выбери тему',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                '$total вопросов',
-                                style: const TextStyle(
-                                  color: DevmateColors.muted,
+                            if (viewModel.error != null) ...[
+                              const SizedBox(height: 16),
+                              Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline,
+                                        color: Colors.orangeAccent,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(child: Text(viewModel.error!)),
+                                      TextButton(
+                                        onPressed: viewModel.load,
+                                        child: const Text('Повторить'),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 18),
-                        ],
-                      ),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
-                      sliver: SliverLayoutBuilder(
-                        builder: (context, constraints) {
-                          final columns = constraints.crossAxisExtent >= 700
-                              ? 2
-                              : 1;
-                          return SliverGrid.builder(
-                            itemCount: questionCatalog.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: columns,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  mainAxisExtent: 146,
-                                ),
-                            itemBuilder: (context, index) {
-                              final topic = questionCatalog[index];
-                              return _TopicTile(
-                                topic: topic,
-                                number: index + 1,
-                                completed: viewModel.completedIn(topic),
-                                onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => TopicScreen(
-                                      topic: topic,
-                                      viewModel: viewModel,
-                                    ),
+                            const SizedBox(height: 40),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Eyebrow(
+                                        'БИБЛИОТЕКА / 10 НАПРАВЛЕНИЙ',
+                                        color: DevmateColors.muted,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Выбери тему',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineSmall,
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              );
-                            },
-                          );
-                        },
+                                Text(
+                                  '$total вопросов',
+                                  style: const TextStyle(
+                                    color: DevmateColors.muted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                        sliver: SliverLayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns = constraints.crossAxisExtent >= 700
+                                ? 2
+                                : 1;
+                            return SliverGrid.builder(
+                              itemCount: questionCatalog.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: columns,
+                                    mainAxisSpacing: 12,
+                                    crossAxisSpacing: 12,
+                                    mainAxisExtent: 146,
+                                  ),
+                              itemBuilder: (context, index) {
+                                final topic = questionCatalog[index];
+                                return _TopicTile(
+                                  topic: topic,
+                                  number: index + 1,
+                                  completed: viewModel.completedIn(topic),
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => TopicScreen(
+                                        topic: topic,
+                                        viewModel: viewModel,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
