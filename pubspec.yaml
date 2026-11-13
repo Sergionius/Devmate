@@ -36,6 +36,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.6
   go_router: ^18.1.4
+  flutter_secure_storage: ^11.2.0
+  flutter_dotenv: ^6.0.1
+  flutter_ai_toolkit: ^1.0.0
+  openai_dart: ^12.0.0
+  flutter_markdown_plus: ^1.0.12
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +66,7 @@ flutter:
   assets:
     - assets/branding/devmate_source.png
     - assets/data/questions.json
+    - assets/config/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

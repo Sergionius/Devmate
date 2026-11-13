@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../domain/question.dart';
 import 'design_system.dart';
@@ -171,6 +172,15 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         }
                       : null,
                   child: const Text('Сверить с эталоном'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.push(
+                    '/chat/question/${widget.topic.id}/$_index',
+                    extra: _answer.text.trim(),
+                  ),
+                  icon: const Icon(Icons.chat_rounded, size: 20),
+                  label: const Text('Разобрать с AI'),
                 ),
               ] else if (_stage == _Stage.compare) ...[
                 const Eyebrow('02 / СРАВНЕНИЕ', color: DevmateColors.muted),

@@ -95,6 +95,13 @@ class _TopicScreenState extends State<TopicScreen> {
                         : 'Продолжить тренировку',
                   ),
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      context.push('/chat/topic/${widget.topic.id}'),
+                  icon: const Icon(Icons.chat_rounded, size: 20),
+                  label: const Text('Обсудить тему с AI'),
+                ),
                 const SizedBox(height: 36),
                 const Eyebrow('ВОПРОСЫ', color: DevmateColors.muted),
                 const SizedBox(height: 10),
