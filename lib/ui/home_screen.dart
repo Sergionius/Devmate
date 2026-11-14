@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/llm_settings.dart';
-import '../data/question_catalog.dart';
+import '../data/topic_catalog.dart';
 import '../domain/question.dart';
 import '../l10n/l10n.dart';
 import 'design_system.dart';
@@ -25,9 +25,11 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.viewModel,
+    required this.catalog,
     required this.settingsRepository,
   });
   final TrainingViewModel viewModel;
+  final TopicCatalog catalog;
   final LlmSettingsRepository settingsRepository;
 
   @override
@@ -45,14 +47,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final total = questionCatalog.fold<int>(
+    final total = widget.catalog.topics.fold<int>(
       0,
       (sum, topic) => sum + topic.questions.length,
     );
     return Scaffold(
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: widget.viewModel,
+          listenable: Listenable.merge([widget.viewModel, widget.catalog]),
           builder: (context, _) {
             if (widget.viewModel.loading) {
               return const Center(child: CircularProgressIndicator());
@@ -137,6 +139,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                             const SizedBox(height: 24),
                             const _FreeChatCard(),
+                            const SizedBox(height: 12),
+                            const _CreateTopicCard(),
                             const SizedBox(height: 40),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.end,
@@ -180,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ? 2
                                 : 1;
                             return SliverGrid.builder(
-                              itemCount: questionCatalog.length,
+                              itemCount: widget.catalog.topics.length,
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: columns,
@@ -189,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     mainAxisExtent: 146,
                                   ),
                               itemBuilder: (context, index) {
-                                final topic = questionCatalog[index];
+                                final topic = widget.catalog.topics[index];
                                 return _TopicTile(
                                   topic: topic,
                                   number: index + 1,
@@ -216,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _continue(BuildContext context) {
-    for (final topic in questionCatalog) {
+    for (final topic in widget.catalog.topics) {
       final next = topic.questions.indexWhere(
         (question) => widget.viewModel.scoreFor(question) == null,
       );
@@ -225,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
     }
-    final topic = questionCatalog.first;
+    final topic = widget.catalog.topics.first;
     context.push('/topic/${topic.id}/practice/0');
   }
 }
@@ -425,6 +429,73 @@ class _FreeChatCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       context.l10n.freeChatCardSubtitle,
+                      style: const TextStyle(
+                        color: DevmateColors.muted,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: DevmateColors.muted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _CreateTopicCard extends StatelessWidget {
+  const _CreateTopicCard();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    child: Material(
+      color: DevmateColors.surface,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: () => context.push('/chat/create'),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            border: Border.all(color: DevmateColors.border),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: DevmateColors.lavender,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: DevmateColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.l10n.createChatTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      context.l10n.createChatCardSubtitle,
                       style: const TextStyle(
                         color: DevmateColors.muted,
                         fontSize: 14,
