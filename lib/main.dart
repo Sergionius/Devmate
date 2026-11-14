@@ -25,11 +25,15 @@ Future<void> main() async {
   final llmSettings = LlmSettingsRepository();
   final catalog = TopicCatalog(
     userTopicsRepository: LocalUserTopicsRepository(SharedPreferencesAsync()),
-  )..load();
+  );
+  // Загружаем каталог ДО viewModel: чистка прогресса по knownQuestionIds
+  // должна видеть пользовательские темы, иначе их прогресс теряется.
+  await catalog.load();
   runApp(
     DevmateApp(
       viewModel: TrainingViewModel(
         LocalProgressRepository(SharedPreferencesAsync()),
+        catalogRepository: catalog,
       )..load(),
       llmSettings: llmSettings,
       catalog: catalog,

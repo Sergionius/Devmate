@@ -228,6 +228,20 @@ void main() {
     expect(edits, isEmpty);
   });
 
+  test('knownQuestionIds покрывает все вопросы каталога и extras', () async {
+    final repo = MemoryUserTopics();
+    final catalog = TopicCatalog(userTopicsRepository: repo);
+    await catalog.load();
+
+    final known = catalog.knownQuestionIds;
+    expect(known, contains('fe-1'));
+
+    await catalog.addQuestionsToTopic('frontend', [('Ещё один', 'Да')]);
+    final frontend = catalog.topicById('frontend')!;
+    final addedId = frontend.questions.last.id;
+    expect(catalog.knownQuestionIds, contains(addedId));
+  });
+
   test('два добавления подряд в одну тему накапливаются без дублей', () async {
     final repo = MemoryUserTopics();
     final catalog = TopicCatalog(userTopicsRepository: repo);

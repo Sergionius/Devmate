@@ -1,5 +1,6 @@
 import 'package:devmate/data/question_catalog.dart';
 import 'package:devmate/data/progress_repository.dart';
+import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/ui/training_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -55,5 +56,16 @@ void main() {
         expect(question.answer.trim(), isNotEmpty);
       }
     }
+  });
+
+  test('load чистит score-мусор от удалённых вопросов', () async {
+    final repo = FakeProgressRepository();
+    repo.stored = {'fe-1': 10, 'deleted-junk': 5};
+    final catalog = TopicCatalog();
+    final model = TrainingViewModel(repo, catalogRepository: catalog);
+    await model.load();
+
+    expect(model.completed, 1);
+    expect(model.points, 10);
   });
 }

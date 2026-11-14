@@ -1,15 +1,18 @@
 import 'package:flutter/foundation.dart';
 
 import '../data/progress_repository.dart';
+import '../data/topic_catalog.dart';
 import '../domain/question.dart';
 
 /// Ошибки тренировки; текст локализуется в UI.
 enum TrainingError { progressLoad, answerSave }
 
 class TrainingViewModel extends ChangeNotifier {
-  TrainingViewModel(this._repository);
+  TrainingViewModel(this._repository, {TopicCatalog? catalogRepository})
+    : _catalog = catalogRepository;
 
   final ProgressRepository _repository;
+  final TopicCatalog? _catalog;
   Map<String, int> _scores = {};
   bool _loading = true;
   bool _saving = false;
@@ -28,6 +31,14 @@ class TrainingViewModel extends ChangeNotifier {
   Future<void> load() async {
     try {
       _scores = await _repository.load();
+      // Мусор от удалённых вопросов не должен завышать статистику.
+      final known = _catalog?.knownQuestionIds;
+      if (known != null) {
+        _scores = {
+          for (final entry in _scores.entries)
+            if (known.contains(entry.key)) entry.key: entry.value,
+        };
+      }
       _error = null;
     } catch (_) {
       _error = TrainingError.progressLoad;

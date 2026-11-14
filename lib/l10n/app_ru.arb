@@ -183,7 +183,6 @@
       "existing": { "type": "String" }
     }
   },
-  "appendChatIntroPlaceholder": "",
   "appendSuggestionBasics": "Добавь базовые вопросы по теме «{title}» для джуна",
   "@appendSuggestionBasics": { "placeholders": { "title": { "type": "String" } } },
   "appendSuggestionPractice": "Добавь 3 практических кейса по теме «{title}»",

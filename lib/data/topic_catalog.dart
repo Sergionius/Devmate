@@ -286,6 +286,13 @@ class TopicCatalog extends ChangeNotifier {
     (topic) => topic.title.toLowerCase() == title.trim().toLowerCase(),
   );
 
+  /// Все существующие id вопросов (для чистки прогресса от мусора).
+  Set<String> get knownQuestionIds => {
+    for (final topic in topics) ...[
+      for (final question in topic.questions) question.id,
+    ],
+  };
+
   /// Новая пользовательская тема. Все id — UUID v4.
   Future<InterviewTopic> addUserTopic(
     String title,
