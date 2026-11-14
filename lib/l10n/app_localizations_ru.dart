@@ -347,4 +347,30 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get topicSuggestionExplainer =>
       'Разбери одну тему простыми словами с примером';
+
+  @override
+  String get freeChatTitle => 'Общий чат';
+
+  @override
+  String get freeChatCardSubtitle =>
+      'Любые темы: карьера, учёба, хобби — о чём угодно.';
+
+  @override
+  String get freeChatIntro =>
+      'Поболтаем о чём угодно: работа, учёба, хобби или просто мысли вслух.';
+
+  @override
+  String get freeSystemPrompt =>
+      'Ты — дружелюбный собеседник для свободного общения на любые темы. Отвечай по-русски: живо, с любопытством и без нравоучений; поддерживай разговор, задавай встречные вопросы, делись примерами. Если тема техническая — углубляйся в детали; если лёгкая — оставайся лёгким.';
+
+  @override
+  String get freeSuggestionIcebreaker =>
+      'Предложи тему для разговора и задай первый вопрос';
+
+  @override
+  String get freeSuggestionCareer =>
+      'Обсудим, как справляться с выгоранием на работе';
+
+  @override
+  String get freeSuggestionFun => 'Расскажи удивительный факт о космосе';
 }

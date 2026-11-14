@@ -20,6 +20,7 @@ void main() {
         home: ChatScreen(
           title: 'AI',
           systemPrompt: 'sys',
+          intro: 'Интро',
           settingsRepository: repo,
         ),
       ),
