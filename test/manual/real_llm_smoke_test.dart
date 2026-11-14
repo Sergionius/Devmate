@@ -24,6 +24,7 @@ void main() {
       markTestSkipped(
         'assets/config/.env не задан — пропускаем реальный запрос',
       );
+      return;
     }
     final provider = OpenAiCompatibleProvider(
       settings: settings,
