@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'l10n/app_localizations.dart';
 import 'data/llm_settings.dart';
 import 'data/progress_repository.dart';
+import 'data/topic_catalog.dart';
 import 'router.dart';
 import 'ui/design_system.dart';
 import 'ui/training_view_model.dart';
@@ -22,12 +23,16 @@ Future<void> main() async {
     dotenv.loadFromString(envString: '', isOptional: true);
   }
   final llmSettings = LlmSettingsRepository();
+  final catalog = TopicCatalog(
+    userTopicsRepository: LocalUserTopicsRepository(SharedPreferencesAsync()),
+  )..load();
   runApp(
     DevmateApp(
       viewModel: TrainingViewModel(
         LocalProgressRepository(SharedPreferencesAsync()),
       )..load(),
       llmSettings: llmSettings,
+      catalog: catalog,
     ),
   );
 }
@@ -37,7 +42,8 @@ class DevmateApp extends StatelessWidget {
     super.key,
     required TrainingViewModel viewModel,
     required LlmSettingsRepository llmSettings,
-  }) : router = createRouter(viewModel, llmSettings);
+    required TopicCatalog catalog,
+  }) : router = createRouter(viewModel, llmSettings, catalog);
 
   final GoRouter router;
 

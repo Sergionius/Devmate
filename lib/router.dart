@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'data/llm_settings.dart';
-import 'data/question_catalog.dart';
+import 'data/topic_catalog.dart';
 import '../l10n/l10n.dart';
 import 'ui/chat_screen.dart';
 import 'ui/design_system.dart';
@@ -15,6 +15,7 @@ import 'ui/training_view_model.dart';
 GoRouter createRouter(
   TrainingViewModel viewModel,
   LlmSettingsRepository llmSettings,
+  TopicCatalog catalog,
 ) {
   GoRouter.optionURLReflectsImperativeAPIs = true;
   return GoRouter(
@@ -23,8 +24,11 @@ GoRouter createRouter(
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) =>
-            HomeScreen(viewModel: viewModel, settingsRepository: llmSettings),
+        builder: (context, state) => HomeScreen(
+          viewModel: viewModel,
+          catalog: catalog,
+          settingsRepository: llmSettings,
+        ),
       ),
       GoRoute(
         path: '/settings',
@@ -46,9 +50,44 @@ GoRouter createRouter(
         ),
       ),
       GoRoute(
+        path: '/chat/create/:topicId',
+        builder: (context, state) {
+          final topic = catalog.topicById(state.pathParameters['topicId']!);
+          if (topic == null) return const NotFoundScreen();
+          return ChatScreen(
+            title: context.l10n.appendChatTitle(topic.title),
+            systemPrompt: context.l10n.appendSystemPrompt(topic.title),
+            intro: context.l10n.appendChatIntro,
+            settingsRepository: llmSettings,
+            catalog: catalog,
+            appendToTopic: topic.id,
+            suggestions: [
+              context.l10n.appendSuggestionBasics(topic.title),
+              context.l10n.appendSuggestionPractice(topic.title),
+              context.l10n.appendSuggestionEdgeCases,
+            ],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/chat/create',
+        builder: (context, state) => ChatScreen(
+          title: context.l10n.createChatTitle,
+          systemPrompt: context.l10n.createSystemPrompt,
+          intro: context.l10n.createChatIntro,
+          settingsRepository: llmSettings,
+          catalog: catalog,
+          suggestions: [
+            context.l10n.createSuggestionDocker,
+            context.l10n.createSuggestionTypescript,
+            context.l10n.createSuggestionSql,
+          ],
+        ),
+      ),
+      GoRoute(
         path: '/chat/topic/:topicId',
         builder: (context, state) {
-          final topic = topicById(state.pathParameters['topicId']!);
+          final topic = catalog.topicById(state.pathParameters['topicId']!);
           if (topic == null) return const NotFoundScreen();
           return ChatScreen(
             title: context.l10n.topicChatTitle(topic.title),
@@ -69,7 +108,7 @@ GoRouter createRouter(
       GoRoute(
         path: '/chat/question/:topicId/:index',
         builder: (context, state) {
-          final topic = topicById(state.pathParameters['topicId']!);
+          final topic = catalog.topicById(state.pathParameters['topicId']!);
           final index = int.tryParse(state.pathParameters['index']!) ?? 0;
           final question =
               (topic == null || index < 0 || index >= topic.questions.length)
@@ -93,7 +132,7 @@ GoRouter createRouter(
       GoRoute(
         path: '/topic/:topicId',
         builder: (context, state) {
-          final topic = topicById(state.pathParameters['topicId']!);
+          final topic = catalog.topicById(state.pathParameters['topicId']!);
           if (topic == null) return const NotFoundScreen();
           return TopicScreen(topic: topic, viewModel: viewModel);
         },
@@ -101,7 +140,7 @@ GoRouter createRouter(
           GoRoute(
             path: 'practice/:index',
             builder: (context, state) {
-              final topic = topicById(state.pathParameters['topicId']!);
+              final topic = catalog.topicById(state.pathParameters['topicId']!);
               if (topic == null) return const NotFoundScreen();
               final index = int.tryParse(state.pathParameters['index']!) ?? 0;
               return PracticeScreen(

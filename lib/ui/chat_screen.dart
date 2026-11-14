@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
+import '../data/topic_catalog.dart';
+import '../data/topic_draft.dart';
 import '../l10n/l10n.dart';
 import 'design_system.dart';
 
@@ -16,12 +18,22 @@ class ChatScreen extends StatefulWidget {
     required this.settingsRepository,
     required this.intro,
     this.suggestions = const [],
+    this.catalog,
+    this.appendToTopic,
   });
 
   final String title;
   final String systemPrompt;
   final String intro;
   final LlmSettingsRepository settingsRepository;
+
+  /// Задан только в чатах работы с темами: после ответа модели код ищет
+  /// JSON-черновик и показывает карточку с действием.
+  final TopicCatalog? catalog;
+
+  /// Если задан — черновик воспринимается как вопросы для этой темы
+  /// (без поля title), а кнопка добавляет их в неё.
+  final String? appendToTopic;
   final List<String> suggestions;
 
   @override
@@ -35,6 +47,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _input = TextEditingController();
   final FocusNode _inputFocus = FocusNode();
   bool _streaming = false;
+  TopicDraft? _draft;
+  bool _draftSaving = false;
 
   @override
   void initState() {
@@ -77,10 +91,65 @@ class _ChatScreenState extends State<ChatScreen> {
               : '${last.text}\n\n${context.llmErrorText(failureKind)}';
         });
       }
+      // В чатах работы с темами ищем JSON-черновик в ответе модели.
+      final catalog = widget.catalog;
+      if (catalog != null && mounted) {
+        final draft = parseTopicDraft(_provider!.history.last.text);
+        if (draft == null) {
+          // Уточняющий ответ: убираем карточку от прошлого хода, если была.
+          if (_draft != null) setState(() => _draft = null);
+          return;
+        }
+        final isAppend = widget.appendToTopic != null;
+        if (isAppend || draft.title != null) {
+          setState(() => _draft = draft);
+        }
+      }
     } finally {
       if (mounted) setState(() => _streaming = false);
     }
   }
+
+  Future<void> _applyDraft(TopicCatalog catalog) async {
+    final draft = _draft;
+    final appendTo = widget.appendToTopic;
+    if (draft == null || _draftSaving) return;
+    setState(() => _draftSaving = true);
+    final l10n = context.l10n;
+    final String success;
+    try {
+      if (appendTo != null) {
+        final title = _topicTitle(context);
+        await catalog.addQuestionsToTopic(appendTo, draft.questions);
+        success = l10n.appendAddedSuccess(title);
+      } else {
+        await catalog.addUserTopic(
+          draft.title!,
+          draft.description ?? '',
+          draft.questions,
+        );
+        success = l10n.createAddTopicSuccess;
+      }
+    } catch (_) {
+      _draftSaving = false;
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.createSaveError)));
+      }
+      return;
+    }
+    _draftSaving = false;
+    if (!mounted) return;
+    setState(() {
+      _draft = null;
+    });
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(success)));
+  }
+
+  String _topicTitle(BuildContext context) =>
+      widget.catalog?.topicById(widget.appendToTopic!)?.title ??
+      widget.appendToTopic!;
 
   @override
   void dispose() {
@@ -131,6 +200,15 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Column(
             children: [
               Expanded(child: _messages.isEmpty ? _buildEmpty() : _buildList()),
+              if (_draft != null && widget.catalog != null)
+                _TopicDraftCard(
+                  draft: _draft!,
+                  saving: _draftSaving,
+                  appendTitle: widget.appendToTopic == null
+                      ? null
+                      : _topicTitle(context),
+                  onAdd: () => _applyDraft(widget.catalog!),
+                ),
               _buildInput(),
             ],
           ),
@@ -396,6 +474,84 @@ class _Bubble extends StatelessWidget {
       styleSheet: markdown,
       softLineBreak: true,
       shrinkWrap: true,
+    );
+  }
+}
+
+class _TopicDraftCard extends StatelessWidget {
+  const _TopicDraftCard({
+    required this.draft,
+    required this.saving,
+    required this.onAdd,
+    required this.appendTitle,
+  });
+
+  final TopicDraft draft;
+  final bool saving;
+  final VoidCallback onAdd;
+
+  /// Название существующей темы в append-режиме; null — создание новой.
+  final String? appendTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final appendTitle = this.appendTitle;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: DevmateColors.surface,
+          border: Border.all(color: DevmateColors.accent),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              appendTitle ?? (draft.title ?? ''),
+              style: const TextStyle(
+                color: DevmateColors.primary,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (appendTitle == null &&
+                (draft.description?.isNotEmpty ?? false)) ...[
+              const SizedBox(height: 6),
+              Text(
+                draft.description!,
+                style: const TextStyle(
+                  color: DevmateColors.muted,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+            ],
+            const SizedBox(height: 6),
+            Text(
+              '${draft.questions.length} ${context.l10n.createAddedQuestionsSuffix(draft.questions.length)}',
+              style: const TextStyle(
+                color: DevmateColors.lavender,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: saving ? null : onAdd,
+                icon: const Icon(Icons.library_add_rounded),
+                label: Text(
+                  appendTitle == null
+                      ? context.l10n.createAddTopic
+                      : context.l10n.appendAddTopic(appendTitle),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:devmate/data/llm_settings.dart';
+import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/main.dart';
 import 'package:devmate/ui/training_view_model.dart';
@@ -25,7 +26,11 @@ void main() {
     final model = TrainingViewModel(repository);
     await model.load();
     await tester.pumpWidget(
-      DevmateApp(viewModel: model, llmSettings: LlmSettingsRepository()),
+      DevmateApp(
+        viewModel: model,
+        llmSettings: LlmSettingsRepository(),
+        catalog: TopicCatalog(),
+      ),
     );
 
     await tester.scrollUntilVisible(
@@ -39,8 +44,15 @@ void main() {
       250,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(find.text('Frontend'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Frontend'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Продолжить тренировку'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Продолжить тренировку'));
     await tester.pumpAndSettle();
 

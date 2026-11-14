@@ -106,6 +106,13 @@ class _TopicScreenState extends State<TopicScreen> {
                   icon: const Icon(Icons.chat_rounded, size: 20),
                   label: Text(context.l10n.discussTopicWithAi),
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      context.push('/chat/create/${widget.topic.id}'),
+                  icon: const Icon(Icons.playlist_add_rounded, size: 20),
+                  label: Text(context.l10n.appendChatButton),
+                ),
                 const SizedBox(height: 36),
                 Eyebrow(
                   context.l10n.questionsEyebrow,
