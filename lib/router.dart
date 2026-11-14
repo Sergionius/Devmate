@@ -32,6 +32,20 @@ GoRouter createRouter(
             SettingsScreen(settingsRepository: llmSettings),
       ),
       GoRoute(
+        path: '/chat/free',
+        builder: (context, state) => ChatScreen(
+          title: context.l10n.freeChatTitle,
+          systemPrompt: context.l10n.freeSystemPrompt,
+          intro: context.l10n.freeChatIntro,
+          settingsRepository: llmSettings,
+          suggestions: [
+            context.l10n.freeSuggestionIcebreaker,
+            context.l10n.freeSuggestionCareer,
+            context.l10n.freeSuggestionFun,
+          ],
+        ),
+      ),
+      GoRoute(
         path: '/chat/topic/:topicId',
         builder: (context, state) {
           final topic = topicById(state.pathParameters['topicId']!);
@@ -42,6 +56,7 @@ GoRouter createRouter(
               topic.title,
               topic.description,
             ),
+            intro: context.l10n.topicChatIntro,
             settingsRepository: llmSettings,
             suggestions: [
               context.l10n.topicSuggestionStart,
@@ -70,6 +85,7 @@ GoRouter createRouter(
                   question.answer,
                 ) +
                 (draft.isNotEmpty ? context.l10n.questionDraftPart(draft) : ''),
+            intro: context.l10n.questionChatIntro,
             settingsRepository: llmSettings,
           );
         },

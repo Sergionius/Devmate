@@ -663,6 +663,48 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Разбери одну тему простыми словами с примером'**
   String get topicSuggestionExplainer;
+
+  /// No description provided for @freeChatTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Общий чат'**
+  String get freeChatTitle;
+
+  /// No description provided for @freeChatCardSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Любые темы: карьера, учёба, хобби — о чём угодно.'**
+  String get freeChatCardSubtitle;
+
+  /// No description provided for @freeChatIntro.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поболтаем о чём угодно: работа, учёба, хобби или просто мысли вслух.'**
+  String get freeChatIntro;
+
+  /// No description provided for @freeSystemPrompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ты — дружелюбный собеседник для свободного общения на любые темы. Отвечай по-русски: живо, с любопытством и без нравоучений; поддерживай разговор, задавай встречные вопросы, делись примерами. Если тема техническая — углубляйся в детали; если лёгкая — оставайся лёгким.'**
+  String get freeSystemPrompt;
+
+  /// No description provided for @freeSuggestionIcebreaker.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предложи тему для разговора и задай первый вопрос'**
+  String get freeSuggestionIcebreaker;
+
+  /// No description provided for @freeSuggestionCareer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обсудим, как справляться с выгоранием на работе'**
+  String get freeSuggestionCareer;
+
+  /// No description provided for @freeSuggestionFun.
+  ///
+  /// In ru, this message translates to:
+  /// **'Расскажи удивительный факт о космосе'**
+  String get freeSuggestionFun;
 }
 
 class _AppLocalizationsDelegate
