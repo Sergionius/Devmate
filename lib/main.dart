@@ -11,12 +11,14 @@ import 'ui/training_view_model.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // .env optional: if absent, use empty defaults. Kept under an asset directory
-  // so a fresh checkout builds without containing private keys.
+  // .env is optional: missing or empty file → start with empty settings.
+  // dotenv.load() throws EmptyEnvFileError on an empty file, and the fallback
+  // needs isOptional:true, otherwise the error escapes main() and the app
+  // freezes on the splash screen.
   try {
     await dotenv.load(fileName: 'assets/config/.env');
   } catch (_) {
-    dotenv.loadFromString(envString: '');
+    dotenv.loadFromString(envString: '', isOptional: true);
   }
   final llmSettings = LlmSettingsRepository();
   runApp(

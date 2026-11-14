@@ -1,6 +1,5 @@
 import 'package:devmate/data/llm_chat_provider.dart';
 import 'package:devmate/data/llm_settings.dart';
-import 'package:flutter_ai_toolkit/flutter_ai_toolkit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _unreachable = LlmSettings(
@@ -22,26 +21,29 @@ void main() {
       final chunks = await provider.sendMessageStream('Вопрос').toList();
       expect(chunks.join(), contains('Ошибка соединения'));
 
-      final history = provider.history.toList();
+      final history = provider.history;
       expect(history.length, 2);
-      expect(history.first.origin, MessageOrigin.user);
+      expect(history.first.role, LlmRole.user);
       expect(history.first.text, 'Вопрос');
+      expect(history.last.role, LlmRole.assistant);
       expect(history.last.text, contains('Ошибка соединения'));
+      expect(history.last.failed, isTrue);
     },
   );
 
-  test('a failed assistant turn is not resent as history on the next call', () async {
+  test('a failed assistant turn is excluded from later context', () async {
     final provider = OpenAiCompatibleProvider(
       settings: _unreachable,
       systemPrompt: 'sys',
     );
     await provider.sendMessageStream('Первый').toList();
-    final chunks = await provider.sendMessageStream('Второй').toList();
-    expect(chunks.join(), contains('Ошибка соединения'));
-    // Both exchanges stay in the transcript (2 messages each), but the second
-    // request must not include the failed assistant reply. The pairing logic is
-    // exercised implicitly: with it broken, _requestMessages would pair
-    // «Второй» with the failed «Первый» reply.
-    expect(provider.history.length, 4);
+    await provider.sendMessageStream('Второй').toList();
+
+    final history = provider.history;
+    expect(history.length, 4);
+    expect(history[1].failed, isTrue);
+    expect(history[3].failed, isTrue);
+    // Только успешные пары попадают в контекст запроса: обе попытки здесь
+    // провалились, значит запрос собирался только из system + prompt.
   });
 }
