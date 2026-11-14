@@ -28,9 +28,17 @@ void main() {
       DevmateApp(viewModel: model, llmSettings: LlmSettingsRepository()),
     );
 
+    await tester.scrollUntilVisible(
+      find.text('Выбери тему'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Выбери тему'), findsOneWidget);
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -350));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Frontend'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Frontend'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Продолжить тренировку'));

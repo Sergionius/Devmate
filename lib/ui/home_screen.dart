@@ -135,6 +135,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ],
+                            const SizedBox(height: 24),
+                            const _FreeChatCard(),
                             const SizedBox(height: 40),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.end,
@@ -373,6 +375,73 @@ class _ProgressPanel extends StatelessWidget {
           style: TextStyle(color: DevmateColors.muted, fontSize: 12),
         ),
       ],
+    ),
+  );
+}
+
+class _FreeChatCard extends StatelessWidget {
+  const _FreeChatCard();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    child: Material(
+      color: DevmateColors.surface,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: () => context.push('/chat/free'),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            border: Border.all(color: DevmateColors.border),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: DevmateColors.accent,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.chat_bubble_rounded,
+                  color: DevmateColors.accentInk,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.l10n.freeChatTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      context.l10n.freeChatCardSubtitle,
+                      style: const TextStyle(
+                        color: DevmateColors.muted,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: DevmateColors.muted,
+              ),
+            ],
+          ),
+        ),
+      ),
     ),
   );
 }

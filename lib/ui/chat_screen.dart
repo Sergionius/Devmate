@@ -14,11 +14,13 @@ class ChatScreen extends StatefulWidget {
     required this.title,
     required this.systemPrompt,
     required this.settingsRepository,
+    required this.intro,
     this.suggestions = const [],
   });
 
   final String title;
   final String systemPrompt;
+  final String intro;
   final LlmSettingsRepository settingsRepository;
   final List<String> suggestions;
 
@@ -175,12 +177,7 @@ class _ChatScreenState extends State<ChatScreen> {
     children: [
       Eyebrow(context.l10n.chatEyebrow, color: DevmateColors.muted),
       const SizedBox(height: 12),
-      Text(
-        widget.suggestions.isEmpty
-            ? context.l10n.questionChatIntro
-            : context.l10n.topicChatIntro,
-        style: const TextStyle(fontSize: 18, height: 1.45),
-      ),
+      Text(widget.intro, style: const TextStyle(fontSize: 18, height: 1.45)),
       if (widget.suggestions.isNotEmpty) ...[
         const SizedBox(height: 24),
         for (final suggestion in widget.suggestions) ...[
