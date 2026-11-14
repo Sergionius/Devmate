@@ -1,0 +1,137 @@
+{
+  "@@locale": "ru",
+  "pageNotFound": "Такой страницы нет.",
+  "goHome": "На главную",
+  "aiSettings": "Настройки AI",
+  "offlineBadge": "ОФЛАЙН",
+  "logoSemantics": "Логотип Devmate",
+
+  "homeEyebrow": "ПОДГОТОВКА К ТЕХНИЧЕСКОМУ ИНТЕРВЬЮ",
+  "homeTitle": "Прокачай ответ.\nНе угадывай.",
+  "homeSubtitle": "Разбирай вопросы, сверяйся с эталоном и возвращайся к сложному.",
+  "continueTraining": "Продолжить тренировку",
+  "retry": "Повторить",
+  "libraryEyebrow": "БИБЛИОТЕКА / 10 НАПРАВЛЕНИЙ",
+  "chooseTopic": "Выбери тему",
+  "statsEyebrow": "ТВОЯ СТАТИСТИКА",
+  "statsCompletedLabel": "вопросов пройдено",
+  "totalQuestions": "{count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопроса}}",
+  "@totalQuestions": { "placeholders": { "count": { "type": "int" } } },
+
+  "topicEyebrowDirection": "Направление",
+  "topicEyebrow": "БИБЛИОТЕКА / ТЕМА",
+  "repeatTopic": "Повторить тему",
+  "discussTopicWithAi": "Обсудить тему с AI",
+  "questionsEyebrow": "ВОПРОСЫ",
+  "knownXp": "Знаю · 10 XP",
+  "repeatedXp": "Повторил · 5 XP",
+  "topicProgress": "{completed} из {total, plural, one{{total} вопроса} few{{total} вопросов} many{{total} вопросов} other{{total} вопроса}} пройдено",
+  "@topicProgress": {
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "practiceSaveFailed": "Не удалось сохранить ответ",
+  "stepYourAnswer": "01 / ТВОЙ ОТВЕТ",
+  "yourAnswerHint": "Сформулируй своими словами. Здесь нет автоматической проверки — сначала попробуй вспомнить сам.",
+  "yourAnswerLabel": "Твой ответ",
+  "answerPlaceholder": "Начни писать здесь...",
+  "compareWithReference": "Сверить с эталоном",
+  "discussWithAi": "Разобрать с AI",
+  "stepComparison": "02 / СРАВНЕНИЕ",
+  "yourAnswerEyebrow": "ТВОЙ ОТВЕТ",
+  "referenceAnswerEyebrow": "ЭТАЛОННЫЙ ОТВЕТ",
+  "howCloseQuestion": "Насколько близко получилось?",
+  "knewAnswerXp": "Знал ответ · +10 XP",
+  "needsRepeat": "Нужно повторить",
+  "stepConsolidation": "03 / ЗАКРЕПЛЕНИЕ",
+  "consolidationHint": "Вспомни эталонный ответ и запиши его снова своими словами. Мы не сравниваем формулировки автоматически.",
+  "whatToRemember": "Что важно запомнить?",
+  "writeEssencePlaceholder": "Запиши суть ответа...",
+  "consolidateXp": "Закрепить · +5 XP",
+  "viewReferenceAgain": "Посмотреть эталон снова",
+  "doneTitle": "Отлично. Ответ засчитан.",
+  "doneSubtitle": "Сложное становится понятнее.",
+  "progressSavedNote": "Прогресс сохранён на этом устройстве.",
+  "backToTopic": "К теме",
+  "nextQuestion": "Следующий вопрос",
+  "questionProgress": "ВОПРОС {current} / {total}",
+  "@questionProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "progressLoadError": "Не удалось загрузить прогресс. Попробуйте ещё раз.",
+  "answerSaveError": "Не удалось сохранить ответ. Попробуйте ещё раз.",
+
+  "settingsTitle": "AI-провайдер (BYOK)",
+  "settingsEyebrow": "ЛЮБОЙ OPENAI-СОВМЕСТИМЫЙ ENDPOINT",
+  "keyPrivacyNote": "Ключ хранится только на этом устройстве и уходит напрямую выбранному провайдеру.",
+  "webCorsNote": "На web работают только провайдеры с CORS: OpenAI, OpenRouter, Groq. z.ai и DeepSeek блокируют запросы из браузера — используйте приложение на iOS/Android или другой провайдер.",
+  "worksInBrowserSuffix": "· работает в браузере",
+  "providerLabel": "Провайдер",
+  "baseUrlLabel": "Base URL",
+  "baseUrlHint": "https://api.z.ai/api/paas/v4",
+  "modelLabel": "Модель",
+  "modelHint": "glm-5.3-flash",
+  "apiKeyLabel": "API-ключ",
+  "apiKeyHint": "Введите ваш ключ",
+  "saving": "Сохраняем...",
+  "save": "Сохранить",
+  "testing": "Проверяем...",
+  "testConnection": "Проверить соединение",
+  "settingsLoadError": "Не удалось прочитать настройки. Проверьте доступность хранилища.",
+  "settingsSaved": "Настройки сохранены на этом устройстве.",
+  "settingsSaveError": "Не удалось сохранить настройки на этом устройстве.",
+  "fillAllFields": "Заполните URL, модель и API-ключ.",
+  "connectionOk": "Соединение работает ✓",
+
+  "chatKeyRequired": "Нужен API-ключ",
+  "chatKeyRequiredDescription": "AI-чат работает с вашим ключом OpenAI-совместимого провайдера. Добавьте его в настройках — он останется на этом устройстве.",
+  "openSettings": "Открыть настройки",
+  "chatEyebrow": "СПРАШИВАЙТЕ — ОТВЕЧАЮ ПОТОКОМ",
+  "topicChatIntro": "Готовлю вас к собеседованию: объясняю, навожу и проверяю.",
+  "questionChatIntro": "Напишите свой ответ или задайте вопрос по нему.",
+  "chatInputHint": "Спросите что угодно…",
+  "chatSettingsReadError": "Не удалось прочитать настройки: {error}",
+  "@chatSettingsReadError": { "placeholders": { "error": { "type": "String" } } },
+
+  "llmKeyRejected": "Ключ отклонён (401). Проверьте API-ключ в настройках.",
+  "llmNotFound": "Адрес или модель не найдены (404). Проверьте base URL и название модели.",
+  "llmRateLimited": "Слишком много запросов (429). Подождите или проверьте квоту.",
+  "llmNoBalance": "На аккаунте провайдера нет средств или тарифного пакета. Пополните баланс или выберите другого провайдера.",
+  "llmWebConnectionError": "Ошибка соединения с провайдером. На web работают только провайдеры с CORS (OpenAI, OpenRouter, Groq). Проверьте настройки и интернет.",
+  "llmConnectionError": "Ошибка соединения с провайдером. Проверьте настройки и интернет.",
+  "llmTestEmptyResponse": "Провайдер ответил пустым сообщением.",
+  "llmEmptyReply": "Провайдер вернул пустой ответ.",
+
+  "topicChatTitle": "AI · {title}",
+  "@topicChatTitle": { "placeholders": { "title": { "type": "String" } } },
+  "questionChatTitle": "AI · Вопрос {index}",
+  "@questionChatTitle": { "placeholders": { "index": { "type": "int" } } },
+
+  "topicSystemPrompt": "Ты — технический интервьюер, готовишь пользователя к собеседованию по теме \"{title}\" ({description}). Отвечай по-русски, кратко и по делу: объясняй примерами, задавай наводящие вопросы, проверяй понимание. Не решай за пользователя, пока он не попробовал сам.",
+  "@topicSystemPrompt": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "description": { "type": "String" }
+    }
+  },
+  "questionSystemPrompt": "Ты — технический интервьюер. Разбираешь с пользователем вопрос: \"{prompt}\". Эталонный ответ для тебя: \"{reference}\". Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить.",
+  "@questionSystemPrompt": {
+    "placeholders": {
+      "prompt": { "type": "String" },
+      "reference": { "type": "String" }
+    }
+  },
+  "questionDraftPart": "Черновик ответа пользователя: \"{draft}\". ",
+  "@questionDraftPart": { "placeholders": { "draft": { "type": "String" } } },
+
+  "topicSuggestionStart": "С чего начать подготовку по этой теме?",
+  "topicSuggestionQuiz": "Задай мне 3 типичных вопроса с собеседования",
+  "topicSuggestionExplainer": "Разбери одну тему простыми словами с примером"
+}

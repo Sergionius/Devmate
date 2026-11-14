@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'l10n/app_localizations.dart';
 import 'data/llm_settings.dart';
 import 'data/progress_repository.dart';
 import 'router.dart';
@@ -45,6 +46,8 @@ class DevmateApp extends StatelessWidget {
     title: 'Devmate',
     debugShowCheckedModeBanner: false,
     theme: devmateTheme(),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     routerConfig: router,
   );
 }

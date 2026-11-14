@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../data/llm_settings.dart';
 import '../data/question_catalog.dart';
 import '../domain/question.dart';
+import '../l10n/l10n.dart';
 import 'design_system.dart';
 import 'training_view_model.dart';
 
@@ -116,11 +117,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
-                                        child: Text(widget.viewModel.error!),
+                                        child: Text(
+                                          switch (widget.viewModel.error!) {
+                                            TrainingError.progressLoad =>
+                                              context.l10n.progressLoadError,
+                                            TrainingError.answerSave =>
+                                              context.l10n.answerSaveError,
+                                          },
+                                        ),
                                       ),
                                       TextButton(
                                         onPressed: widget.viewModel.load,
-                                        child: const Text('Повторить'),
+                                        child: Text(context.l10n.retry),
                                       ),
                                     ],
                                   ),
@@ -136,13 +144,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Eyebrow(
-                                        'БИБЛИОТЕКА / 10 НАПРАВЛЕНИЙ',
+                                      Eyebrow(
+                                        context.l10n.libraryEyebrow,
                                         color: DevmateColors.muted,
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Выбери тему',
+                                        context.l10n.chooseTopic,
                                         style: Theme.of(context)
                                             .textTheme
                                             .headlineSmall,
@@ -151,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 Text(
-                                  '$total вопросов',
+                                  context.l10n.totalQuestions(total),
                                   style: const TextStyle(
                                     color: DevmateColors.muted,
                                   ),
@@ -233,7 +241,7 @@ class _BrandHeader extends StatelessWidget {
           'assets/branding/devmate_source.png',
           width: 42,
           height: 42,
-          semanticLabel: 'Логотип Devmate',
+          semanticLabel: context.l10n.logoSemantics,
         ),
       ),
       const SizedBox(width: 11),
@@ -248,8 +256,8 @@ class _BrandHeader extends StatelessWidget {
       const Spacer(),
       const Icon(Icons.wifi_off_rounded, size: 15, color: DevmateColors.muted),
       const SizedBox(width: 6),
-      const Text(
-        'ОФЛАЙН',
+      Text(
+        context.l10n.offlineBadge,
         style: TextStyle(
           color: DevmateColors.muted,
           fontSize: 11,
@@ -259,7 +267,7 @@ class _BrandHeader extends StatelessWidget {
       ),
       const SizedBox(width: 10),
       IconButton(
-        tooltip: 'Настройки AI',
+        tooltip: context.l10n.aiSettings,
         onPressed: onOpenSettings,
         icon: const Icon(
           Icons.settings_rounded,
@@ -279,22 +287,22 @@ class _Intro extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Eyebrow('ПОДГОТОВКА К ТЕХНИЧЕСКОМУ ИНТЕРВЬЮ'),
+      Eyebrow(context.l10n.homeEyebrow),
       const SizedBox(height: 14),
       Text(
-        'Прокачай ответ.\nНе угадывай.',
+        context.l10n.homeTitle,
         style: Theme.of(context).textTheme.headlineLarge,
       ),
       const SizedBox(height: 14),
-      const Text(
-        'Разбирай вопросы, сверяйся с эталоном и возвращайся к сложному.',
+      Text(
+        context.l10n.homeSubtitle,
         style: TextStyle(color: DevmateColors.muted, fontSize: 15, height: 1.5),
       ),
       const SizedBox(height: 24),
       FilledButton.icon(
         onPressed: onStart,
         icon: const Icon(Icons.arrow_forward_rounded, size: 20),
-        label: const Text('Продолжить тренировку'),
+        label: Text(context.l10n.continueTraining),
       ),
     ],
   );
@@ -321,7 +329,7 @@ class _ProgressPanel extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Eyebrow('ТВОЯ СТАТИСТИКА', color: DevmateColors.muted),
+        Eyebrow(context.l10n.statsEyebrow, color: DevmateColors.muted),
         const SizedBox(height: 22),
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -360,8 +368,8 @@ class _ProgressPanel extends StatelessWidget {
         const SizedBox(height: 16),
         ProgressTrack(value: completed / total),
         const SizedBox(height: 10),
-        const Text(
-          'вопросов пройдено',
+        Text(
+          context.l10n.statsCompletedLabel,
           style: TextStyle(color: DevmateColors.muted, fontSize: 12),
         ),
       ],

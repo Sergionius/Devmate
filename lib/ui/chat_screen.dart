@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
+import '../l10n/l10n.dart';
 import 'design_system.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -64,6 +65,16 @@ class _ChatScreenState extends State<ChatScreen> {
         if (!mounted) return;
         setState(() => _messages.last.text += chunk);
       }
+      // Провайдер не отдаёт ошибку чанком: локализуем её по errorKind.
+      final failureKind = _provider!.history.last.errorKind;
+      if (failureKind != null && mounted) {
+        setState(() {
+          final last = _messages.last;
+          last.text = last.text.isEmpty
+              ? context.llmErrorText(failureKind)
+              : '${last.text}\n\n${context.llmErrorText(failureKind)}';
+        });
+      }
     } finally {
       if (mounted) setState(() => _streaming = false);
     }
@@ -84,7 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
       automaticallyImplyLeading: !kIsWeb,
       actions: [
         IconButton(
-          tooltip: 'Настройки AI',
+          tooltip: context.l10n.aiSettings,
           onPressed: _openSettings,
           icon: const Icon(Icons.settings_rounded),
         ),
@@ -98,7 +109,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                'Не удалось прочитать настройки: ${snapshot.error}',
+                context.l10n.chatSettingsReadError('${snapshot.error}'),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -138,14 +149,13 @@ class _ChatScreenState extends State<ChatScreen> {
             color: DevmateColors.lavender,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Нужен API-ключ',
+          Text(
+            context.l10n.chatKeyRequired,
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'AI-чат работает с вашим ключом OpenAI-совместимого провайдера. '
-            'Добавьте его в настройках — он останется на этом устройстве.',
+          Text(
+            context.l10n.chatKeyRequiredDescription,
             textAlign: TextAlign.center,
             style: TextStyle(color: DevmateColors.muted, height: 1.5),
           ),
@@ -153,7 +163,7 @@ class _ChatScreenState extends State<ChatScreen> {
           FilledButton.icon(
             onPressed: _openSettings,
             icon: const Icon(Icons.settings_rounded),
-            label: const Text('Открыть настройки'),
+            label: Text(context.l10n.openSettings),
           ),
         ],
       ),
@@ -163,15 +173,12 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildEmpty() => ListView(
     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
     children: [
-      const Eyebrow(
-        'СПРАШИВАЙТЕ — ОТВЕЧАЮ ПОТОКОМ',
-        color: DevmateColors.muted,
-      ),
+      Eyebrow(context.l10n.chatEyebrow, color: DevmateColors.muted),
       const SizedBox(height: 12),
       Text(
         widget.suggestions.isEmpty
-            ? 'Напишите свой ответ или задайте вопрос по нему.'
-            : 'Готовлю вас к собеседованию: объясняю, навожу и проверяю.',
+            ? context.l10n.questionChatIntro
+            : context.l10n.topicChatIntro,
         style: const TextStyle(fontSize: 18, height: 1.45),
       ),
       if (widget.suggestions.isNotEmpty) ...[
@@ -205,33 +212,39 @@ class _ChatScreenState extends State<ChatScreen> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: DevmateColors.surface,
-              border: Border.all(color: DevmateColors.border),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: TextField(
-              controller: _input,
-              focusNode: _inputFocus,
-              minLines: 1,
-              maxLines: 5,
-              textInputAction: TextInputAction.send,
-              onSubmitted: _send,
-              enabled: !_streaming,
-              style: const TextStyle(
-                color: DevmateColors.primary,
-                fontSize: 16,
-                height: 1.4,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              decoration: BoxDecoration(
+                color: DevmateColors.surface,
+                border: Border.all(color: DevmateColors.border),
+                borderRadius: BorderRadius.circular(24),
               ),
-              decoration: InputDecoration(
-                hintText: 'Спросите что угодно…',
-                hintStyle: const TextStyle(color: DevmateColors.muted),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
+              child: TextField(
+                controller: _input,
+                focusNode: _inputFocus,
+                minLines: 1,
+                maxLines: 5,
+                textInputAction: TextInputAction.send,
+                onSubmitted: _send,
+                enabled: !_streaming,
+                style: const TextStyle(
+                  color: DevmateColors.primary,
+                  fontSize: 16,
+                  height: 1.4,
                 ),
-                border: InputBorder.none,
+                decoration: InputDecoration(
+                  hintText: context.l10n.chatInputHint,
+                  hintStyle: const TextStyle(color: DevmateColors.muted),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 14,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                ),
               ),
             ),
           ),

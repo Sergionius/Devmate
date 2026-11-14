@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
+import '../l10n/l10n.dart';
 import 'design_system.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -49,8 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _preset = llmPresets.last;
         _loading = false;
-        _testResult =
-            'Не удалось прочитать настройки. Проверьте доступность хранилища.';
+        _testResult = context.l10n.settingsLoadError;
       });
     }
   }
@@ -88,17 +88,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await widget.settingsRepository.save(_collect());
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Настройки сохранены на этом устройстве.'),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.l10n.settingsSaved)));
     } catch (_) {
       if (!mounted) return;
-      setState(
-        () =>
-            _testResult = 'Не удалось сохранить настройки на этом устройстве.',
-      );
+      setState(() => _testResult = context.l10n.settingsSaveError);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -106,7 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _test() async {
     if (!_collect().isConfigured) {
-      setState(() => _testResult = 'Заполните URL, модель и API-ключ.');
+      setState(() => _testResult = context.l10n.fillAllFields);
       return;
     }
     setState(() {
@@ -117,13 +111,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     setState(() {
       _testing = false;
-      _testResult = error ?? 'Соединение работает ✓';
+      _testResult = error == null
+          ? context.l10n.connectionOk
+          : context.llmErrorText(error);
     });
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('AI-провайдер (BYOK)')),
+    appBar: AppBar(title: Text(context.l10n.settingsTitle)),
     body: _loading
         ? const Center(child: CircularProgressIndicator())
         : Center(
@@ -132,21 +128,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(24, 18, 24, 40),
                 children: [
-                  const Eyebrow(
-                    'ЛЮБОЙ OPENAI-СОВМЕСТИМЫЙ ENDPOINT',
+                  Eyebrow(
+                    context.l10n.settingsEyebrow,
                     color: DevmateColors.muted,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Ключ хранится только на этом устройстве и уходит напрямую выбранному провайдеру.',
+                  Text(
+                    context.l10n.keyPrivacyNote,
                     style: TextStyle(color: DevmateColors.muted, height: 1.5),
                   ),
                   if (kIsWeb) ...[
                     const SizedBox(height: 8),
-                    const Text(
-                      'На web работают только провайдеры с CORS: OpenAI, OpenRouter, Groq. '
-                      'z.ai и DeepSeek блокируют запросы из браузера — используйте приложение на iOS/Android '
-                      'или другой провайдер.',
+                    Text(
+                      context.l10n.webCorsNote,
                       style: TextStyle(
                         color: DevmateColors.lavender,
                         height: 1.5,
@@ -162,49 +156,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           value: preset,
                           child: Text(
                             kIsWeb && preset.worksInBrowser
-                                ? '${preset.label} · работает в браузере'
+                                ? '${preset.label} ${context.l10n.worksInBrowserSuffix}'
                                 : preset.label,
                           ),
                         ),
                     ],
                     onChanged: (preset) => _applyPreset(preset!),
-                    decoration: const InputDecoration(labelText: 'Провайдер'),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.providerLabel,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _baseUrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Base URL',
-                      hintText: 'https://api.z.ai/api/paas/v4',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.baseUrlLabel,
+                      hintText: context.l10n.baseUrlHint,
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _model,
-                    decoration: const InputDecoration(
-                      labelText: 'Модель',
-                      hintText: 'glm-5.3-flash',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.modelLabel,
+                      hintText: context.l10n.modelHint,
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _apiKey,
                     obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'API-ключ',
-                      hintText: 'Введите ваш ключ',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.apiKeyLabel,
+                      hintText: context.l10n.apiKeyHint,
                     ),
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: _saving ? null : _save,
-                    child: Text(_saving ? 'Сохраняем...' : 'Сохранить'),
+                    child: Text(
+                      _saving ? context.l10n.saving : context.l10n.save,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton(
                     onPressed: _testing ? null : _test,
                     child: Text(
-                      _testing ? 'Проверяем...' : 'Проверить соединение',
+                      _testing
+                          ? context.l10n.testing
+                          : context.l10n.testConnection,
                     ),
                   ),
                   if (_testResult != null) ...[

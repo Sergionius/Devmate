@@ -19,15 +19,16 @@ void main() {
         systemPrompt: 'sys',
       );
       final chunks = await provider.sendMessageStream('Вопрос').toList();
-      expect(chunks.join(), contains('Ошибка соединения'));
+      // Ошибка не приходит чанком: UI локализует её по errorKind.
+      expect(chunks, isEmpty);
 
       final history = provider.history;
       expect(history.length, 2);
       expect(history.first.role, LlmRole.user);
       expect(history.first.text, 'Вопрос');
       expect(history.last.role, LlmRole.assistant);
-      expect(history.last.text, contains('Ошибка соединения'));
       expect(history.last.failed, isTrue);
+      expect(history.last.errorKind, LlmErrorKind.connection);
     },
   );
 
@@ -43,6 +44,8 @@ void main() {
     expect(history.length, 4);
     expect(history[1].failed, isTrue);
     expect(history[3].failed, isTrue);
+    expect(history[1].errorKind, isNotNull);
+    expect(history[3].errorKind, isNotNull);
     // Только успешные пары попадают в контекст запроса: обе попытки здесь
     // провалились, значит запрос собирался только из system + prompt.
   });
