@@ -57,8 +57,14 @@ class LlmPreset {
 
 const llmPresets = <LlmPreset>[
   LlmPreset(
+    'zaiCoding',
+    'z.ai GLM Coding (подписка)',
+    'https://api.z.ai/api/coding/paas/v4',
+    'glm-5.3-flash',
+  ),
+  LlmPreset(
     'zai',
-    'z.ai (GLM)',
+    'z.ai API (оплата за токены)',
     'https://api.z.ai/api/paas/v4',
     'glm-5.3-flash',
   ),

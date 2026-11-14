@@ -37,6 +37,18 @@ void main() {
       repo
           .detectPreset(
             const LlmSettings(
+              baseUrl: 'https://api.z.ai/api/coding/paas/v4',
+              model: 'glm-5.3-flash',
+              apiKey: '',
+            ),
+          )
+          ?.id,
+      'zaiCoding',
+    );
+    expect(
+      repo
+          .detectPreset(
+            const LlmSettings(
               baseUrl: 'https://api.z.ai/api/paas/v4',
               model: 'anything',
               apiKey: '',

@@ -38,7 +38,6 @@ dependencies:
   go_router: ^18.1.4
   flutter_secure_storage: ^11.2.0
   flutter_dotenv: ^6.0.1
-  flutter_ai_toolkit: ^1.0.0
   openai_dart: ^12.0.0
   flutter_markdown_plus: ^1.0.12
 
