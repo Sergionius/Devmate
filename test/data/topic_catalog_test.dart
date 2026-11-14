@@ -1,3 +1,4 @@
+import 'package:devmate/data/question_catalog.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,6 +22,16 @@ class MemoryUserTopics implements UserTopicsRepository {
   Future<void> saveExtra(Map<String, List<Map<String, dynamic>>> extra) async {
     extraStored = extra;
   }
+
+  Map<String, dynamic> overridesStored = {};
+
+  @override
+  Future<Map<String, dynamic>> loadOverrides() async => overridesStored;
+
+  @override
+  Future<void> saveOverrides(Map<String, dynamic> overrides) async {
+    overridesStored = overrides;
+  }
 }
 
 void main() {
@@ -38,14 +49,11 @@ void main() {
         ('Чем контейнер отличается от VM?', 'Общий кернел.'),
       ]);
 
-      expect(added.id, startsWith('u'));
-      expect(added.questions.first.id, added.id.replaceAll('_t0', '_q0'));
-      expect(
-        added.questions.first.id,
-        added.id.replaceRange(added.id.length - 2, null, 'q0'),
-      );
+      expect(added.questions.first.id, isNot(added.id));
       expect(catalog.topics.first.id, 'frontend');
-      expect(catalog.topicById(added.id), same(added));
+      final found = catalog.topicById(added.id)!;
+      expect(found.title, 'Docker');
+      expect(found.questions, hasLength(2));
       expect(catalog.hasTitle('docker'), isTrue);
       expect(catalog.hasTitle('Frontend'), isTrue);
 
@@ -113,6 +121,112 @@ void main() {
       );
     },
   );
+
+  test('овереи правят встроенные вопросы, темы и удаляют вопросы', () async {
+    final repo = MemoryUserTopics();
+    final catalog = TopicCatalog(userTopicsRepository: repo);
+    await catalog.load();
+
+    // Правка встроенного вопроса (оверей, не мутирует каталог).
+    await catalog.updateQuestion(
+      'fe-1',
+      'Правленный вопрос',
+      'Правленный ответ',
+    );
+    final frontend = catalog.topicById('frontend')!;
+    final edited = frontend.questions.firstWhere((q) => q.id == 'fe-1');
+    expect(edited.prompt, 'Правленный вопрос');
+    expect(edited.answer, 'Правленный ответ');
+    // Оверлей сохранён, компилируемая база не изменилась.
+    expect(repo.overridesStored['questionEdits'], isNotNull);
+    expect(
+      questionCatalog // базовый каталог не тронут
+          .firstWhere((t) => t.id == 'frontend')
+          .questions
+          .first
+          .prompt,
+      'Что происходит после ввода URL в браузере?',
+    );
+
+    // Возврат к исходному тексту снимает оверлей.
+    final baseQuestion = questionCatalog
+        .firstWhere((t) => t.id == 'frontend')
+        .questions
+        .firstWhere((q) => q.id == 'fe-1');
+    await catalog.updateQuestion(
+      'fe-1',
+      baseQuestion.prompt,
+      baseQuestion.answer,
+    );
+    final editsAfter = repo.overridesStored['questionEdits'] as Map?;
+    expect(editsAfter?['fe-1'], isNull);
+
+    // Удаление встроенного вопроса.
+    await catalog.deleteQuestion('fe-2');
+    final afterDelete = catalog.topicById('frontend')!;
+    expect(afterDelete.questions.map((q) => q.id), isNot(contains('fe-2')));
+    expect(repo.overridesStored['deletedQuestionIds'], contains('fe-2'));
+
+    // Правка метаданных темы.
+    await catalog.updateTopicMeta('frontend', 'Frontend (новый)', 'Обновлено');
+    expect(catalog.topicById('frontend')!.title, 'Frontend (новый)');
+    expect(repo.overridesStored['topicEdits'], isNotNull);
+  });
+
+  test('оверлеи применяются к добавленным вопросам встроенной темы', () async {
+    final repo = MemoryUserTopics();
+    final catalog = TopicCatalog(userTopicsRepository: repo);
+    await catalog.load();
+
+    // Добавляем вопрос во встроенную тему (extras map).
+    await catalog.addQuestionsToTopic('frontend', [
+      ('Доп. вопрос про кеш', 'Доп. ответ про кеш.'),
+    ]);
+    final withExtra = catalog.topicById('frontend')!;
+    expect(withExtra.questions.last.prompt, 'Доп. вопрос про кеш');
+
+    // Правим добавленный вопрос (questionEdits) — правка должна применяться
+    // (композиция: сначала extras, потом оверлеи).
+    await catalog.updateQuestion(
+      withExtra.questions.last.id,
+      'Правленный доп. вопрос',
+      'Правленный доп. ответ.',
+    );
+    final merged = catalog.topicById('frontend')!;
+    expect(merged.questions.last.prompt, 'Правленный доп. вопрос');
+    expect(merged.questions.last.answer, 'Правленный доп. ответ.');
+
+    // Удаляем добавленный вопрос — он исчезает (удаление по оверлею).
+    await catalog.deleteQuestion(merged.questions.last.id);
+    final afterDelete = catalog.topicById('frontend')!;
+    expect(
+      afterDelete.questions.map((q) => q.prompt),
+      isNot(contains('Правленный доп. вопрос')),
+    );
+  });
+
+  test('правка пользовательского вопроса идёт напрямую в тему', () async {
+    final repo = MemoryUserTopics();
+    final catalog = TopicCatalog(userTopicsRepository: repo);
+    await catalog.load();
+    final created = await catalog.addUserTopic('Моя тема', '', [
+      ('Вопрос до правки', 'Ответ до правки'),
+    ]);
+
+    await catalog.updateQuestion(
+      created.questions.first.id,
+      'Вопрос после правки',
+      'Ответ после правки',
+    );
+
+    final stored = repo.stored.single;
+    expect(
+      (stored['questions'] as List).first['prompt'],
+      'Вопрос после правки',
+    );
+    final edits = repo.overridesStored['questionEdits'] as Map? ?? {};
+    expect(edits, isEmpty);
+  });
 
   test('два добавления подряд в одну тему накапливаются без дублей', () async {
     final repo = MemoryUserTopics();

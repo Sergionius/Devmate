@@ -15,6 +15,48 @@ class TopicDraft {
 /// ```json-фенс. Возвращает null, если валидной темы в тексте нет —
 /// тогда ответ считается обычным сообщением (например, уточнением).
 TopicDraft? parseTopicDraft(String text) {
+  for (final candidate in _jsonCandidates(text)) {
+    final draft = _decode(candidate);
+    if (draft != null) return draft;
+  }
+  return null;
+}
+
+/// Правка ответа существующего вопроса: JSON с action=update_answer,
+/// поля prompt (уточнённый вопрос) и answer (новый эталонный ответ).
+class AnswerUpdate {
+  const AnswerUpdate(this.prompt, this.answer);
+
+  final String prompt;
+  final String answer;
+}
+
+/// Вытаскивает из ответа модели команду замены ответа вопроса.
+/// Возвращает null, если команды в тексте нет.
+AnswerUpdate? parseAnswerUpdate(String text) {
+  for (final candidate in _jsonCandidates(text)) {
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(candidate);
+    } on FormatException {
+      continue;
+    }
+    if (decoded is! Map<String, dynamic>) continue;
+    if (decoded['action'] != 'update_answer') continue;
+    final prompt = decoded['prompt'];
+    final answer = decoded['answer'];
+    if (prompt is! String ||
+        prompt.trim().isEmpty ||
+        answer is! String ||
+        answer.trim().isEmpty) {
+      continue;
+    }
+    return AnswerUpdate(prompt.trim(), answer.trim());
+  }
+  return null;
+}
+
+List<String> _jsonCandidates(String text) {
   final candidates = <String>[];
   final fenced = RegExp(
     r'```(?:json)?\s*(\{.*?\})\s*```',
@@ -24,12 +66,7 @@ TopicDraft? parseTopicDraft(String text) {
   final start = text.indexOf('{');
   final end = text.lastIndexOf('}');
   if (start >= 0 && end > start) candidates.add(text.substring(start, end + 1));
-
-  for (final candidate in candidates) {
-    final draft = _decode(candidate);
-    if (draft != null) return draft;
-  }
-  return null;
+  return candidates;
 }
 
 TopicDraft? _decode(String raw) {

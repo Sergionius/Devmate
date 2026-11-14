@@ -62,4 +62,23 @@ void main() {
     expect(draft!.title, 'Git');
     expect(draft.questions.single.$1, 'П');
   });
+
+  test('parseAnswerUpdate: fenced с action=update_answer', () {
+    const text =
+        '```json\n{"action":"update_answer","prompt":"Уточнённый вопрос",'
+        '"answer":"Новый эталонный ответ."}\n```';
+    final update = parseAnswerUpdate(text);
+    expect(update, isNotNull);
+    expect(update!.prompt, 'Уточнённый вопрос');
+    expect(update.answer, 'Новый эталонный ответ.');
+  });
+
+  test('parseAnswerUpdate: без action и с пустыми полями — null', () {
+    expect(parseAnswerUpdate('{"prompt":"П","answer":"О"}'), isNull);
+    expect(
+      parseAnswerUpdate('{"action":"update_answer","prompt":" ","answer":"О"}'),
+      isNull,
+    );
+    expect(parseAnswerUpdate('Уточняющий вопрос без JSON'), isNull);
+  });
 }

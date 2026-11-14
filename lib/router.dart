@@ -5,6 +5,7 @@ import 'data/llm_settings.dart';
 import 'data/topic_catalog.dart';
 import '../l10n/l10n.dart';
 import 'ui/chat_screen.dart';
+import 'ui/edit_topic_screen.dart';
 import 'ui/design_system.dart';
 import 'ui/home_screen.dart';
 import 'ui/practice_screen.dart';
@@ -56,7 +57,10 @@ GoRouter createRouter(
           if (topic == null) return const NotFoundScreen();
           return ChatScreen(
             title: context.l10n.appendChatTitle(topic.title),
-            systemPrompt: context.l10n.appendSystemPrompt(topic.title),
+            systemPrompt: context.l10n.appendSystemPrompt(
+              topic.title,
+              topic.questions.map((q) => '- ${q.prompt}').join('\n'),
+            ),
             intro: context.l10n.appendChatIntro,
             settingsRepository: llmSettings,
             catalog: catalog,
@@ -126,6 +130,8 @@ GoRouter createRouter(
                 (draft.isNotEmpty ? context.l10n.questionDraftPart(draft) : ''),
             intro: context.l10n.questionChatIntro,
             settingsRepository: llmSettings,
+            catalog: catalog,
+            editQuestionId: question.id,
           );
         },
       ),
@@ -137,6 +143,39 @@ GoRouter createRouter(
           return TopicScreen(topic: topic, viewModel: viewModel);
         },
         routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) {
+              final topic = catalog.topicById(state.pathParameters['topicId']!);
+              if (topic == null) return const NotFoundScreen();
+              return EditTopicScreen(catalog: catalog, topicId: topic.id);
+            },
+          ),
+          GoRoute(
+            path: 'edit/question/:questionId',
+            builder: (context, state) {
+              final topic = catalog.topicById(state.pathParameters['topicId']!);
+              final questionId = state.pathParameters['questionId']!;
+              final question = topic?.questions
+                  .where((q) => q.id == questionId)
+                  .firstOrNull;
+              if (topic == null || question == null) {
+                return const NotFoundScreen();
+              }
+              return ChatScreen(
+                title: context.l10n.appendChatTitle(topic.title),
+                systemPrompt: context.l10n.questionSystemPrompt(
+                  question.prompt,
+                  question.answer,
+                ),
+                intro: context.l10n.questionChatIntro,
+                settingsRepository: llmSettings,
+                catalog: catalog,
+                editQuestionId: question.id,
+                suggestions: [context.l10n.appendSuggestionEdgeCases],
+              );
+            },
+          ),
           GoRoute(
             path: 'practice/:index',
             builder: (context, state) {

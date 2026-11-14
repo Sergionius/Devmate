@@ -329,7 +329,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String questionSystemPrompt(String prompt, String reference) {
-    return 'Ты — технический интервьюер. Разбираешь с пользователем вопрос: \"$prompt\". Эталонный ответ для тебя: \"$reference\". Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить.';
+    return 'Ты — технический интервьюер. Разбираешь с пользователем вопрос: \"$prompt\". Эталонный ответ для тебя: \"$reference\". Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить. Если пользователь просит исправить, дописать или записать правильный ответ — ответь ровно одним JSON-объектом без пояснений: поле action со значением update_answer, поле prompt — уточнённый текст вопроса, поле answer — новый эталонный ответ.';
   }
 
   @override
@@ -347,6 +347,60 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get topicSuggestionExplainer =>
       'Разбери одну тему простыми словами с примером';
+
+  @override
+  String get editTopicButton => 'Редактировать';
+
+  @override
+  String get editTopicTitle => 'Редактирование темы';
+
+  @override
+  String get editTopicNameLabel => 'Название';
+
+  @override
+  String get editTopicDescLabel => 'Описание';
+
+  @override
+  String get editSaveTopic => 'Сохранить тему';
+
+  @override
+  String get editAddQuestion => 'Добавить вопрос';
+
+  @override
+  String get editQuestionDialogTitleNew => 'Новый вопрос';
+
+  @override
+  String get editQuestionDialogTitleEdit => 'Редактирование вопроса';
+
+  @override
+  String get editPromptLabel => 'Вопрос';
+
+  @override
+  String get editAnswerLabel => 'Эталонный ответ';
+
+  @override
+  String get editSave => 'Сохранить';
+
+  @override
+  String get editDeleteQuestion => 'Удалить';
+
+  @override
+  String get editRequired => 'Заполните вопрос и ответ.';
+
+  @override
+  String get editSaved => 'Сохранено';
+
+  @override
+  String get answerUpdateCardTitle => 'Модель предлагает новую версию ответа';
+
+  @override
+  String get answerUpdatePromptLabel => 'Уточнённый вопрос';
+
+  @override
+  String get answerUpdateButton => 'Заменить ответ';
+
+  @override
+  String get answerReplaced => 'Ответ обновлён в теме';
 
   @override
   String get freeChatTitle => 'Общий чат';
@@ -425,8 +479,8 @@ class AppLocalizationsRu extends AppLocalizations {
       'Напиши, какие вопросы добавить в тему. Уточню, если что-то неясно.';
 
   @override
-  String appendSystemPrompt(String title) {
-    return 'Ты добавляешь вопросы в существующую тренировочную тему \"$title\". Отвечай по-русски. Правила: (1) Если запрос ясен — ответь ровно одним JSON-объектом без markdown-обёрток и пояснений: одно поле questions — массив объектов, где каждый объект имеет поле prompt (новый вопрос) и поле answer (эталонный ответ в 2-4 предложения). Вопросов от 3 до 10, на русском, они не должны повторять существующие вопросы темы. (2) Если запрос неоднозначный — задай один короткий уточняющий вопрос обычным текстом, без JSON. (3) Дополнительный текст рядом с JSON запрещён.';
+  String appendSystemPrompt(String title, String existing) {
+    return 'Ты добавляешь вопросы в существующую тренировочную тему \"$title\". Отвечай по-русски. Существующие вопросы темы: $existing. Правила: (1) Если запрос ясен — ответь ровно одним JSON-объектом без markdown-обёрток и пояснений: одно поле questions — массив объектов, где каждый объект имеет поле prompt (новый вопрос) и поле answer (эталонный ответ в 2-4 предложения). Вопросов от 3 до 10, на русском, они не должны повторять перечисленные вопросы. (2) Если запрос неоднозначный — задай один короткий уточняющий вопрос обычным текстом, без JSON. (3) Дополнительный текст рядом с JSON запрещён.';
   }
 
   @override

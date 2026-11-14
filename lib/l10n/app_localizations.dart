@@ -637,7 +637,7 @@ abstract class AppLocalizations {
   /// No description provided for @questionSystemPrompt.
   ///
   /// In ru, this message translates to:
-  /// **'Ты — технический интервьюер. Разбираешь с пользователем вопрос: \"{prompt}\". Эталонный ответ для тебя: \"{reference}\". Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить.'**
+  /// **'Ты — технический интервьюер. Разбираешь с пользователем вопрос: \"{prompt}\". Эталонный ответ для тебя: \"{reference}\". Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить. Если пользователь просит исправить, дописать или записать правильный ответ — ответь ровно одним JSON-объектом без пояснений: поле action со значением update_answer, поле prompt — уточнённый текст вопроса, поле answer — новый эталонный ответ.'**
   String questionSystemPrompt(String prompt, String reference);
 
   /// No description provided for @questionDraftPart.
@@ -663,6 +663,114 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Разбери одну тему простыми словами с примером'**
   String get topicSuggestionExplainer;
+
+  /// No description provided for @editTopicButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Редактировать'**
+  String get editTopicButton;
+
+  /// No description provided for @editTopicTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Редактирование темы'**
+  String get editTopicTitle;
+
+  /// No description provided for @editTopicNameLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Название'**
+  String get editTopicNameLabel;
+
+  /// No description provided for @editTopicDescLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Описание'**
+  String get editTopicDescLabel;
+
+  /// No description provided for @editSaveTopic.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранить тему'**
+  String get editSaveTopic;
+
+  /// No description provided for @editAddQuestion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить вопрос'**
+  String get editAddQuestion;
+
+  /// No description provided for @editQuestionDialogTitleNew.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый вопрос'**
+  String get editQuestionDialogTitleNew;
+
+  /// No description provided for @editQuestionDialogTitleEdit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Редактирование вопроса'**
+  String get editQuestionDialogTitleEdit;
+
+  /// No description provided for @editPromptLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопрос'**
+  String get editPromptLabel;
+
+  /// No description provided for @editAnswerLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эталонный ответ'**
+  String get editAnswerLabel;
+
+  /// No description provided for @editSave.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранить'**
+  String get editSave;
+
+  /// No description provided for @editDeleteQuestion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить'**
+  String get editDeleteQuestion;
+
+  /// No description provided for @editRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заполните вопрос и ответ.'**
+  String get editRequired;
+
+  /// No description provided for @editSaved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранено'**
+  String get editSaved;
+
+  /// No description provided for @answerUpdateCardTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Модель предлагает новую версию ответа'**
+  String get answerUpdateCardTitle;
+
+  /// No description provided for @answerUpdatePromptLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уточнённый вопрос'**
+  String get answerUpdatePromptLabel;
+
+  /// No description provided for @answerUpdateButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заменить ответ'**
+  String get answerUpdateButton;
+
+  /// No description provided for @answerReplaced.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ обновлён в теме'**
+  String get answerReplaced;
 
   /// No description provided for @freeChatTitle.
   ///
@@ -787,8 +895,8 @@ abstract class AppLocalizations {
   /// No description provided for @appendSystemPrompt.
   ///
   /// In ru, this message translates to:
-  /// **'Ты добавляешь вопросы в существующую тренировочную тему \"{title}\". Отвечай по-русски. Правила: (1) Если запрос ясен — ответь ровно одним JSON-объектом без markdown-обёрток и пояснений: одно поле questions — массив объектов, где каждый объект имеет поле prompt (новый вопрос) и поле answer (эталонный ответ в 2-4 предложения). Вопросов от 3 до 10, на русском, они не должны повторять существующие вопросы темы. (2) Если запрос неоднозначный — задай один короткий уточняющий вопрос обычным текстом, без JSON. (3) Дополнительный текст рядом с JSON запрещён.'**
-  String appendSystemPrompt(String title);
+  /// **'Ты добавляешь вопросы в существующую тренировочную тему \"{title}\". Отвечай по-русски. Существующие вопросы темы: {existing}. Правила: (1) Если запрос ясен — ответь ровно одним JSON-объектом без markdown-обёрток и пояснений: одно поле questions — массив объектов, где каждый объект имеет поле prompt (новый вопрос) и поле answer (эталонный ответ в 2-4 предложения). Вопросов от 3 до 10, на русском, они не должны повторять перечисленные вопросы. (2) Если запрос неоднозначный — задай один короткий уточняющий вопрос обычным текстом, без JSON. (3) Дополнительный текст рядом с JSON запрещён.'**
+  String appendSystemPrompt(String title, String existing);
 
   /// No description provided for @appendChatIntroPlaceholder.
   ///

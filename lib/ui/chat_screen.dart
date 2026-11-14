@@ -20,6 +20,7 @@ class ChatScreen extends StatefulWidget {
     this.suggestions = const [],
     this.catalog,
     this.appendToTopic,
+    this.editQuestionId,
   });
 
   final String title;
@@ -34,6 +35,10 @@ class ChatScreen extends StatefulWidget {
   /// Если задан — черновик воспринимается как вопросы для этой темы
   /// (без поля title), а кнопка добавляет их в неё.
   final String? appendToTopic;
+
+  /// Если задан — ответы модели в этом чате могут заменять ответ этого
+  /// вопроса (JSON action=update_answer).
+  final String? editQuestionId;
   final List<String> suggestions;
 
   @override
@@ -48,6 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final FocusNode _inputFocus = FocusNode();
   bool _streaming = false;
   TopicDraft? _draft;
+  AnswerUpdate? _answerUpdate;
   bool _draftSaving = false;
 
   @override
@@ -91,19 +97,32 @@ class _ChatScreenState extends State<ChatScreen> {
               : '${last.text}\n\n${context.llmErrorText(failureKind)}';
         });
       }
-      // В чатах работы с темами ищем JSON-черновик в ответе модели.
+      // В чатах работы с темами ищем JSON в ответе модели.
       final catalog = widget.catalog;
-      if (catalog != null && mounted) {
-        final draft = parseTopicDraft(_provider!.history.last.text);
-        if (draft == null) {
-          // Уточняющий ответ: убираем карточку от прошлого хода, если была.
-          if (_draft != null) setState(() => _draft = null);
-          return;
-        }
-        final isAppend = widget.appendToTopic != null;
-        if (isAppend || draft.title != null) {
-          setState(() => _draft = draft);
-        }
+      final isQuestionEdit = widget.editQuestionId != null;
+      if (catalog == null || !mounted) return;
+
+      final update = isQuestionEdit
+          ? parseAnswerUpdate(_provider!.history.last.text)
+          : null;
+      if (update != null) {
+        setState(() {
+          _answerUpdate = update;
+          _draft = null;
+        });
+        return;
+      }
+      if (isQuestionEdit) return;
+
+      final draft = parseTopicDraft(_provider!.history.last.text);
+      if (draft == null) {
+        // Уточняющий ответ: убираем карточку от прошлого хода, если была.
+        if (_draft != null) setState(() => _draft = null);
+        return;
+      }
+      final isAppend = widget.appendToTopic != null;
+      if (isAppend || draft.title != null) {
+        setState(() => _draft = draft);
       }
     } finally {
       if (mounted) setState(() => _streaming = false);
@@ -131,8 +150,8 @@ class _ChatScreenState extends State<ChatScreen> {
         success = l10n.createAddTopicSuccess;
       }
     } catch (_) {
-      _draftSaving = false;
       if (mounted) {
+        setState(() => _draftSaving = false);
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(l10n.createSaveError)));
       }
@@ -145,6 +164,26 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(success)));
+  }
+
+  Future<void> _replaceAnswer(String questionId) async {
+    final update = _answerUpdate;
+    if (update == null) return;
+    final catalog = widget.catalog!;
+    final l10n = context.l10n;
+    try {
+      await catalog.updateQuestion(questionId, update.prompt, update.answer);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.createSaveError)));
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _answerUpdate = null);
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(l10n.answerReplaced)));
   }
 
   String _topicTitle(BuildContext context) =>
@@ -200,6 +239,11 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Column(
             children: [
               Expanded(child: _messages.isEmpty ? _buildEmpty() : _buildList()),
+              if (_answerUpdate != null && widget.editQuestionId != null)
+                _AnswerUpdateCard(
+                  update: _answerUpdate!,
+                  onApply: () => _replaceAnswer(widget.editQuestionId!),
+                ),
               if (_draft != null && widget.catalog != null)
                 _TopicDraftCard(
                   draft: _draft!,
@@ -554,6 +598,78 @@ class _TopicDraftCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AnswerUpdateCard extends StatelessWidget {
+  const _AnswerUpdateCard({required this.update, required this.onApply});
+
+  final AnswerUpdate update;
+  final VoidCallback onApply;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DevmateColors.surface,
+        border: Border.all(color: DevmateColors.accent),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.answerUpdateCardTitle,
+            style: const TextStyle(
+              color: DevmateColors.primary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (update.prompt.isNotEmpty) ...[
+            Text(
+              context.l10n.answerUpdatePromptLabel,
+              style: const TextStyle(color: DevmateColors.muted, fontSize: 13),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              update.prompt,
+              style: const TextStyle(
+                color: DevmateColors.primary,
+                fontSize: 15,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          Text(
+            context.l10n.editAnswerLabel,
+            style: const TextStyle(color: DevmateColors.muted, fontSize: 13),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            update.answer,
+            style: const TextStyle(
+              color: DevmateColors.primary,
+              fontSize: 15,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onApply,
+              icon: const Icon(Icons.check_rounded),
+              label: Text(context.l10n.answerUpdateButton),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _SendButton extends StatelessWidget {
