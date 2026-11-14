@@ -107,11 +107,25 @@ Future<LlmErrorKind?> testLlmConnection(LlmSettings settings) async {
   }
 }
 
+/// Сессия одного чата: история диалога + потоковые ответы. Абстракция над
+/// [OpenAiCompatibleProvider] — ChatViewModel и экран слушают её напрямую
+/// (гранулярный ребилд), в тестах подменяется фейком.
+abstract interface class ChatSession implements Listenable {
+  /// Transcript of the conversation, oldest first.
+  List<LlmChatMessage> get history;
+
+  /// Streams the assistant reply to [prompt], appending both turns to
+  /// [history]. Yields text chunks as they arrive.
+  Stream<String> sendMessageStream(String prompt);
+
+  void dispose();
+}
+
 /// Talks to any OpenAI-compatible endpoint (z.ai, OpenRouter, DeepSeek, Groq,
 /// Ollama, OpenAI, ...) with streaming. Keeps one conversation in memory:
 /// [history] is the transcript, failed replies are kept visible for the user
 /// but excluded from follow-up requests.
-class OpenAiCompatibleProvider extends ChangeNotifier {
+class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
   OpenAiCompatibleProvider({
     required this._settings,
     required this._systemPrompt,
@@ -122,10 +136,12 @@ class OpenAiCompatibleProvider extends ChangeNotifier {
   final List<LlmChatMessage> _history = [];
 
   /// Transcript of the conversation, oldest first.
+  @override
   List<LlmChatMessage> get history => List.unmodifiable(_history);
 
   /// Streams the assistant reply to [prompt], appending both turns to
   /// [history]. Yields text chunks as they arrive.
+  @override
   Stream<String> sendMessageStream(String prompt) async* {
     final assistant = LlmChatMessage(LlmRole.assistant, '');
     _history
