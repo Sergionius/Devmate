@@ -329,7 +329,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String questionSystemPrompt(String prompt, String reference) {
-    return 'Ты — технический интервьюер. Разбираешь с пользователем вопрос: \"$prompt\". Эталонный ответ для тебя: \"$reference\". Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить.';
+    return 'Ты — технический интервьюер. Разбираешь с пользователем вопрос: \"$prompt\". Эталонный ответ для тебя: \"$reference\". Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить. Если пользователь просит исправить, дописать или записать правильный ответ — ответь ровно одним JSON-объектом без пояснений: поле action со значением update_answer, поле prompt — уточнённый текст вопроса, поле answer — новый эталонный ответ.';
   }
 
   @override
@@ -347,6 +347,60 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get topicSuggestionExplainer =>
       'Разбери одну тему простыми словами с примером';
+
+  @override
+  String get editTopicButton => 'Редактировать';
+
+  @override
+  String get editTopicTitle => 'Редактирование темы';
+
+  @override
+  String get editTopicNameLabel => 'Название';
+
+  @override
+  String get editTopicDescLabel => 'Описание';
+
+  @override
+  String get editSaveTopic => 'Сохранить тему';
+
+  @override
+  String get editAddQuestion => 'Добавить вопрос';
+
+  @override
+  String get editQuestionDialogTitleNew => 'Новый вопрос';
+
+  @override
+  String get editQuestionDialogTitleEdit => 'Редактирование вопроса';
+
+  @override
+  String get editPromptLabel => 'Вопрос';
+
+  @override
+  String get editAnswerLabel => 'Эталонный ответ';
+
+  @override
+  String get editSave => 'Сохранить';
+
+  @override
+  String get editDeleteQuestion => 'Удалить';
+
+  @override
+  String get editRequired => 'Заполните вопрос и ответ.';
+
+  @override
+  String get editSaved => 'Сохранено';
+
+  @override
+  String get answerUpdateCardTitle => 'Модель предлагает новую версию ответа';
+
+  @override
+  String get answerUpdatePromptLabel => 'Уточнённый вопрос';
+
+  @override
+  String get answerUpdateButton => 'Заменить ответ';
+
+  @override
+  String get answerReplaced => 'Ответ обновлён в теме';
 
   @override
   String get freeChatTitle => 'Общий чат';
@@ -373,4 +427,99 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get freeSuggestionFun => 'Расскажи удивительный факт о космосе';
+
+  @override
+  String get createChatTitle => 'Создать тему';
+
+  @override
+  String get createChatCardSubtitle =>
+      'Опиши тему и вопросы — соберу её за тебя.';
+
+  @override
+  String get createChatIntro =>
+      'Опиши, что за тему хочешь: название, уровень и сколько вопросов. Если что-то неясно — уточню.';
+
+  @override
+  String get createSystemPrompt =>
+      'Ты помогаешь пользователю создавать тренировочные темы для подготовки к собеседованиям. Отвечай по-русски. Правила: (1) Если запрос ясен — ответь ровно одним JSON-объектом без markdown-обёрток и пояснений. Схема объекта: поле title — строка, название темы; поле description — строка, одно предложение о теме; поле questions — массив объектов, где каждый объект имеет поле prompt (вопрос) и поле answer (эталонный ответ в 2-4 предложения). Вопросов от 4 до 12, вопросы и ответы — на русском. (2) Если чего-то не хватает для хорошей темы (уровень, стек, глубина) — задай один короткий уточняющий вопрос обычным текстом, без JSON. (3) Дополнительный текст рядом с JSON запрещён.';
+
+  @override
+  String get createSuggestionDocker =>
+      'Собери тему «Docker для новичков» — 5 вопросов';
+
+  @override
+  String get createSuggestionTypescript =>
+      '10 вопросов по TypeScript для мидла';
+
+  @override
+  String get createSuggestionSql =>
+      'Тема по SQL: запросы и индексы, 6 вопросов';
+
+  @override
+  String get createAddTopic => 'Добавить тему';
+
+  @override
+  String get createSaveError =>
+      'Не удалось сохранить тему. Попробуйте ещё раз.';
+
+  @override
+  String get createAddTopicSuccess =>
+      'Тема добавлена — она в библиотеке на главной';
+
+  @override
+  String get appendChatButton => 'Добавить вопросы с AI';
+
+  @override
+  String appendChatTitle(String title) {
+    return 'Вопросы · $title';
+  }
+
+  @override
+  String get appendChatIntro =>
+      'Напиши, какие вопросы добавить в тему. Уточню, если что-то неясно.';
+
+  @override
+  String appendSystemPrompt(String title, String existing) {
+    return 'Ты добавляешь вопросы в существующую тренировочную тему \"$title\". Отвечай по-русски. Существующие вопросы темы: $existing. Правила: (1) Если запрос ясен — ответь ровно одним JSON-объектом без markdown-обёрток и пояснений: одно поле questions — массив объектов, где каждый объект имеет поле prompt (новый вопрос) и поле answer (эталонный ответ в 2-4 предложения). Вопросов от 3 до 10, на русском, они не должны повторять перечисленные вопросы. (2) Если запрос неоднозначный — задай один короткий уточняющий вопрос обычным текстом, без JSON. (3) Дополнительный текст рядом с JSON запрещён.';
+  }
+
+  @override
+  String get appendChatIntroPlaceholder => '';
+
+  @override
+  String appendSuggestionBasics(String title) {
+    return 'Добавь базовые вопросы по теме «$title» для джуна';
+  }
+
+  @override
+  String appendSuggestionPractice(String title) {
+    return 'Добавь 3 практических кейса по теме «$title»';
+  }
+
+  @override
+  String get appendSuggestionEdgeCases =>
+      'Добавь вопросы про типичные ошибки и подводные камни';
+
+  @override
+  String appendAddTopic(String title) {
+    return 'Добавить в тему “$title”';
+  }
+
+  @override
+  String appendAddedSuccess(String title) {
+    return 'Вопросы добавлены в тему “$title”';
+  }
+
+  @override
+  String createAddedQuestionsSuffix(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'вопроса',
+      one: 'вопрос',
+      many: 'вопросов',
+      few: 'вопроса',
+    );
+    return '$_temp0';
+  }
 }

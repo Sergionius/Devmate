@@ -121,7 +121,7 @@
       "description": { "type": "String" }
     }
   },
-  "questionSystemPrompt": "Ты — технический интервьюер. Разбираешь с пользователем вопрос: \"{prompt}\". Эталонный ответ для тебя: \"{reference}\". Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить.",
+  "questionSystemPrompt": "Ты — технический интервьюер. Разбираешь с пользователем вопрос: \"{prompt}\". Эталонный ответ для тебя: \"{reference}\". Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить. Если пользователь просит исправить, дописать или записать правильный ответ — ответь ровно одним JSON-объектом без пояснений: поле action со значением update_answer, поле prompt — уточнённый текст вопроса, поле answer — новый эталонный ответ.",
   "@questionSystemPrompt": {
     "placeholders": {
       "prompt": { "type": "String" },
@@ -135,11 +135,64 @@
   "topicSuggestionQuiz": "Задай мне 3 типичных вопроса с собеседования",
   "topicSuggestionExplainer": "Разбери одну тему простыми словами с примером",
 
+  "editTopicButton": "Редактировать",
+  "editTopicTitle": "Редактирование темы",
+  "editTopicNameLabel": "Название",
+  "editTopicDescLabel": "Описание",
+  "editSaveTopic": "Сохранить тему",
+  "editAddQuestion": "Добавить вопрос",
+  "editQuestionDialogTitleNew": "Новый вопрос",
+  "editQuestionDialogTitleEdit": "Редактирование вопроса",
+  "editPromptLabel": "Вопрос",
+  "editAnswerLabel": "Эталонный ответ",
+  "editSave": "Сохранить",
+  "editDeleteQuestion": "Удалить",
+  "editRequired": "Заполните вопрос и ответ.",
+  "editSaved": "Сохранено",
+  "answerUpdateCardTitle": "Модель предлагает новую версию ответа",
+  "answerUpdatePromptLabel": "Уточнённый вопрос",
+  "answerUpdateButton": "Заменить ответ",
+  "answerReplaced": "Ответ обновлён в теме",
+
   "freeChatTitle": "Общий чат",
   "freeChatCardSubtitle": "Любые темы: карьера, учёба, хобби — о чём угодно.",
   "freeChatIntro": "Поболтаем о чём угодно: работа, учёба, хобби или просто мысли вслух.",
   "freeSystemPrompt": "Ты — дружелюбный собеседник для свободного общения на любые темы. Отвечай по-русски: живо, с любопытством и без нравоучений; поддерживай разговор, задавай встречные вопросы, делись примерами. Если тема техническая — углубляйся в детали; если лёгкая — оставайся лёгким.",
   "freeSuggestionIcebreaker": "Предложи тему для разговора и задай первый вопрос",
   "freeSuggestionCareer": "Обсудим, как справляться с выгоранием на работе",
-  "freeSuggestionFun": "Расскажи удивительный факт о космосе"
+  "freeSuggestionFun": "Расскажи удивительный факт о космосе",
+
+  "createChatTitle": "Создать тему",
+  "createChatCardSubtitle": "Опиши тему и вопросы — соберу её за тебя.",
+  "createChatIntro": "Опиши, что за тему хочешь: название, уровень и сколько вопросов. Если что-то неясно — уточню.",
+  "createSystemPrompt": "Ты помогаешь пользователю создавать тренировочные темы для подготовки к собеседованиям. Отвечай по-русски. Правила: (1) Если запрос ясен — ответь ровно одним JSON-объектом без markdown-обёрток и пояснений. Схема объекта: поле title — строка, название темы; поле description — строка, одно предложение о теме; поле questions — массив объектов, где каждый объект имеет поле prompt (вопрос) и поле answer (эталонный ответ в 2-4 предложения). Вопросов от 4 до 12, вопросы и ответы — на русском. (2) Если чего-то не хватает для хорошей темы (уровень, стек, глубина) — задай один короткий уточняющий вопрос обычным текстом, без JSON. (3) Дополнительный текст рядом с JSON запрещён.",
+  "createSuggestionDocker": "Собери тему «Docker для новичков» — 5 вопросов",
+  "createSuggestionTypescript": "10 вопросов по TypeScript для мидла",
+  "createSuggestionSql": "Тема по SQL: запросы и индексы, 6 вопросов",
+  "createAddTopic": "Добавить тему",
+  "createSaveError": "Не удалось сохранить тему. Попробуйте ещё раз.",
+  "createAddTopicSuccess": "Тема добавлена — она в библиотеке на главной",
+  "appendChatButton": "Добавить вопросы с AI",
+  "appendChatTitle": "Вопросы · {title}",
+  "@appendChatTitle": { "placeholders": { "title": { "type": "String" } } },
+  "appendChatIntro": "Напиши, какие вопросы добавить в тему. Уточню, если что-то неясно.",
+  "appendSystemPrompt": "Ты добавляешь вопросы в существующую тренировочную тему \"{title}\". Отвечай по-русски. Существующие вопросы темы: {existing}. Правила: (1) Если запрос ясен — ответь ровно одним JSON-объектом без markdown-обёрток и пояснений: одно поле questions — массив объектов, где каждый объект имеет поле prompt (новый вопрос) и поле answer (эталонный ответ в 2-4 предложения). Вопросов от 3 до 10, на русском, они не должны повторять перечисленные вопросы. (2) Если запрос неоднозначный — задай один короткий уточняющий вопрос обычным текстом, без JSON. (3) Дополнительный текст рядом с JSON запрещён.",
+  "@appendSystemPrompt": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "existing": { "type": "String" }
+    }
+  },
+  "appendChatIntroPlaceholder": "",
+  "appendSuggestionBasics": "Добавь базовые вопросы по теме «{title}» для джуна",
+  "@appendSuggestionBasics": { "placeholders": { "title": { "type": "String" } } },
+  "appendSuggestionPractice": "Добавь 3 практических кейса по теме «{title}»",
+  "@appendSuggestionPractice": { "placeholders": { "title": { "type": "String" } } },
+  "appendSuggestionEdgeCases": "Добавь вопросы про типичные ошибки и подводные камни",
+  "appendAddTopic": "Добавить в тему “{title}”",
+  "@appendAddTopic": { "placeholders": { "title": { "type": "String" } } },
+  "appendAddedSuccess": "Вопросы добавлены в тему “{title}”",
+  "@appendAddedSuccess": { "placeholders": { "title": { "type": "String" } } },
+  "createAddedQuestionsSuffix": "{count, plural, few{вопроса} many{вопросов} one{вопрос} other{вопроса}}",
+  "@createAddedQuestionsSuffix": { "placeholders": { "count": { "type": "int" } } }
 }
