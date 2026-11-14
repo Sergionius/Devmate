@@ -30,6 +30,9 @@ class LlmChatMessage {
 
   /// Failed replies are shown but never resent as conversation context.
   bool failed;
+
+  /// Why the reply failed; localized in UI via context.llmErrorText.
+  LlmErrorKind? errorKind;
   String text;
 }
 
@@ -47,48 +50,60 @@ List<oai.ChatMessage> _requestMessages(
   oai.ChatMessage.user(prompt),
 ];
 
-/// Maps low-level client errors to messages a user can act on.
-String describeLlmError(Object error) {
+/// Вид ошибки LLM-провайдера. Локализуется в UI (context.llmErrorText).
+enum LlmErrorKind {
+  keyRejected,
+  notFound,
+  rateLimited,
+  noBalance,
+  webConnection,
+  connection,
+  emptyTestResponse,
+  emptyReply,
+}
+
+/// Maps low-level client errors to [LlmErrorKind].
+LlmErrorKind classifyLlmError(Object error) {
   final text = error.toString();
   if (text.contains('401') || text.toLowerCase().contains('unauthorized')) {
-    return 'Ключ отклонён (401). Проверьте API-ключ в настройках.';
+    return LlmErrorKind.keyRejected;
   }
   if (text.contains('404')) {
-    return 'Адрес или модель не найдены (404). Проверьте base URL и название модели.';
+    return LlmErrorKind.notFound;
   }
   if (text.contains('429')) {
-    return 'Слишком много запросов (429). Подождите или проверьте квоту.';
+    return LlmErrorKind.rateLimited;
   }
   final lower = text.toLowerCase();
   if (lower.contains('insufficient balance') ||
       lower.contains('no resource package') ||
       lower.contains('billing')) {
-    return 'На аккаунте провайдера нет средств или тарифного пакета. '
-        'Пополните баланс или выберите другого провайдера.';
+    return LlmErrorKind.noBalance;
   }
-  return kIsWeb
-      ? 'Ошибка соединения с провайдером. На web работают только провайдеры с CORS '
-            '(OpenAI, OpenRouter, Groq). Проверьте настройки и интернет.'
-      : 'Ошибка соединения с провайдером. Проверьте настройки и интернет.';
+  return kIsWeb ? LlmErrorKind.webConnection : LlmErrorKind.connection;
 }
 
+/// Тестовая инструкция модели — не UI-текст, локализуется на уровне модели.
+const String llmTestPrompt = 'Ответь одним словом: ок';
+
 /// Sends a tiny request to verify that key, URL and model work together.
-Future<String?> testLlmConnection(LlmSettings settings) async {
+/// Returns null on success or the failure kind to localize in UI.
+Future<LlmErrorKind?> testLlmConnection(LlmSettings settings) async {
   try {
     final client = _clientFor(settings);
     final response = await client.chat.completions.create(
       oai.ChatCompletionCreateRequest(
         model: settings.model.trim(),
         maxTokens: 5,
-        messages: [oai.ChatMessage.user('Ответь одним словом: ок')],
+        messages: [oai.ChatMessage.user(llmTestPrompt)],
       ),
     );
     if (response.text == null || response.text!.isEmpty) {
-      return 'Провайдер ответил пустым сообщением.';
+      return LlmErrorKind.emptyTestResponse;
     }
     return null;
   } catch (error) {
-    return describeLlmError(error);
+    return classifyLlmError(error);
   }
 }
 
@@ -142,17 +157,16 @@ class OpenAiCompatibleProvider extends ChangeNotifier {
         }
       }
       if (!received) {
-        assistant.text = 'Провайдер вернул пустой ответ.';
+        assistant
+          ..failed = true
+          ..errorKind = LlmErrorKind.emptyReply;
         notifyListeners();
-        yield assistant.text;
       }
     } catch (error) {
       assistant
         ..failed = true
-        ..text +=
-            (assistant.text.isEmpty ? '' : '\n\n') + describeLlmError(error);
+        ..errorKind = classifyLlmError(error);
       notifyListeners();
-      yield assistant.text;
     } finally {
       notifyListeners();
     }

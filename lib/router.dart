@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'data/llm_settings.dart';
 import 'data/question_catalog.dart';
+import '../l10n/l10n.dart';
 import 'ui/chat_screen.dart';
 import 'ui/design_system.dart';
 import 'ui/home_screen.dart';
@@ -36,16 +37,16 @@ GoRouter createRouter(
           final topic = topicById(state.pathParameters['topicId']!);
           if (topic == null) return const NotFoundScreen();
           return ChatScreen(
-            title: 'AI · ${topic.title}',
-            systemPrompt:
-                'Ты — технический интервьюер, готовишь пользователя к собеседованию по теме "${topic.title}" (${topic.description}). '
-                'Отвечай по-русски, кратко и по делу: объясняй примерами, задавай наводящие вопросы, проверяй понимание. '
-                'Не решай за пользователя, пока он не попробовал сам.',
+            title: context.l10n.topicChatTitle(topic.title),
+            systemPrompt: context.l10n.topicSystemPrompt(
+              topic.title,
+              topic.description,
+            ),
             settingsRepository: llmSettings,
-            suggestions: const [
-              'С чего начать подготовку по этой теме?',
-              'Задай мне 3 типичных вопроса с собеседования',
-              'Разбери одну тему простыми словами с примером',
+            suggestions: [
+              context.l10n.topicSuggestionStart,
+              context.l10n.topicSuggestionQuiz,
+              context.l10n.topicSuggestionExplainer,
             ],
           );
         },
@@ -62,13 +63,13 @@ GoRouter createRouter(
           if (question == null) return const NotFoundScreen();
           final draft = (state.extra is String) ? state.extra as String : '';
           return ChatScreen(
-            title: 'AI · Вопрос ${index + 1}',
+            title: context.l10n.questionChatTitle(index + 1),
             systemPrompt:
-                'Ты — технический интервьюер. Разбираешь с пользователем вопрос: "${question.prompt}". '
-                'Эталонный ответ для тебя: "${question.answer}". '
-                '${draft.isNotEmpty ? 'Черновик ответа пользователя: "$draft". ' : ''}'
-                'Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю '
-                'сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить.',
+                context.l10n.questionSystemPrompt(
+                  question.prompt,
+                  question.answer,
+                ) +
+                (draft.isNotEmpty ? context.l10n.questionDraftPart(draft) : ''),
             settingsRepository: llmSettings,
           );
         },
@@ -112,14 +113,14 @@ class NotFoundScreen extends StatelessWidget {
         children: [
           const Eyebrow('404'),
           const SizedBox(height: 12),
-          const Text(
-            'Такой страницы нет.',
+          Text(
+            context.l10n.pageNotFound,
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           FilledButton(
             onPressed: () => context.go('/'),
-            child: const Text('На главную'),
+            child: Text(context.l10n.goHome),
           ),
         ],
       ),
