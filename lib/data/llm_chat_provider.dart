@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
-import 'package:flutter_ai_toolkit/flutter_ai_toolkit.dart';
 import 'package:openai_dart/openai_dart.dart' as oai;
 
 import 'llm_settings.dart';
@@ -19,17 +20,30 @@ oai.OpenAIClient _clientFor(LlmSettings settings) => oai.OpenAIClient(
   ),
 );
 
+enum LlmRole { user, assistant }
+
+/// One transcript entry shown in the chat and fed back as context.
+class LlmChatMessage {
+  LlmChatMessage(this.role, this.text, {this.failed = false});
+
+  final LlmRole role;
+
+  /// Failed replies are shown but never resent as conversation context.
+  bool failed;
+  String text;
+}
+
 List<oai.ChatMessage> _requestMessages(
   String systemPrompt,
-  List<String> pastUser,
-  List<String> pastAssistant,
+  List<LlmChatMessage> history,
   String prompt,
 ) => [
   oai.ChatMessage.system(systemPrompt),
-  for (var i = 0; i < pastUser.length; i++) ...[
-    oai.ChatMessage.user(pastUser[i]),
-    oai.ChatMessage.assistant(content: pastAssistant[i]),
-  ],
+  for (final message in history)
+    if (!message.failed && message.text.isNotEmpty)
+      message.role == LlmRole.user
+          ? oai.ChatMessage.user(message.text)
+          : oai.ChatMessage.assistant(content: message.text),
   oai.ChatMessage.user(prompt),
 ];
 
@@ -78,10 +92,11 @@ Future<String?> testLlmConnection(LlmSettings settings) async {
   }
 }
 
-/// [LlmProvider] for any OpenAI-compatible endpoint (z.ai, OpenRouter,
-/// DeepSeek, Groq, Ollama, OpenAI, ...). Keeps the conversation history
-/// in memory for one chat session.
-class OpenAiCompatibleProvider extends LlmProvider with ChangeNotifier {
+/// Talks to any OpenAI-compatible endpoint (z.ai, OpenRouter, DeepSeek, Groq,
+/// Ollama, OpenAI, ...) with streaming. Keeps one conversation in memory:
+/// [history] is the transcript, failed replies are kept visible for the user
+/// but excluded from follow-up requests.
+class OpenAiCompatibleProvider extends ChangeNotifier {
   OpenAiCompatibleProvider({
     required this._settings,
     required this._systemPrompt,
@@ -89,62 +104,31 @@ class OpenAiCompatibleProvider extends LlmProvider with ChangeNotifier {
 
   final LlmSettings _settings;
   final String _systemPrompt;
-  final List<ChatMessage> _history = [];
-  final Set<ChatMessage> _failedMessages = {};
+  final List<LlmChatMessage> _history = [];
 
-  @override
-  Iterable<ChatMessage> get history => _history;
+  /// Transcript of the conversation, oldest first.
+  List<LlmChatMessage> get history => List.unmodifiable(_history);
 
-  @override
-  set history(Iterable<ChatMessage> history) {
+  /// Streams the assistant reply to [prompt], appending both turns to
+  /// [history]. Yields text chunks as they arrive.
+  Stream<String> sendMessageStream(String prompt) async* {
+    final assistant = LlmChatMessage(LlmRole.assistant, '');
     _history
-      ..clear()
-      ..addAll(history);
-    _failedMessages.removeWhere((message) => !_history.contains(message));
-    notifyListeners();
-  }
-
-  (List<String>, List<String>) get _pastTurns {
-    final users = <String>[];
-    final assistants = <String>[];
-    for (var i = 0; i + 1 < _history.length; i += 2) {
-      final user = _history[i];
-      final assistant = _history[i + 1];
-      if (user.origin != MessageOrigin.user ||
-          assistant.origin != MessageOrigin.llm ||
-          _failedMessages.contains(assistant) ||
-          (assistant.text ?? '').isEmpty) {
-        continue;
-      }
-      users.add(user.text ?? '');
-      assistants.add(assistant.text!);
-    }
-    return (users, assistants);
-  }
-
-  @override
-  Stream<String> sendMessageStream(
-    String prompt, {
-    Iterable<Attachment> attachments = const [],
-  }) async* {
-    final userMessage = ChatMessage.user(prompt, const []);
-    final llmMessage = ChatMessage.llm();
-    _history.addAll([userMessage, llmMessage]);
+      ..add(LlmChatMessage(LlmRole.user, prompt))
+      ..add(assistant);
     notifyListeners();
 
     try {
-      final (pastUsers, pastAssistants) = _pastTurns;
-      final messages = _requestMessages(
-        _systemPrompt,
-        pastUsers,
-        pastAssistants,
-        prompt,
-      );
-      final stream = _clientFor(_settings).chat.completions.createStream(
+      final client = _clientFor(_settings);
+      final stream = client.chat.completions.createStream(
         oai.ChatCompletionCreateRequest(
           model: _settings.model.trim(),
           temperature: 0.6,
-          messages: messages,
+          messages: _requestMessages(
+            _systemPrompt,
+            _history.sublist(0, _history.length - 1),
+            prompt,
+          ),
         ),
       );
       var received = false;
@@ -152,40 +136,25 @@ class OpenAiCompatibleProvider extends LlmProvider with ChangeNotifier {
         final delta = event.textDelta;
         if (delta != null && delta.isNotEmpty) {
           received = true;
-          llmMessage.append(delta);
+          assistant.text += delta;
+          notifyListeners();
           yield delta;
         }
       }
       if (!received) {
-        const empty = 'Провайдер вернул пустой ответ.';
-        llmMessage.append(empty);
-        yield empty;
+        assistant.text = 'Провайдер вернул пустой ответ.';
+        notifyListeners();
+        yield assistant.text;
       }
     } catch (error) {
-      _failedMessages.add(llmMessage);
-      final message = describeLlmError(error);
-      llmMessage.append('\n\n$message');
-      yield '\n\n$message';
+      assistant
+        ..failed = true
+        ..text +=
+            (assistant.text.isEmpty ? '' : '\n\n') + describeLlmError(error);
+      notifyListeners();
+      yield assistant.text;
     } finally {
       notifyListeners();
-    }
-  }
-
-  @override
-  Stream<String> generateStream(
-    String prompt, {
-    Iterable<Attachment> attachments = const [],
-  }) async* {
-    final stream = _clientFor(_settings).chat.completions.createStream(
-      oai.ChatCompletionCreateRequest(
-        model: _settings.model.trim(),
-        temperature: 0.6,
-        messages: _requestMessages(_systemPrompt, const [], const [], prompt),
-      ),
-    );
-    await for (final event in stream) {
-      final delta = event.textDelta;
-      if (delta != null && delta.isNotEmpty) yield delta;
     }
   }
 }
