@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../domain/question.dart';
 import 'design_system.dart';
+import '../l10n/l10n.dart';
 import 'training_view_model.dart';
 
 enum _Stage { answer, compare, rewrite, finished }
@@ -70,7 +71,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.viewModel.error ?? 'Не удалось сохранить ответ'),
+          content: Text(switch (widget.viewModel.error) {
+            TrainingError.progressLoad => context.l10n.progressLoadError,
+            TrainingError.answerSave => context.l10n.answerSaveError,
+            null => context.l10n.practiceSaveFailed,
+          }),
         ),
       );
     }
@@ -114,7 +119,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 children: [
                   Expanded(
                     child: Eyebrow(
-                      'ВОПРОС ${_index + 1} / ${widget.topic.questions.length}',
+                      context.l10n.questionProgress(
+                        _index + 1,
+                        widget.topic.questions.length,
+                      ),
                     ),
                   ),
                   const Icon(
@@ -143,10 +151,13 @@ class _PracticeScreenState extends State<PracticeScreen> {
               ),
               const SizedBox(height: 28),
               if (_stage == _Stage.answer) ...[
-                const Eyebrow('01 / ТВОЙ ОТВЕТ', color: DevmateColors.muted),
+                Eyebrow(
+                  context.l10n.stepYourAnswer,
+                  color: DevmateColors.muted,
+                ),
                 const SizedBox(height: 10),
-                const Text(
-                  'Сформулируй своими словами. Здесь нет автоматической проверки — сначала попробуй вспомнить сам.',
+                Text(
+                  context.l10n.yourAnswerHint,
                   style: TextStyle(color: DevmateColors.muted, height: 1.5),
                 ),
                 const SizedBox(height: 20),
@@ -156,10 +167,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   maxLines: 6,
                   minLines: 4,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Твой ответ',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.yourAnswerLabel,
                     alignLabelWithHint: true,
-                    hintText: 'Начни писать здесь...',
+                    hintText: context.l10n.answerPlaceholder,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -171,7 +182,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                           _scrollToTop();
                         }
                       : null,
-                  child: const Text('Сверить с эталоном'),
+                  child: Text(context.l10n.compareWithReference),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
@@ -180,21 +191,27 @@ class _PracticeScreenState extends State<PracticeScreen> {
                     extra: _answer.text.trim(),
                   ),
                   icon: const Icon(Icons.chat_rounded, size: 20),
-                  label: const Text('Разобрать с AI'),
+                  label: Text(context.l10n.discussWithAi),
                 ),
               ] else if (_stage == _Stage.compare) ...[
-                const Eyebrow('02 / СРАВНЕНИЕ', color: DevmateColors.muted),
+                Eyebrow(
+                  context.l10n.stepComparison,
+                  color: DevmateColors.muted,
+                ),
                 const SizedBox(height: 16),
-                _AnswerCard(label: 'ТВОЙ ОТВЕТ', text: _answer.text),
+                _AnswerCard(
+                  label: context.l10n.yourAnswerEyebrow,
+                  text: _answer.text,
+                ),
                 const SizedBox(height: 12),
                 _AnswerCard(
-                  label: 'ЭТАЛОННЫЙ ОТВЕТ',
+                  label: context.l10n.referenceAnswerEyebrow,
                   text: _question.answer,
                   highlight: true,
                 ),
                 const SizedBox(height: 26),
                 Text(
-                  'Насколько близко получилось?',
+                  context.l10n.howCloseQuestion,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 14),
@@ -209,7 +226,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                               ? null
                               : () => _finish(true),
                           icon: const Icon(Icons.check_rounded),
-                          label: const Text('Знал ответ · +10 XP'),
+                          label: Text(context.l10n.knewAnswerXp),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -223,17 +240,17 @@ class _PracticeScreenState extends State<PracticeScreen> {
                                   _scrollToTop();
                                 },
                           icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('Нужно повторить'),
+                          label: Text(context.l10n.needsRepeat),
                         ),
                       ),
                     ],
                   ),
                 ),
               ] else if (_stage == _Stage.rewrite) ...[
-                const Eyebrow('03 / ЗАКРЕПЛЕНИЕ'),
+                Eyebrow(context.l10n.stepConsolidation),
                 const SizedBox(height: 12),
-                const Text(
-                  'Вспомни эталонный ответ и запиши его снова своими словами. Мы не сравниваем формулировки автоматически.',
+                Text(
+                  context.l10n.consolidationHint,
                   style: TextStyle(color: DevmateColors.muted, height: 1.5),
                 ),
                 const SizedBox(height: 20),
@@ -243,10 +260,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   maxLines: 6,
                   minLines: 4,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Что важно запомнить?',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.whatToRemember,
                     alignLabelWithHint: true,
-                    hintText: 'Запиши суть ответа...',
+                    hintText: context.l10n.writeEssencePlaceholder,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -256,7 +273,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                     onPressed: _hasRewrite && !widget.viewModel.saving
                         ? () => _finish(false)
                         : null,
-                    child: const Text('Закрепить · +5 XP'),
+                    child: Text(context.l10n.consolidateXp),
                   ),
                 ),
                 TextButton(
@@ -264,7 +281,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                     setState(() => _stage = _Stage.compare);
                     _scrollToTop();
                   },
-                  child: const Text('Посмотреть эталон снова'),
+                  child: Text(context.l10n.viewReferenceAgain),
                 ),
               ] else ...[
                 Container(
@@ -285,13 +302,13 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       const SizedBox(height: 20),
                       Text(
                         _knewAnswer
-                            ? 'Отлично. Ответ засчитан.'
-                            : 'Сложное становится понятнее.',
+                            ? context.l10n.doneTitle
+                            : context.l10n.doneSubtitle,
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 10),
-                      const Text(
-                        'Прогресс сохранён на этом устройстве.',
+                      Text(
+                        context.l10n.progressSavedNote,
                         style: TextStyle(color: DevmateColors.muted),
                       ),
                     ],
@@ -302,8 +319,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   onPressed: _next,
                   child: Text(
                     _index + 1 == widget.topic.questions.length
-                        ? 'К теме'
-                        : 'Следующий вопрос',
+                        ? context.l10n.backToTopic
+                        : context.l10n.nextQuestion,
                   ),
                 ),
               ],

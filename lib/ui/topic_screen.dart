@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../domain/question.dart';
+import '../l10n/l10n.dart';
 import 'design_system.dart';
 import 'home_screen.dart';
 import 'training_view_model.dart';
@@ -28,7 +29,7 @@ class _TopicScreenState extends State<TopicScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Направление'),
+      title: Text(context.l10n.topicEyebrowDirection),
       // На web назад ведёт кнопка браузера; на мобильных — системная кнопка.
       automaticallyImplyLeading: !kIsWeb,
     ),
@@ -45,7 +46,7 @@ class _TopicScreenState extends State<TopicScreen> {
               children: [
                 Row(
                   children: [
-                    const Eyebrow('БИБЛИОТЕКА / ТЕМА'),
+                    Eyebrow(context.l10n.topicEyebrow),
                     const Spacer(),
                     Icon(
                       iconForTopic(widget.topic.id),
@@ -73,7 +74,10 @@ class _TopicScreenState extends State<TopicScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${widget.viewModel.completedIn(widget.topic)} из ${widget.topic.questions.length} вопросов пройдено',
+                  context.l10n.topicProgress(
+                    widget.viewModel.completedIn(widget.topic),
+                    widget.topic.questions.length,
+                  ),
                   style: const TextStyle(
                     color: DevmateColors.muted,
                     fontSize: 13,
@@ -91,8 +95,8 @@ class _TopicScreenState extends State<TopicScreen> {
                   label: Text(
                     widget.viewModel.completedIn(widget.topic) ==
                             widget.topic.questions.length
-                        ? 'Повторить тему'
-                        : 'Продолжить тренировку',
+                        ? context.l10n.repeatTopic
+                        : context.l10n.continueTraining,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -100,10 +104,13 @@ class _TopicScreenState extends State<TopicScreen> {
                   onPressed: () =>
                       context.push('/chat/topic/${widget.topic.id}'),
                   icon: const Icon(Icons.chat_rounded, size: 20),
-                  label: const Text('Обсудить тему с AI'),
+                  label: Text(context.l10n.discussTopicWithAi),
                 ),
                 const SizedBox(height: 36),
-                const Eyebrow('ВОПРОСЫ', color: DevmateColors.muted),
+                Eyebrow(
+                  context.l10n.questionsEyebrow,
+                  color: DevmateColors.muted,
+                ),
                 const SizedBox(height: 10),
                 for (
                   var index = 0;
@@ -157,8 +164,8 @@ class _TopicScreenState extends State<TopicScreen> {
                                                 widget.topic.questions[index],
                                               ) ==
                                               10
-                                          ? 'Знаю · 10 XP'
-                                          : 'Повторил · 5 XP',
+                                          ? context.l10n.knownXp
+                                          : context.l10n.repeatedXp,
                                       style: const TextStyle(
                                         color: DevmateColors.accent,
                                         fontSize: 12,
