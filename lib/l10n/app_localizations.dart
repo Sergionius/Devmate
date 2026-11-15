@@ -557,8 +557,44 @@ abstract class AppLocalizations {
   /// No description provided for @settingsTitle.
   ///
   /// In ru, this message translates to:
-  /// **'AI-провайдер (BYOK)'**
+  /// **'Настройки'**
   String get settingsTitle;
+
+  /// No description provided for @settingsAiTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'AI-провайдер (BYOK)'**
+  String get settingsAiTitle;
+
+  /// No description provided for @settingsDisableAi.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отключить AI'**
+  String get settingsDisableAi;
+
+  /// No description provided for @settingsAiSection.
+  ///
+  /// In ru, this message translates to:
+  /// **'AI-провайдер'**
+  String get settingsAiSection;
+
+  /// No description provided for @settingsAiSectionNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Провайдер, модель и API-ключ'**
+  String get settingsAiSectionNote;
+
+  /// No description provided for @settingsDataTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопросы и данные'**
+  String get settingsDataTitle;
+
+  /// No description provided for @settingsDataSectionNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Импорт, экспорт и сброс'**
+  String get settingsDataSectionNote;
 
   /// No description provided for @settingsEyebrow.
   ///
@@ -583,6 +619,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Интерфейс переключится сразу; вопросы будут на выбранном языке после перезапуска приложения.'**
   String get settingsLanguageRestartNote;
+
+  /// No description provided for @settingsTheme.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оформление'**
+  String get settingsTheme;
+
+  /// No description provided for @settingsThemeDark.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тёмная'**
+  String get settingsThemeDark;
+
+  /// No description provided for @settingsThemeLight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Светлая'**
+  String get settingsThemeLight;
+
+  /// No description provided for @settingsThemeSystem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как на устройстве'**
+  String get settingsThemeSystem;
 
   /// No description provided for @keyPrivacyNote.
   ///

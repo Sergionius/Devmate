@@ -266,7 +266,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get answerSaveError => 'Failed to save the answer. Try again.';
 
   @override
-  String get settingsTitle => 'AI provider (BYOK)';
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsAiTitle => 'AI provider (BYOK)';
+
+  @override
+  String get settingsDisableAi => 'Disable AI';
+
+  @override
+  String get settingsAiSection => 'AI provider';
+
+  @override
+  String get settingsAiSectionNote => 'Provider, model and API key';
+
+  @override
+  String get settingsDataTitle => 'Questions and data';
+
+  @override
+  String get settingsDataSectionNote => 'Import, export and reset';
 
   @override
   String get settingsEyebrow => 'ANY OPENAI-COMPATIBLE ENDPOINT';
@@ -280,6 +298,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsLanguageRestartNote =>
       'The interface switches immediately; questions use the new language after restarting the app.';
+
+  @override
+  String get settingsTheme => 'Appearance';
+
+  @override
+  String get settingsThemeDark => 'Dark';
+
+  @override
+  String get settingsThemeLight => 'Light';
+
+  @override
+  String get settingsThemeSystem => 'Match device';
 
   @override
   String get keyPrivacyNote =>

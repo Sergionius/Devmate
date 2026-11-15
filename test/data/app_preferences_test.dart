@@ -48,4 +48,35 @@ void main() {
       expect(await repository.loadLanguage(), AppLanguage.system);
     });
   });
+
+  group('AppThemePreference', () {
+    test('fromCode maps known codes and falls back to dark', () {
+      expect(AppThemePreference.fromCode('dark'), AppThemePreference.dark);
+      expect(AppThemePreference.fromCode('light'), AppThemePreference.light);
+      expect(AppThemePreference.fromCode('system'), AppThemePreference.system);
+      expect(AppThemePreference.fromCode(null), AppThemePreference.dark);
+      expect(AppThemePreference.fromCode('sepia'), AppThemePreference.dark);
+    });
+
+    test('mode maps to ThemeMode values', () {
+      expect(AppThemePreference.dark.mode, ThemeMode.dark);
+      expect(AppThemePreference.light.mode, ThemeMode.light);
+      expect(AppThemePreference.system.mode, ThemeMode.system);
+    });
+
+    test('defaults to dark when nothing is saved', () async {
+      final repository = AppPreferencesRepository();
+      expect(await repository.loadTheme(), AppThemePreference.dark);
+    });
+
+    test('saved theme reads back', () async {
+      final repository = AppPreferencesRepository();
+      await repository.saveTheme(AppThemePreference.light);
+      expect(await repository.loadTheme(), AppThemePreference.light);
+      await repository.saveTheme(AppThemePreference.system);
+      expect(await repository.loadTheme(), AppThemePreference.system);
+      await repository.saveTheme(AppThemePreference.dark);
+      expect(await repository.loadTheme(), AppThemePreference.dark);
+    });
+  });
 }

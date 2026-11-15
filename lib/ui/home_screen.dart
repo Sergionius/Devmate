@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +7,7 @@ import '../data/topic_catalog.dart';
 import '../domain/question.dart';
 import '../l10n/l10n.dart';
 import 'design_system.dart';
+import 'platform_ui.dart';
 import 'training_view_model.dart';
 
 IconData iconForTopic(String id) => switch (id) {
@@ -27,10 +29,14 @@ class HomeScreen extends StatefulWidget {
     required this.viewModel,
     required this.catalog,
     required this.settingsRepository,
+    this.aiDisabled,
   });
   final TrainingViewModel viewModel;
   final TopicCatalog catalog;
   final LlmSettingsRepository settingsRepository;
+
+  /// Глобальное отключение AI: скрывает карточки чатов на главной.
+  final ValueListenable<bool>? aiDisabled;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -54,10 +60,19 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: Listenable.merge([widget.viewModel, widget.catalog]),
+          // AI-нотифаер в merge: переключение в настройках мгновенно
+          // убирает или возвращает карточки чатов на открытой главной.
+          listenable: Listenable.merge([
+            widget.viewModel,
+            widget.catalog,
+            widget.aiDisabled,
+          ]),
           builder: (context, _) {
+            final aiDisabled = widget.aiDisabled?.value ?? false;
             if (widget.viewModel.loading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: DevmateSpinner(size: 28, strokeWidth: 2.5),
+              );
             }
             return Center(
               child: ConstrainedBox(
@@ -113,9 +128,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   padding: const EdgeInsets.all(16),
                                   child: Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.error_outline,
-                                        color: Colors.orangeAccent,
+                                        color: context.colors.error,
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -138,9 +153,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                             const SizedBox(height: 24),
-                            const _FreeChatCard(),
-                            const SizedBox(height: 12),
-                            const _CreateTopicCard(),
+                            if (!aiDisabled) ...[
+                              const _FreeChatCard(),
+                              const SizedBox(height: 12),
+                              const _CreateTopicCard(),
+                            ],
                             const SizedBox(height: 40),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.end,
@@ -152,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     children: [
                                       Eyebrow(
                                         context.l10n.libraryEyebrow,
-                                        color: DevmateColors.muted,
+                                        color: context.colors.muted,
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
@@ -166,9 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 Text(
                                   context.l10n.totalQuestions(total),
-                                  style: const TextStyle(
-                                    color: DevmateColors.muted,
-                                  ),
+                                  style: TextStyle(color: context.colors.muted),
                                 ),
                               ],
                             ),
@@ -188,9 +203,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: columns,
-                                    mainAxisSpacing: 12,
-                                    crossAxisSpacing: 12,
-                                    mainAxisExtent: 146,
+                                    mainAxisSpacing: DevmateSpacing.md,
+                                    crossAxisSpacing: DevmateSpacing.md,
+                                    // Высота плитки масштабируется вместе с
+                                    // текстом, чтобы контент не переполнялся.
+                                    mainAxisExtent:
+                                        146 *
+                                        MediaQuery.textScalerOf(context)
+                                            .scale(1)
+                                            .clamp(1, 2),
                                   ),
                               itemBuilder: (context, index) {
                                 final topic = widget.catalog.topics[index];
@@ -260,25 +281,31 @@ class _BrandHeader extends StatelessWidget {
         ),
       ),
       const Spacer(),
-      const Icon(Icons.wifi_off_rounded, size: 15, color: DevmateColors.muted),
+      Icon(Icons.wifi_off_rounded, size: 15, color: context.colors.muted),
       const SizedBox(width: 6),
-      Text(
-        context.l10n.offlineBadge,
-        style: TextStyle(
-          color: DevmateColors.muted,
-          fontSize: 11,
-          letterSpacing: 1.4,
-          fontWeight: FontWeight.w700,
+      // Бейдж сжимается и многоточится при крупных шрифтах, чтобы шапка
+      // не переполнялась на узких экранах.
+      Flexible(
+        child: Text(
+          context.l10n.offlineBadge,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: context.colors.muted,
+            fontSize: 11,
+            letterSpacing: 1.4,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       const SizedBox(width: 10),
       IconButton(
-        tooltip: context.l10n.aiSettings,
+        tooltip: context.l10n.settingsTitle,
         onPressed: onOpenSettings,
-        icon: const Icon(
+        icon: Icon(
           Icons.settings_rounded,
           size: 21,
-          color: DevmateColors.muted,
+          color: context.colors.muted,
         ),
       ),
     ],
@@ -302,7 +329,11 @@ class _Intro extends StatelessWidget {
       const SizedBox(height: 14),
       Text(
         context.l10n.homeSubtitle,
-        style: TextStyle(color: DevmateColors.muted, fontSize: 15, height: 1.5),
+        style: TextStyle(
+          color: context.colors.muted,
+          fontSize: 15,
+          height: 1.5,
+        ),
       ),
       const SizedBox(height: 24),
       FilledButton.icon(
@@ -328,43 +359,57 @@ class _ProgressPanel extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(22),
     decoration: BoxDecoration(
-      color: DevmateColors.surface,
-      border: Border.all(color: DevmateColors.border),
+      color: context.colors.surface,
+      border: Border.all(color: context.colors.border),
       borderRadius: BorderRadius.circular(20),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Eyebrow(context.l10n.statsEyebrow, color: DevmateColors.muted),
+        Eyebrow(context.l10n.statsEyebrow, color: context.colors.muted),
         const SizedBox(height: 22),
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              '$completed',
-              style: const TextStyle(
-                fontSize: 48,
-                height: 1,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -3,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 5, left: 5),
-              child: Text(
-                '/ $total',
-                style: const TextStyle(
-                  color: DevmateColors.muted,
-                  fontSize: 18,
+            // Крупное число сжимается (FittedBox) при увеличенном тексте,
+            // чтобы строка статистики не переполнялась.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$completed',
+                      style: const TextStyle(
+                        fontSize: 48,
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -3,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 5, left: 5),
+                      child: Text(
+                        '/ $total',
+                        style: TextStyle(
+                          color: context.colors.muted,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
             const Spacer(),
-            const Icon(Icons.bolt_rounded, color: DevmateColors.accent),
+            Icon(Icons.bolt_rounded, color: context.colors.accent),
             Text(
               '$points XP',
-              style: const TextStyle(
-                color: DevmateColors.accent,
+              style: TextStyle(
+                color: context.colors.accent,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
@@ -376,7 +421,7 @@ class _ProgressPanel extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           context.l10n.statsCompletedLabel,
-          style: TextStyle(color: DevmateColors.muted, fontSize: 12),
+          style: TextStyle(color: context.colors.muted, fontSize: 12),
         ),
       ],
     ),
@@ -387,63 +432,56 @@ class _FreeChatCard extends StatelessWidget {
   const _FreeChatCard();
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    child: Material(
-      color: DevmateColors.surface,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: () => context.push('/chat/free'),
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            border: Border.all(color: DevmateColors.border),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: DevmateColors.accent,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.chat_bubble_rounded,
-                  color: DevmateColors.accentInk,
-                  size: 24,
-                ),
+  Widget build(BuildContext context) => Material(
+    color: context.colors.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: DevmateRadii.cardBorder,
+      side: BorderSide(color: context.colors.border),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: DevmatePressable(
+      borderRadius: DevmateRadii.cardBorder,
+      onTap: () => context.push('/chat/free'),
+      child: Padding(
+        padding: const EdgeInsets.all(DevmateSpacing.xl + 2),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: context.colors.accent,
+                borderRadius: BorderRadius.circular(14),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.l10n.freeChatTitle,
-                      style: Theme.of(context).textTheme.titleMedium,
+              child: Icon(
+                Icons.chat_bubble_rounded,
+                color: context.colors.accentInk,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: DevmateSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.freeChatTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: DevmateSpacing.xs),
+                  Text(
+                    context.l10n.freeChatCardSubtitle,
+                    style: TextStyle(
+                      color: context.colors.muted,
+                      fontSize: 14,
+                      height: 1.4,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      context.l10n.freeChatCardSubtitle,
-                      style: const TextStyle(
-                        color: DevmateColors.muted,
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: DevmateColors.muted,
-              ),
-            ],
-          ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: context.colors.muted),
+          ],
         ),
       ),
     ),
@@ -454,63 +492,56 @@ class _CreateTopicCard extends StatelessWidget {
   const _CreateTopicCard();
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    child: Material(
-      color: DevmateColors.surface,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: () => context.push('/chat/create'),
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            border: Border.all(color: DevmateColors.border),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: DevmateColors.lavender,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: DevmateColors.primary,
-                  size: 24,
-                ),
+  Widget build(BuildContext context) => Material(
+    color: context.colors.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: DevmateRadii.cardBorder,
+      side: BorderSide(color: context.colors.border),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: DevmatePressable(
+      borderRadius: DevmateRadii.cardBorder,
+      onTap: () => context.push('/chat/create'),
+      child: Padding(
+        padding: const EdgeInsets.all(DevmateSpacing.xl + 2),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: context.colors.lavender,
+                borderRadius: BorderRadius.circular(14),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.l10n.createChatTitle,
-                      style: Theme.of(context).textTheme.titleMedium,
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                color: context.colors.accentInk,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: DevmateSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.createChatTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: DevmateSpacing.xs),
+                  Text(
+                    context.l10n.createChatCardSubtitle,
+                    style: TextStyle(
+                      color: context.colors.muted,
+                      fontSize: 14,
+                      height: 1.4,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      context.l10n.createChatCardSubtitle,
-                      style: const TextStyle(
-                        color: DevmateColors.muted,
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: DevmateColors.muted,
-              ),
-            ],
-          ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: context.colors.muted),
+          ],
         ),
       ),
     ),
@@ -531,16 +562,17 @@ class _TopicTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: DevmateColors.surface,
+    color: context.colors.surface,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(18),
-      side: const BorderSide(color: DevmateColors.border),
+      borderRadius: DevmateRadii.cardBorder,
+      side: BorderSide(color: context.colors.border),
     ),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(18),
+    clipBehavior: Clip.antiAlias,
+    child: DevmatePressable(
+      borderRadius: DevmateRadii.cardBorder,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(19),
+        padding: const EdgeInsets.all(DevmateSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -548,8 +580,8 @@ class _TopicTile extends StatelessWidget {
               children: [
                 Text(
                   number.toString().padLeft(2, '0'),
-                  style: const TextStyle(
-                    color: DevmateColors.muted,
+                  style: TextStyle(
+                    color: context.colors.muted,
                     fontSize: 12,
                     fontFamily: 'monospace',
                     fontWeight: FontWeight.w700,
@@ -559,8 +591,8 @@ class _TopicTile extends StatelessWidget {
                 Icon(
                   iconForTopic(topic.id),
                   color: completed == topic.questions.length
-                      ? DevmateColors.accent
-                      : DevmateColors.lavender,
+                      ? context.colors.accent
+                      : context.colors.lavender,
                   size: 20,
                 ),
               ],
@@ -579,7 +611,7 @@ class _TopicTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DevmateSpacing.lg),
             Row(
               children: [
                 Expanded(
@@ -587,20 +619,20 @@ class _TopicTile extends StatelessWidget {
                     value: completed / topic.questions.length,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: DevmateSpacing.lg),
                 Text(
                   '$completed/${topic.questions.length}',
-                  style: const TextStyle(
-                    color: DevmateColors.muted,
+                  style: TextStyle(
+                    color: context.colors.muted,
                     fontSize: 12,
                     fontFamily: 'monospace',
                   ),
                 ),
-                const SizedBox(width: 4),
-                const Icon(
+                const SizedBox(width: DevmateSpacing.xs),
+                Icon(
                   Icons.arrow_outward_rounded,
                   size: 15,
-                  color: DevmateColors.muted,
+                  color: context.colors.muted,
                 ),
               ],
             ),

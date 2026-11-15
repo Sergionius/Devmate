@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../domain/question.dart';
 import 'design_system.dart';
 import '../l10n/l10n.dart';
+import 'platform_ui.dart';
 import 'training_view_model.dart';
 
 enum _Stage { answer, compare, rewrite, finished }
@@ -15,10 +16,14 @@ class PracticeScreen extends StatefulWidget {
     required this.topic,
     required this.initialIndex,
     required this.viewModel,
+    this.aiDisabled,
   });
   final InterviewTopic topic;
   final int initialIndex;
   final TrainingViewModel viewModel;
+
+  /// Глобальное отключение AI: скрывает кнопку разбора с AI.
+  final ValueListenable<bool>? aiDisabled;
 
   @override
   State<PracticeScreen> createState() => _PracticeScreenState();
@@ -69,15 +74,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
       });
       _scrollToTop();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(switch (widget.viewModel.error) {
-            TrainingError.progressLoad => context.l10n.progressLoadError,
-            TrainingError.answerSave => context.l10n.answerSaveError,
-            null => context.l10n.practiceSaveFailed,
-          }),
-        ),
-      );
+      showDevmateNotice(context, switch (widget.viewModel.error) {
+        TrainingError.progressLoad => context.l10n.progressLoadError,
+        TrainingError.answerSave => context.l10n.answerSaveError,
+        null => context.l10n.practiceSaveFailed,
+      }, kind: DevmateNoticeKind.error);
     }
   }
 
@@ -125,15 +126,15 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       ),
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.bolt_rounded,
-                    color: DevmateColors.accent,
+                    color: context.colors.accent,
                     size: 19,
                   ),
                   Text(
                     '${widget.viewModel.points} XP',
-                    style: const TextStyle(
-                      color: DevmateColors.accent,
+                    style: TextStyle(
+                      color: context.colors.accent,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -153,12 +154,12 @@ class _PracticeScreenState extends State<PracticeScreen> {
               if (_stage == _Stage.answer) ...[
                 Eyebrow(
                   context.l10n.stepYourAnswer,
-                  color: DevmateColors.muted,
+                  color: context.colors.muted,
                 ),
                 const SizedBox(height: 10),
                 Text(
                   context.l10n.yourAnswerHint,
-                  style: TextStyle(color: DevmateColors.muted, height: 1.5),
+                  style: TextStyle(color: context.colors.muted, height: 1.5),
                 ),
                 const SizedBox(height: 20),
                 TextField(
@@ -166,11 +167,14 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   controller: _answer,
                   maxLines: 6,
                   minLines: 4,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => FocusScope.of(context).unfocus(),
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.yourAnswerLabel,
+                  decoration: devmateFieldDecoration(
+                    context,
+                    label: context.l10n.yourAnswerLabel,
+                    hint: context.l10n.answerPlaceholder,
                     alignLabelWithHint: true,
-                    hintText: context.l10n.answerPlaceholder,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -185,18 +189,22 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   child: Text(context.l10n.compareWithReference),
                 ),
                 const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => context.push(
-                    '/chat/question/${widget.topic.id}/$_index',
-                    extra: _answer.text.trim(),
+                DevmateAiVisibility(
+                  aiDisabled: widget.aiDisabled,
+                  topGap: const EdgeInsets.only(top: 12),
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push(
+                      '/chat/question/${widget.topic.id}/$_index',
+                      extra: _answer.text.trim(),
+                    ),
+                    icon: const Icon(Icons.chat_rounded, size: 20),
+                    label: Text(context.l10n.discussWithAi),
                   ),
-                  icon: const Icon(Icons.chat_rounded, size: 20),
-                  label: Text(context.l10n.discussWithAi),
                 ),
               ] else if (_stage == _Stage.compare) ...[
                 Eyebrow(
                   context.l10n.stepComparison,
-                  color: DevmateColors.muted,
+                  color: context.colors.muted,
                 ),
                 const SizedBox(height: 16),
                 _AnswerCard(
@@ -245,15 +253,19 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       ),
                       const SizedBox(height: 10),
 
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => context.push(
-                            '/chat/question/${widget.topic.id}/$_index',
-                            extra: _answer.text.trim(),
+                      DevmateAiVisibility(
+                        aiDisabled: widget.aiDisabled,
+                        topGap: const EdgeInsets.only(top: 10),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.push(
+                              '/chat/question/${widget.topic.id}/$_index',
+                              extra: _answer.text.trim(),
+                            ),
+                            icon: const Icon(Icons.chat_rounded, size: 20),
+                            label: Text(context.l10n.discussWithAi),
                           ),
-                          icon: const Icon(Icons.chat_rounded, size: 20),
-                          label: Text(context.l10n.discussWithAi),
                         ),
                       ),
                     ],
@@ -264,7 +276,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 const SizedBox(height: 12),
                 Text(
                   context.l10n.consolidationHint,
-                  style: TextStyle(color: DevmateColors.muted, height: 1.5),
+                  style: TextStyle(color: context.colors.muted, height: 1.5),
                 ),
                 const SizedBox(height: 20),
                 TextField(
@@ -272,11 +284,14 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   controller: _rewrite,
                   maxLines: 6,
                   minLines: 4,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => FocusScope.of(context).unfocus(),
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.whatToRemember,
+                  decoration: devmateFieldDecoration(
+                    context,
+                    label: context.l10n.whatToRemember,
+                    hint: context.l10n.writeEssencePlaceholder,
                     alignLabelWithHint: true,
-                    hintText: context.l10n.writeEssencePlaceholder,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -298,29 +313,32 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                OutlinedButton.icon(
-                  onPressed: () => context.push(
-                    '/chat/question/${widget.topic.id}/$_index',
-                    extra: _answer.text.trim(),
+                DevmateAiVisibility(
+                  aiDisabled: widget.aiDisabled,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push(
+                      '/chat/question/${widget.topic.id}/$_index',
+                      extra: _answer.text.trim(),
+                    ),
+                    icon: const Icon(Icons.chat_rounded, size: 20),
+                    label: Text(context.l10n.discussWithAi),
                   ),
-                  icon: const Icon(Icons.chat_rounded, size: 20),
-                  label: Text(context.l10n.discussWithAi),
                 ),
               ] else ...[
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: DevmateColors.surface,
-                    border: Border.all(color: DevmateColors.border),
+                    color: context.colors.surface,
+                    border: Border.all(color: context.colors.border),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check_circle_rounded,
                         size: 40,
-                        color: DevmateColors.accent,
+                        color: context.colors.accent,
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -332,7 +350,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       const SizedBox(height: 10),
                       Text(
                         context.l10n.progressSavedNote,
-                        style: TextStyle(color: DevmateColors.muted),
+                        style: TextStyle(color: context.colors.muted),
                       ),
                     ],
                   ),
@@ -370,11 +388,11 @@ class _AnswerCard extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: highlight ? DevmateColors.surfaceRaised : DevmateColors.surface,
+      color: highlight ? context.colors.surfaceRaised : context.colors.surface,
       border: Border.all(
         color: highlight
-            ? DevmateColors.accent.withValues(alpha: 0.55)
-            : DevmateColors.border,
+            ? context.colors.accent.withValues(alpha: 0.55)
+            : context.colors.border,
       ),
       borderRadius: BorderRadius.circular(16),
     ),
@@ -383,7 +401,7 @@ class _AnswerCard extends StatelessWidget {
       children: [
         Eyebrow(
           label,
-          color: highlight ? DevmateColors.accent : DevmateColors.muted,
+          color: highlight ? context.colors.accent : context.colors.muted,
         ),
         const SizedBox(height: 12),
         SelectableText(

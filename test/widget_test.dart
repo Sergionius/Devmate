@@ -5,6 +5,7 @@ import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/main.dart';
+import 'package:devmate/ui/design_system.dart';
 import 'package:devmate/ui/training_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -117,5 +118,38 @@ void main() {
     final ruEyebrow = lookupAppLocalizations(const Locale('ru')).homeEyebrow;
     expect(find.text(ruEyebrow), findsOneWidget);
     expect(find.text('TECH INTERVIEW PREP'), findsNothing);
+  });
+
+  testWidgets('theme defaults to dark and switches instantly via notifier', (
+    tester,
+  ) async {
+    final repository = MemoryProgressRepository();
+    final model = TrainingViewModel(repository);
+    await model.load();
+    final themeMode = ValueNotifier<ThemeMode>(ThemeMode.dark);
+    await tester.pumpWidget(
+      DevmateApp(
+        viewModel: model,
+        llmSettings: LlmSettingsRepository(),
+        catalog: TopicCatalog(baseTopics: questionCatalogFor('en')),
+        themeMode: themeMode,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final context = tester.element(find.byType(Scaffold).first);
+    expect(Theme.of(context).brightness, Brightness.dark);
+    expect(Theme.of(context).scaffoldBackgroundColor, DevmateColors.canvas);
+
+    themeMode.value = ThemeMode.light;
+    await tester.pumpAndSettle();
+
+    expect(Theme.of(context).brightness, Brightness.light);
+    expect(Theme.of(context).scaffoldBackgroundColor, const Color(0xFFF7F9F6));
+
+    themeMode.value = ThemeMode.system;
+    await tester.pumpAndSettle();
+    // Тестовый стенд по умолчанию «светлое устройство» — system даёт светлую.
+    expect(Theme.of(context).brightness, Brightness.light);
   });
 }

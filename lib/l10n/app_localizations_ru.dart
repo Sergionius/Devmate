@@ -272,7 +272,25 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось сохранить ответ. Попробуйте ещё раз.';
 
   @override
-  String get settingsTitle => 'AI-провайдер (BYOK)';
+  String get settingsTitle => 'Настройки';
+
+  @override
+  String get settingsAiTitle => 'AI-провайдер (BYOK)';
+
+  @override
+  String get settingsDisableAi => 'Отключить AI';
+
+  @override
+  String get settingsAiSection => 'AI-провайдер';
+
+  @override
+  String get settingsAiSectionNote => 'Провайдер, модель и API-ключ';
+
+  @override
+  String get settingsDataTitle => 'Вопросы и данные';
+
+  @override
+  String get settingsDataSectionNote => 'Импорт, экспорт и сброс';
 
   @override
   String get settingsEyebrow => 'ЛЮБОЙ OPENAI-СОВМЕСТИМЫЙ ENDPOINT';
@@ -286,6 +304,18 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get settingsLanguageRestartNote =>
       'Интерфейс переключится сразу; вопросы будут на выбранном языке после перезапуска приложения.';
+
+  @override
+  String get settingsTheme => 'Оформление';
+
+  @override
+  String get settingsThemeDark => 'Тёмная';
+
+  @override
+  String get settingsThemeLight => 'Светлая';
+
+  @override
+  String get settingsThemeSystem => 'Как на устройстве';
 
   @override
   String get keyPrivacyNote =>

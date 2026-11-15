@@ -1,8 +1,15 @@
+import 'dart:async';
+
 import 'package:devmate/data/llm_chat_provider.dart';
 import 'package:devmate/data/llm_settings.dart';
 
+import 'package:devmate/data/progress_repository.dart';
+import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
+import 'package:devmate/router.dart';
 import 'package:devmate/ui/chat_screen.dart';
+import 'package:devmate/ui/design_system.dart';
+import 'package:devmate/ui/training_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -21,6 +28,58 @@ void main() {
   LlmSettingsRepository repoWith(FlutterSecureStorage storage) =>
       LlmSettingsRepository(storage: storage);
 
+  testWidgets('chat CTA opens the AI settings section and reloads on return', (
+    tester,
+  ) async {
+    final model = TrainingViewModel(
+      _MemoryProgressRepository(),
+      catalogRepository: TopicCatalog(),
+    )..load();
+    final router = createRouter(
+      model,
+      LlmSettingsRepository(storage: MemorySecureStorage()),
+      TopicCatalog(),
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      MaterialApp.router(
+        theme: devmateTheme(),
+        routerConfig: router,
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
+    );
+    unawaited(router.push('/chat/free'));
+    await tester.pumpAndSettle();
+
+    // Without a key the chat offers settings; the CTA leads straight to the
+    // AI provider section, not to the overview.
+    expect(find.text('Open settings'), findsOneWidget);
+    await tester.tap(find.text('Open settings'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/settings/ai');
+
+    // Configure the provider and save.
+    await tester.enterText(
+      find.byType(TextField).at(0),
+      'https://example.com/v1',
+    );
+    await tester.enterText(find.byType(TextField).at(1), 'test-model');
+    await tester.ensureVisible(find.byType(TextField).at(2));
+    await tester.enterText(find.byType(TextField).at(2), 'test-key');
+    await tester.ensureVisible(find.text('Save'));
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    // Back to the chat: the session settings are reloaded, so the chat is
+    // ready with the input field instead of the no-key CTA.
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/chat/free');
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('Open settings'), findsNothing);
+  });
   testWidgets('ChatScreen offers settings when no key is configured', (
     tester,
   ) async {
@@ -141,6 +200,90 @@ void main() {
     expect(find.textContaining('"questions"'), findsNothing);
     expect(find.textContaining('"prompt"'), findsNothing);
   });
+
+  testWidgets(
+    'waiting for the first fragment shows UI-kit dots and disables input',
+    (tester) async {
+      final session = _SlowStartSession();
+      final repo = repoWith(configuredStorage);
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(
+            title: 'AI',
+            systemPrompt: 'sys',
+            intro: 'Intro',
+            settingsRepository: repo,
+            sessionFactory: (_, _) => session,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'hi');
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      // Пока первого фрагмента нет: индикатор UI kit, поле ввода отключено.
+      expect(find.byType(DevmateDotsLoader), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
+
+      // Первый фрагмент пришёл: точки исчезли, текст стримится.
+      session.release();
+      await tester.pumpAndSettle();
+      expect(find.byType(DevmateDotsLoader), findsNothing);
+      expect(find.textContaining('partial'), findsOneWidget);
+      expect(find.textContaining('answer'), findsOneWidget);
+
+      // Стриминг завершён: поле снова активно.
+      expect(tester.widget<TextField>(find.byType(TextField)).enabled, isTrue);
+    },
+  );
+}
+
+class _SlowStartSession extends ChangeNotifier implements ChatSession {
+  final List<LlmChatMessage> _history = [];
+  Completer<void>? _gate;
+
+  @override
+  List<LlmChatMessage> get history => List.unmodifiable(_history);
+
+  void release() {
+    _gate?.complete();
+  }
+
+  @override
+  Stream<String> sendMessageStream(String prompt) async* {
+    _history
+      ..add(LlmChatMessage(LlmRole.user, prompt))
+      ..add(LlmChatMessage(LlmRole.assistant, ''));
+    notifyListeners();
+    // Пауза до первого фрагмента: экран показывает индикатор ожидания.
+    _gate = Completer<void>();
+    await _gate!.future;
+    _history.last.text += 'partial ';
+    notifyListeners();
+    yield 'partial ';
+    _history.last.text += 'answer';
+    notifyListeners();
+    yield 'answer';
+  }
+}
+
+class _MemoryProgressRepository implements ProgressRepository {
+  Map<String, int> scores = {};
+
+  @override
+  Future<Map<String, int>> load() async => {...scores};
+
+  @override
+  Future<void> save(Map<String, int> scores) async {
+    this.scores = {...scores};
+  }
 }
 
 class _FakeSession extends ChangeNotifier implements ChatSession {

@@ -4,14 +4,31 @@ import 'package:devmate/data/llm_settings.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
+import 'package:devmate/router.dart';
+import 'package:devmate/ui/design_system.dart';
+import 'package:devmate/ui/platform_ui.dart';
 import 'package:devmate/ui/settings_screen.dart';
 import 'package:devmate/ui/training_view_model.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 import '../support/memory_secure_storage.dart';
+
+class _FailingProgress implements ProgressRepository {
+  @override
+  Future<Map<String, int>> load() async => {};
+
+  @override
+  Future<void> save(Map<String, int> values) async {
+    throw StateError('storage unavailable');
+  }
+}
 
 class _MemoryProgress implements ProgressRepository {
   Map<String, int> scores = {};
@@ -25,7 +42,35 @@ class _MemoryProgress implements ProgressRepository {
   }
 }
 
+MaterialApp _routerApp(GoRouter router) => MaterialApp.router(
+  theme: devmateTheme(),
+  routerConfig: router,
+  locale: const Locale('en'),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+);
+
 void main() {
+  tearDown(() {
+    debugDevmateSimulateWeb = false;
+  });
+
+  /// Runs [body] with the given target platform, resetting the override
+  /// inside the test body as required by the framework invariants.
+  Future<void> withPlatform(
+    WidgetTester tester,
+    TargetPlatform? platform,
+    Future<void> Function() body,
+  ) async {
+    debugDefaultTargetPlatformOverride = platform;
+    try {
+      await body();
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+      await tester.pumpAndSettle();
+    }
+  }
+
   testWidgets('reset progress only keeps topics and AI settings', (
     tester,
   ) async {
@@ -51,7 +96,7 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: SettingsScreen(
+        home: DataSettingsScreen(
           settingsRepository: settings,
           catalog: catalog,
           viewModel: model,
@@ -99,10 +144,19 @@ void main() {
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: SettingsScreen(settingsRepository: repo),
+          home: AiSettingsScreen(settingsRepository: repo),
         ),
       );
       await tester.pumpAndSettle();
+
+      // Android/web: у Base URL остаётся плавающий label.
+      expect(
+        tester
+            .widget<TextField>(find.byType(TextField).first)
+            .decoration!
+            .labelText,
+        'Base URL',
+      );
 
       await tester.tap(find.byType(DropdownButtonFormField<LlmPreset>));
       await tester.pumpAndSettle();
@@ -111,9 +165,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // The language dropdown pushed the form down: the button is beyond
-      // the lazy ListView cache extent — drag until visible. pumpAndSettle
-      // is not an option here: the Codex login card animates forever.
+      // The Codex login card animates forever, so pumpAndSettle is not an
+      // option: drag until the Save button is visible.
       await tester.scrollUntilVisible(
         find.text('Save'),
         120,
@@ -131,18 +184,56 @@ void main() {
     },
   );
 
+  testWidgets('iOS provider uses an action sheet and applies the preset', (
+    tester,
+  ) async {
+    await withPlatform(tester, TargetPlatform.iOS, () async {
+      final repo = LlmSettingsRepository(storage: MemorySecureStorage());
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: devmateTheme(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: AiSettingsScreen(settingsRepository: repo),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(DropdownButtonFormField<LlmPreset>), findsNothing);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Provider'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CupertinoActionSheet), findsOneWidget);
+      await tester.tap(find.text('OpenAI').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(CupertinoActionSheet), findsNothing);
+      final baseUrlField = tester.widget<TextField>(
+        // Порядок полей на этом экране фиксирован: Base URL — первое поле.
+        find.byType(TextField).first,
+      );
+      expect(baseUrlField.controller!.text, 'https://api.openai.com/v1');
+      expect(baseUrlField.decoration!.labelText, isNull);
+      expect(baseUrlField.decoration!.hintText, 'Base URL');
+      expect(find.byType(CupertinoSlidingSegmentedControl<bool>), findsNothing);
+      expect(find.byType(CupertinoTextField), findsNothing);
+      final modelField = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'Model'),
+      );
+      expect(modelField.decoration!.labelText, isNull);
+      expect(modelField.decoration!.hintText, 'Model');
+      final apiKeyField = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'API key'),
+      );
+      expect(apiKeyField.decoration!.labelText, isNull);
+      expect(apiKeyField.decoration!.hintText, 'API key');
+      expect(modelField.controller!.text, 'gpt-4.1-mini');
+    });
+  });
+
   testWidgets('switching language applies the locale and persists the choice', (
     tester,
   ) async {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.withData({});
-    final settings = LlmSettingsRepository(storage: MemorySecureStorage());
-    const aiConfig = LlmSettings(
-      baseUrl: 'https://example.org',
-      model: 'test-model',
-      apiKey: 'secret',
-    );
-    await settings.save(aiConfig);
     final appPreferences = AppPreferencesRepository();
     final appLocale = ValueNotifier<Locale?>(null);
 
@@ -152,7 +243,6 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: SettingsScreen(
-          settingsRepository: settings,
           appLocale: appLocale,
           appPreferences: appPreferences,
         ),
@@ -168,6 +258,201 @@ void main() {
     expect(appLocale.value, const Locale('en'));
     expect(await appPreferences.loadLanguage(), AppLanguage.english);
   });
+
+  testWidgets('iOS language uses an action sheet and persists selection', (
+    tester,
+  ) async {
+    await withPlatform(tester, TargetPlatform.iOS, () async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final preferences = AppPreferencesRepository();
+      final locale = ValueNotifier<Locale?>(null);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: devmateTheme(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SettingsScreen(appLocale: locale, appPreferences: preferences),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(DropdownButtonFormField<AppLanguage>), findsNothing);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'App language'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CupertinoActionSheet), findsOneWidget);
+      await tester.tap(find.text('English').last);
+      await tester.pumpAndSettle();
+      expect(locale.value, const Locale('en'));
+      expect(await preferences.loadLanguage(), AppLanguage.english);
+    });
+  });
+
+  testWidgets('iOS theme uses an action sheet and applies instantly', (
+    tester,
+  ) async {
+    await withPlatform(tester, TargetPlatform.iOS, () async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final preferences = AppPreferencesRepository();
+      final themeMode = ValueNotifier<ThemeMode>(ThemeMode.dark);
+      await tester.pumpWidget(
+        ValueListenableBuilder<ThemeMode>(
+          valueListenable: themeMode,
+          builder: (context, mode, _) => MaterialApp(
+            theme: devmateLightTheme(),
+            darkTheme: devmateTheme(),
+            themeMode: mode,
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettingsScreen(
+              themeMode: themeMode,
+              appPreferences: preferences,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(DropdownButtonFormField<AppThemePreference>),
+        findsNothing,
+      );
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Appearance'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CupertinoActionSheet), findsOneWidget);
+      await tester.tap(find.text('Dark').last);
+      await tester.pumpAndSettle();
+      expect(themeMode.value, ThemeMode.dark);
+      expect(await preferences.loadTheme(), AppThemePreference.dark);
+      final context = tester.element(find.byType(Scaffold).first);
+      expect(Theme.of(context).brightness, Brightness.dark);
+    });
+  });
+
+  testWidgets('theme dropdown on Android applies and persists', (tester) async {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.withData({});
+    final preferences = AppPreferencesRepository();
+    final themeMode = ValueNotifier<ThemeMode>(ThemeMode.dark);
+    await tester.pumpWidget(
+      ValueListenableBuilder<ThemeMode>(
+        valueListenable: themeMode,
+        builder: (context, mode, _) => MaterialApp(
+          theme: devmateLightTheme(),
+          darkTheme: devmateTheme(),
+          themeMode: mode,
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SettingsScreen(
+            themeMode: themeMode,
+            appPreferences: preferences,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<AppThemePreference>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Light').last);
+    await tester.pumpAndSettle();
+    expect(themeMode.value, ThemeMode.light);
+    expect(await preferences.loadTheme(), AppThemePreference.light);
+    final context = tester.element(find.byType(Scaffold).first);
+    expect(Theme.of(context).brightness, Brightness.light);
+  });
+
+  testWidgets('settings overview links to the AI and data sections', (
+    tester,
+  ) async {
+    final model = TrainingViewModel(
+      _MemoryProgress(),
+      catalogRepository: TopicCatalog(),
+    )..load();
+    final router = createRouter(
+      model,
+      LlmSettingsRepository(storage: MemorySecureStorage()),
+      TopicCatalog(),
+      appLocale: ValueNotifier<Locale?>(null),
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(_routerApp(router));
+    await tester.pumpAndSettle();
+
+    // The home gear opens the settings overview, not a concrete section.
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/settings');
+    expect(find.text('App language'), findsOneWidget);
+
+    await tester.tap(find.text('AI provider'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/settings/ai');
+    expect(find.text('Save'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/settings');
+
+    await tester.tap(find.text('Questions and data'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/settings/data');
+    expect(find.text('Import JSON'), findsOneWidget);
+  });
+
+  testWidgets(
+    'iOS import actions stay stacked and the sheet fills bottom inset',
+    (tester) async {
+      await withPlatform(tester, TargetPlatform.iOS, () async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        tester.view.viewPadding = const FakeViewPadding(bottom: 34);
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.view.resetViewPadding);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: devmateTheme(),
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: DataSettingsScreen(
+              settingsRepository: LlmSettingsRepository(
+                storage: MemorySecureStorage(),
+              ),
+              catalog: TopicCatalog(),
+              viewModel: TrainingViewModel(_MemoryProgress()),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Import JSON'));
+        await tester.pumpAndSettle();
+        final add = find.widgetWithText(FilledButton, 'Add');
+        final replace = find.widgetWithText(OutlinedButton, 'Replace all');
+        final cancel = find.widgetWithText(TextButton, 'Cancel');
+        expect(add, findsOneWidget);
+        expect(replace, findsOneWidget);
+        expect(cancel, findsOneWidget);
+        expect(tester.getTopLeft(add).dx, tester.getTopLeft(replace).dx);
+        expect(tester.getTopLeft(replace).dx, tester.getTopLeft(cancel).dx);
+        expect(
+          tester.getBottomLeft(add).dy,
+          lessThan(tester.getTopLeft(replace).dy),
+        );
+        expect(
+          tester.getBottomLeft(replace).dy,
+          lessThan(tester.getTopLeft(cancel).dy),
+        );
+        final sheet = find
+            .ancestor(of: add, matching: find.byType(Material))
+            .first;
+        expect(tester.getBottomLeft(sheet).dy, 844);
+        expect(tester.takeException(), isNull);
+      });
+    },
+  );
 
   testWidgets('import dialog Add mode appends questions and keeps progress', (
     tester,
@@ -188,7 +473,7 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: SettingsScreen(
+        home: DataSettingsScreen(
           settingsRepository: settings,
           catalog: catalog,
           viewModel: model,
@@ -252,7 +537,7 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: SettingsScreen(
+        home: DataSettingsScreen(
           settingsRepository: settings,
           catalog: catalog,
           viewModel: model,
@@ -306,7 +591,7 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: SettingsScreen(
+        home: DataSettingsScreen(
           settingsRepository: settings,
           catalog: catalog,
           viewModel: model,
@@ -328,5 +613,247 @@ void main() {
         .ancestor(of: shareButton, matching: find.byType(Row))
         .first;
     expect(find.descendant(of: row, matching: instruction), findsOneWidget);
+  });
+
+  testWidgets('failed iOS reset never emits a success haptic', (tester) async {
+    await withPlatform(tester, TargetPlatform.iOS, () async {
+      final calls = <MethodCall>[];
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMessageHandler(SystemChannels.platform.name, (
+        data,
+      ) async {
+        final call = const JSONMethodCodec().decodeMethodCall(data!);
+        if (call.method == 'HapticFeedback.vibrate') calls.add(call);
+        return null;
+      });
+      addTearDown(
+        () =>
+            messenger.setMockMessageHandler(SystemChannels.platform.name, null),
+      );
+      final catalog = TopicCatalog();
+      final model = TrainingViewModel(_FailingProgress());
+      await model.load();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: devmateTheme(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: DataSettingsScreen(
+            settingsRepository: LlmSettingsRepository(
+              storage: MemorySecureStorage(),
+            ),
+            catalog: catalog,
+            viewModel: model,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final button = find.text('Reset progress only');
+      await tester.scrollUntilVisible(
+        button,
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(button.first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Reset progress only').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Failed to reset progress'), findsOneWidget);
+      expect(calls, isEmpty);
+    });
+  });
+
+  testWidgets('reset confirmation on iOS uses the Cupertino contract', (
+    tester,
+  ) async {
+    await withPlatform(tester, TargetPlatform.iOS, () async {
+      final calls = <MethodCall>[];
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMessageHandler(SystemChannels.platform.name, (
+        data,
+      ) async {
+        final call = const JSONMethodCodec().decodeMethodCall(data!);
+        if (call.method == 'HapticFeedback.vibrate') calls.add(call);
+        return null;
+      });
+      addTearDown(
+        () =>
+            messenger.setMockMessageHandler(SystemChannels.platform.name, null),
+      );
+      final settings = LlmSettingsRepository(storage: MemorySecureStorage());
+      final catalog = TopicCatalog();
+      final topic = await catalog.addUserTopic('Docker', 'Containers', [
+        ('What is an image?', 'A template.'),
+      ]);
+      final model = TrainingViewModel(
+        _MemoryProgress(),
+        catalogRepository: catalog,
+      )..load();
+      await model.record(topic.questions.single, knewAnswer: true);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: DataSettingsScreen(
+            settingsRepository: settings,
+            catalog: catalog,
+            viewModel: model,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final button = find.text('Reset progress only');
+      await tester.scrollUntilVisible(
+        button,
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(button.first);
+      await tester.pumpAndSettle();
+      // Platform contract: Cupertino alert, no Material dialog.
+      expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
+
+      // Cancel keeps the recorded progress.
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+      expect(model.points, 10);
+      expect(calls, isEmpty);
+
+      // Confirm resets it.
+      await tester.tap(button.first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Reset progress only').last);
+      await tester.pumpAndSettle();
+      expect(model.points, 0);
+      expect(calls.single.arguments, 'HapticFeedbackType.successNotification');
+    });
+  });
+
+  testWidgets(
+    'reset-all confirmation on web is a capped dialog with safe focus',
+    (tester) async {
+      debugDevmateSimulateWeb = true;
+      final settings = LlmSettingsRepository(storage: MemorySecureStorage());
+      final catalog = TopicCatalog();
+      final topic = await catalog.addUserTopic('Docker', 'Containers', [
+        ('What is an image?', 'A template.'),
+      ]);
+      final model = TrainingViewModel(
+        _MemoryProgress(),
+        catalogRepository: catalog,
+      )..load();
+      await model.record(topic.questions.single, knewAnswer: true);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: devmateTheme(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: DataSettingsScreen(
+            settingsRepository: settings,
+            catalog: catalog,
+            viewModel: model,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final button = find.text('Reset everything');
+      await tester.scrollUntilVisible(
+        button,
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(button.first);
+      await tester.pumpAndSettle();
+
+      // Wide layout: themed dialog capped to a reasonable width.
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is ConstrainedBox && widget.constraints.maxWidth == 600,
+        ),
+        findsOneWidget,
+      );
+      // For a destructive confirm the keyboard focus lands on Cancel, so
+      // pressing Enter performs the safer action on web.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(model.points, 10);
+    },
+  );
+
+  testWidgets('disabling AI hides the provider section and persists', (
+    tester,
+  ) async {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.withData({});
+    final appPreferences = AppPreferencesRepository();
+    final aiDisabled = ValueNotifier<bool>(false);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(
+          appPreferences: appPreferences,
+          aiDisabled: aiDisabled,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // По умолчанию AI включён: чекбокс снят, раздел провайдера виден.
+    expect(find.text('Disable AI'), findsOneWidget);
+    expect(find.text('AI provider'), findsOneWidget);
+    expect(aiDisabled.value, isFalse);
+
+    await tester.tap(find.text('Disable AI'));
+    await tester.pumpAndSettle();
+
+    // Раздел провайдера скрыт, выбор применён в нотифаер и сохранён.
+    expect(aiDisabled.value, isTrue);
+    expect(await appPreferences.loadAiDisabled(), isTrue);
+    expect(find.text('AI provider'), findsNothing);
+    expect(find.text('Questions and data'), findsOneWidget);
+
+    // Возврат к включённому состоянию возвращает раздел.
+    await tester.tap(find.text('Disable AI'));
+    await tester.pumpAndSettle();
+    expect(aiDisabled.value, isFalse);
+    expect(find.text('AI provider'), findsOneWidget);
+  });
+
+  testWidgets('a saved "AI disabled" choice restores on open', (tester) async {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.withData({});
+    final appPreferences = AppPreferencesRepository();
+    await appPreferences.saveAiDisabled(true);
+    final aiDisabled = ValueNotifier<bool>(false);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(
+          appPreferences: appPreferences,
+          aiDisabled: aiDisabled,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(aiDisabled.value, isTrue);
+    expect(find.text('AI provider'), findsNothing);
   });
 }
