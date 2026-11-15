@@ -1,4 +1,6 @@
 import 'package:devmate/data/llm_settings.dart';
+
+
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
@@ -44,6 +46,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('ru'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: SettingsScreen(
@@ -54,7 +57,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final button = find.widgetWithText(OutlinedButton, 'Сбросить только прогресс');
+    final button = find.widgetWithText(
+      OutlinedButton,
+      'Сбросить только прогресс',
+    );
     await tester.scrollUntilVisible(
       button,
       220,
@@ -84,8 +90,6 @@ void main() {
     expect(saved.toMap(), aiConfig.toMap());
   });
 
-  // Регрессия на ревью-находку: _collect() терял authMode, из-за чего
-  // выбранный Codex-режим не сохранялся и чат продолжал ходить по ключу.
   testWidgets(
     'choosing codex preset persists codexDeviceCode auth mode on save',
     (tester) async {
@@ -93,6 +97,7 @@ void main() {
       final repo = LlmSettingsRepository(storage: storage);
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('ru'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: SettingsScreen(settingsRepository: repo),
@@ -101,16 +106,15 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(DropdownButtonFormField<LlmPreset>));
-      await tester.pumpAndSettle(); // меню пресетов — без карточки логина
+      await tester.pumpAndSettle();
       await tester.tap(find.text('ChatGPT Codex (подписка)').last);
-      // Карточка логина содержит CircularProgressIndicator — его анимация
-      // никогда не «успокаивается», поэтому только конечные пульсы.
+
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
       await tester.tap(find.text('Сохранить'));
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1)); // анимация снекбара
+      await tester.pump(const Duration(seconds: 1));
 
       final loaded = await repo.load();
       expect(loaded.authMode, LlmAuthMode.codexDeviceCode);

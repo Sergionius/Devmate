@@ -6,8 +6,6 @@ import 'package:devmate/data/topic_draft.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Real-provider smoke test: генерация темы по произвольному запросу.
-/// Пропускается, если assets/config/.env не содержит ключа.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() {

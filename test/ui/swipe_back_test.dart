@@ -1,4 +1,6 @@
 import 'package:devmate/data/llm_settings.dart';
+
+
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
@@ -13,13 +15,6 @@ import '../support/memory_secure_storage.dart';
 
 import 'dart:async';
 
-/// Регрессионный тест iOS edge-swipe back.
-///
-/// go_router 18 не распознаёт MaterialApp (его isMaterialApp() ищет класс из
-/// material_ui), и builder-маршруты получают NoTransitionPage — без
-/// Cupertino-перехода и жеста «назад». createRouter строит страницы через
-/// _transitionPage с переходами из PageTransitionsTheme; тест проверяет, что
-/// свайп от левого края реально возвращает на предыдущий маршрут.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -47,20 +42,19 @@ void main() {
         MaterialApp.router(
           theme: devmateTheme(),
           routerConfig: router,
+          locale: const Locale('ru'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
         ),
       );
       await tester.pumpAndSettle();
 
-      // push завершается только при pop маршрута — не ждём его.
       unawaited(router.push('/chat/free'));
       await tester.pumpAndSettle();
-      // Чат реально открылся и загрузил настройки (поле ввода на экране).
+
       const inputHint = 'Спросите что угодно…';
       expect(find.text(inputHint), findsOneWidget);
 
-      // Свайп от левого края: тянем дальше половины ширины экрана.
       final gesture = await tester.startGesture(const Offset(2, 300));
       await gesture.moveBy(const Offset(60, 0));
       await tester.pump();
@@ -69,7 +63,6 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      // Маршрут вернулся на домашний экран.
       expect(find.text(inputHint), findsNothing);
       expect(router.routeInformationProvider.value.uri.path, '/');
     } finally {

@@ -37,6 +37,28 @@ class MemoryUserTopics implements UserTopicsRepository {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test(
+    'English catalog mirrors Russian ids for stable progress and overrides',
+    () {
+      expect(questionCatalogEn.length, questionCatalogRu.length);
+      for (var i = 0; i < questionCatalogRu.length; i++) {
+        expect(questionCatalogEn[i].id, questionCatalogRu[i].id);
+        expect(
+          questionCatalogEn[i].questions.length,
+          questionCatalogRu[i].questions.length,
+        );
+        for (var j = 0; j < questionCatalogRu[i].questions.length; j++) {
+          expect(
+            questionCatalogEn[i].questions[j].id,
+            questionCatalogRu[i].questions[j].id,
+          );
+          expect(questionCatalogEn[i].questions[j].prompt, isNot(''));
+          expect(questionCatalogEn[i].questions[j].answer, isNot(''));
+        }
+      }
+    },
+  );
+
   test('JSON roundtrip replaces catalog, rejects malformed input, reset restores builtins', () async {
     final repo = MemoryUserTopics();
     final catalog = TopicCatalog(userTopicsRepository: repo);
@@ -152,13 +174,13 @@ void main() {
       final merged = catalog.topicById('frontend')!;
       expect(merged.questions, hasLength(before.questions.length + 2));
       expect(merged.questions.last.prompt, 'Ещё вопрос?');
-      // id новых вопросов уникальны и не пересекаются со встроенными.
+
       final ids = merged.questions.map((q) => q.id).toSet();
       expect(ids.length, merged.questions.length);
       expect(ids, containsAll(<String>[...before.questions.map((q) => q.id)]));
-      // extras персистятся отдельно: {frontend: [2 вопроса]}.
+
       expect(repo.extraStored['frontend'], hasLength(2));
-      // round-trip: новая инстанс каталога восстанавливает merged-состояние.
+
       final second = TopicCatalog(userTopicsRepository: repo);
       await second.load();
       expect(
@@ -173,7 +195,6 @@ void main() {
     final catalog = TopicCatalog(userTopicsRepository: repo);
     await catalog.load();
 
-    // Правка встроенного вопроса (оверей, не мутирует каталог).
     await catalog.updateQuestion(
       'fe-1',
       'Правленный вопрос',
@@ -183,10 +204,10 @@ void main() {
     final edited = frontend.questions.firstWhere((q) => q.id == 'fe-1');
     expect(edited.prompt, 'Правленный вопрос');
     expect(edited.answer, 'Правленный ответ');
-    // Оверлей сохранён, компилируемая база не изменилась.
+
     expect(repo.overridesStored['questionEdits'], isNotNull);
     expect(
-      questionCatalog // базовый каталог не тронут
+      questionCatalog
           .firstWhere((t) => t.id == 'frontend')
           .questions
           .first
@@ -194,7 +215,6 @@ void main() {
       'Что происходит после ввода URL в браузере?',
     );
 
-    // Возврат к исходному тексту снимает оверлей.
     final baseQuestion = questionCatalog
         .firstWhere((t) => t.id == 'frontend')
         .questions
@@ -207,13 +227,11 @@ void main() {
     final editsAfter = repo.overridesStored['questionEdits'] as Map?;
     expect(editsAfter?['fe-1'], isNull);
 
-    // Удаление встроенного вопроса.
     await catalog.deleteQuestion('fe-2');
     final afterDelete = catalog.topicById('frontend')!;
     expect(afterDelete.questions.map((q) => q.id), isNot(contains('fe-2')));
     expect(repo.overridesStored['deletedQuestionIds'], contains('fe-2'));
 
-    // Правка метаданных темы.
     await catalog.updateTopicMeta('frontend', 'Frontend (новый)', 'Обновлено');
     expect(catalog.topicById('frontend')!.title, 'Frontend (новый)');
     expect(repo.overridesStored['topicEdits'], isNotNull);
@@ -224,15 +242,12 @@ void main() {
     final catalog = TopicCatalog(userTopicsRepository: repo);
     await catalog.load();
 
-    // Добавляем вопрос во встроенную тему (extras map).
     await catalog.addQuestionsToTopic('frontend', [
       ('Доп. вопрос про кеш', 'Доп. ответ про кеш.'),
     ]);
     final withExtra = catalog.topicById('frontend')!;
     expect(withExtra.questions.last.prompt, 'Доп. вопрос про кеш');
 
-    // Правим добавленный вопрос (questionEdits) — правка должна применяться
-    // (композиция: сначала extras, потом оверлеи).
     await catalog.updateQuestion(
       withExtra.questions.last.id,
       'Правленный доп. вопрос',
@@ -242,7 +257,6 @@ void main() {
     expect(merged.questions.last.prompt, 'Правленный доп. вопрос');
     expect(merged.questions.last.answer, 'Правленный доп. ответ.');
 
-    // Удаляем добавленный вопрос — он исчезает (удаление по оверлею).
     await catalog.deleteQuestion(merged.questions.last.id);
     final afterDelete = catalog.topicById('frontend')!;
     expect(
@@ -323,9 +337,9 @@ void main() {
       'Исходный вопрос',
       'Добавленный вопрос',
     ]);
-    // extras map для user-темы не используется — вопросы живут в самой теме.
+
     expect(repo.extraStored[created.id], isNull);
-    // round-trip: исходные вопросы не потеряны после persist.
+
     final second = TopicCatalog(userTopicsRepository: repo);
     await second.load();
     final restored = second.topicById(created.id)!;

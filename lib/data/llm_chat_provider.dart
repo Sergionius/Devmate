@@ -22,20 +22,15 @@ oai.OpenAIClient _clientFor(LlmSettings settings) => oai.OpenAIClient(
 
 enum LlmRole { user, assistant }
 
-/// One transcript entry shown in the chat and fed back as context.
 class LlmChatMessage {
   LlmChatMessage(this.role, this.text, {this.failed = false});
 
   final LlmRole role;
 
-  /// Failed replies are shown but never resent as conversation context.
   bool failed;
 
-  /// Why the reply failed; localized in UI via context.llmErrorText.
   LlmErrorKind? errorKind;
 
-  /// Raw provider message for [errorKind]; UI-only, never sent back to the
-  /// provider. Null when the failure has no meaningful provider text.
   String? errorDetail;
   String text;
 }
@@ -54,7 +49,6 @@ List<oai.ChatMessage> _requestMessages(
   oai.ChatMessage.user(prompt),
 ];
 
-/// Вид ошибки LLM-провайдера. Локализуется в UI (context.llmErrorText).
 enum LlmErrorKind {
   keyRejected,
   notFound,
@@ -65,16 +59,9 @@ enum LlmErrorKind {
   emptyTestResponse,
   emptyReply,
 
-  /// OAuth-сессия подписки (Codex) истекла/отсутствует — нужен повторный вход.
   subscriptionExpired,
 }
 
-/// Речевые маркеры лимитов подписки/квоты у OpenAI-совместимых провайдеров
-/// (z.ai, OpenRouter и т.п.): приходим к [LlmErrorKind.noBalance], чтобы
-/// пользователь понял, что дело не в сети. Маркеры сознательно узкие —
-/// применяются только к текстам ошибок; порядок: до 429, потому что лимит
-/// плана (например, у z.ai) часто приходит как 429/403 с этими словами,
-/// и пользователю полезнее подсказка про подписку, чем про rate limit.
 const List<String> _quotaMarkers = [
   'insufficient balance',
   'no resource package',
@@ -108,10 +95,7 @@ LlmErrorKind? _kindFromText(String text) {
   return null;
 }
 
-/// Maps low-level client errors to [LlmErrorKind].
 LlmErrorKind classifyLlmError(Object error) {
-  // Типизированные ошибки openai_dart классифицируем по HTTP-коду и
-  // содержимому ответа — toString() содержит requestId/код и ненадёжен.
   if (error is oai.ApiException) {
     final fromText = _kindFromText(
       '${error.message} ${error.code} ${error.type}',
@@ -134,7 +118,6 @@ LlmErrorKind classifyLlmError(Object error) {
       (kIsWeb ? LlmErrorKind.webConnection : LlmErrorKind.connection);
 }
 
-/// Сырое сообщение провайдера для показа в чате; null — показывать нечего.
 String? llmErrorDetail(Object error) {
   if (error is oai.OpenAIException) {
     final message = error.message.trim();
@@ -149,11 +132,8 @@ String? llmErrorDetail(Object error) {
 String _truncate(String text) =>
     text.length > 300 ? '${text.substring(0, 300)}…' : text;
 
-/// Тестовая инструкция модели — не UI-текст, локализуется на уровне модели.
 const String llmTestPrompt = 'Ответь одним словом: ок';
 
-/// Sends a tiny request to verify that key, URL and model work together.
-/// Returns null on success or the failure kind to localize in UI.
 Future<LlmErrorKind?> testLlmConnection(LlmSettings settings) async {
   try {
     final client = _clientFor(settings);
@@ -173,27 +153,14 @@ Future<LlmErrorKind?> testLlmConnection(LlmSettings settings) async {
   }
 }
 
-/// Сессия одного чата: история диалога + потоковые ответы. Абстракция над
-/// [OpenAiCompatibleProvider] — ChatViewModel и экран слушают её напрямую
-/// (гранулярный ребилд), в тестах подменяется фейком.
-/// Контракт отмены: `dispose()` рвёт активный HTTP-стрим (abortTrigger) —
-/// потребитель получает done, соединение закрывается, notify после dispose
-/// не будет.
 abstract interface class ChatSession implements Listenable {
-  /// Transcript of the conversation, oldest first.
   List<LlmChatMessage> get history;
 
-  /// Streams the assistant reply to [prompt], appending both turns to
-  /// [history]. Yields text chunks as they arrive.
   Stream<String> sendMessageStream(String prompt);
 
   void dispose();
 }
 
-/// Talks to any OpenAI-compatible endpoint (z.ai, OpenRouter, DeepSeek, Groq,
-/// Ollama, OpenAI, ...) with streaming. Keeps one conversation in memory:
-/// [history] is the transcript, failed replies are kept visible for the user
-/// but excluded from follow-up requests.
 class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
   OpenAiCompatibleProvider({
     required this._settings,
@@ -204,19 +171,13 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
   final String _systemPrompt;
   final List<LlmChatMessage> _history = [];
 
-  /// false после [dispose]: генерация останавливается, notify запрещены.
   bool _active = true;
   Completer<void>? _abort;
   StreamController<String>? _controller;
 
-  /// Transcript of the conversation, oldest first.
   @override
   List<LlmChatMessage> get history => List.unmodifiable(_history);
 
-  /// Streams the assistant reply to [prompt], appending both turns to
-  /// [history]. Yields text chunks as they arrive. Отмена активного
-  /// ответа — через [dispose]: он рвёт HTTP-подписку немедленно,
-  /// не дожидаясь следующего чанка.
   @override
   Stream<String> sendMessageStream(String prompt) {
     assert(_controller == null, 'Одновременные стримы не поддерживаются');
@@ -230,13 +191,9 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
     }
 
     void fail(Object error) {
-      // Обнуляем поля только если они ещё указывают на ЭТОТ стрим:
-      // отложенный колбэк старого стрима не должен затереть регистрацию
-      // нового (иначе dispose() его не отменит — та самая утечка).
       if (identical(_abort, abort)) _abort = null;
       if (identical(_controller, controller)) _controller = null;
-      // Отмену запросили мы (dispose/onCancel через abort) — это не сбой:
-      // не помечаем ответ failed, контракт ChatSession.
+
       if (_active && !abort.isCompleted) {
         assistant
           ..failed = true
@@ -249,7 +206,7 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
 
     controller = StreamController<String>(
       onListen: () {
-        if (!_active) return; // dispose успел раньше подписки
+        if (!_active) return;
         assistant = LlmChatMessage(LlmRole.assistant, '');
         _history
           ..add(LlmChatMessage(LlmRole.user, prompt))
@@ -263,19 +220,17 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
               temperature: 0.6,
               messages: _requestMessages(
                 _systemPrompt,
-                // Исключаем только что добавленную пару (user, assistant):
-                // новый prompt _requestMessages добавит сам, иначе — дубль.
+
                 _history.sublist(0, _history.length - 2),
                 prompt,
               ),
             ),
-            // Транспортная отмена средствами openai_dart: abort.future
-            // рвёт HTTP-запрос изнутри библиотеки.
+
             abortTrigger: abort.future,
           );
           stream.listen(
             (event) {
-              if (!_active) return; // dispose(): тишо докатываемся
+              if (!_active) return;
               final delta = event.textDelta;
               if (delta == null || delta.isEmpty) return;
               received = true;
@@ -302,8 +257,7 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
           fail(error);
         }
       },
-      // Потребитель отменил поток — рвём и транспорт. Основной путь
-      // отмены — dispose(), этот путь на будушее для подписчиков-UI.
+
       onCancel: () {
         if (!abort.isCompleted) abort.complete();
         _abort = null;
@@ -315,15 +269,10 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
     return controller.stream;
   }
 
-  /// Немедленная отмена: abortTrigger рвёт HTTP-запрос на транспортном
-  /// уровне, закрытие моста отдаёт потребителю done, а не зависание.
-  /// Ограничение (сознательное): одновременные стримы не поддерживаются;
-  /// в release вместо assert это просто не определено, как и прежде.
   @override
   void dispose() {
     _active = false;
-    // Немедленная отмена: abortTrigger рвёт HTTP-запрос на транспортном
-    // уровне, закрытие моста отдаёт потребителю done, а не зависание.
+
     if (!(_abort?.isCompleted ?? true)) _abort?.complete();
     _abort = null;
     final controller = _controller;

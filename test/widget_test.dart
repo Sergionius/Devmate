@@ -1,4 +1,6 @@
 import 'package:devmate/data/llm_settings.dart';
+
+
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/main.dart';
@@ -30,6 +32,7 @@ void main() {
         viewModel: model,
         llmSettings: LlmSettingsRepository(),
         catalog: TopicCatalog(),
+        locale: const Locale('ru'),
       ),
     );
 

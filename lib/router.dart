@@ -13,19 +13,11 @@ import 'ui/settings_screen.dart';
 import 'ui/topic_screen.dart';
 import 'ui/training_view_model.dart';
 
-/// go_router 18 не распознаёт MaterialApp из package:flutter/material:
-/// его isMaterialApp() ищет одноимённый класс из пакета material_ui, а это
-/// другой класс. Все builder-маршруты получают NoTransitionPage — без
-/// переходов и без Cupertino-жеста «назад» на iOS. Поэтому страницы строим
-/// явно: переходы берём из PageTransitionsTheme (на iOS — Cupertino со
-/// свайпом от края, на Android — predictive back, и т.д.).
 CustomTransitionPage<Object?> _transitionPage(
   BuildContext context,
   GoRouterState state,
   Widget child,
 ) {
-  // Длительность берём у выбранного платформой builder'а: у Cupertino 500 мс,
-  // у Zoom/предиктивного на Android и десктопных переходов — 300 мс.
   final theme = Theme.of(context);
   final duration =
       theme.pageTransitionsTheme.builders[theme.platform]?.transitionDuration ??
@@ -52,8 +44,6 @@ CustomTransitionPage<Object?> _transitionPage(
   );
 }
 
-/// GoRoute с явным pageBuilder: обходит указанный выше баг go_router,
-/// сохраняя обычную семантику builder.
 GoRoute _route({
   required String path,
   required GoRouterWidgetBuilder builder,

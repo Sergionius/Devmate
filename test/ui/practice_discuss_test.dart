@@ -1,4 +1,6 @@
 import 'package:devmate/data/progress_repository.dart';
+
+
 import 'package:devmate/domain/question.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/ui/practice_screen.dart';
@@ -7,8 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-/// Кнопка «Разобрать с AI» должна быть доступна на сравнении с эталоном
-/// и на стадии «нужно повторить» (до сохранения результата).
 void main() {
   const topic = InterviewTopic('t1', 'Тема', 'Описание', [
     InterviewQuestion('q1', 'Вопрос?', 'Эталон.'),
@@ -37,6 +37,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: router,
+        locale: const Locale('ru'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),
@@ -45,7 +46,6 @@ void main() {
     return router;
   }
 
-  /// Тап по цели: на маленьком окне теста кнопки ниже сгиба.
   Future<void> tapVisible(WidgetTester tester, Finder finder) async {
     await tester.ensureVisible(finder);
     await tester.pumpAndSettle();
@@ -60,7 +60,7 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('answer-field')), 'Мой ответ');
     await tapVisible(tester, find.text('Сверить с эталоном'));
-    // Сравнение реально показано.
+
     expect(find.text('Нужно повторить'), findsOneWidget);
 
     await tapVisible(tester, find.text('Разобрать с AI'));
@@ -76,7 +76,7 @@ void main() {
     await tapVisible(tester, find.text('Сверить с эталоном'));
     expect(find.text('Нужно повторить'), findsOneWidget);
     await tapVisible(tester, find.text('Нужно повторить'));
-    // Стадия закрепления: поле и кнопка разбора с AI.
+
     expect(find.byKey(const Key('rewrite-field')), findsOneWidget);
 
     await tapVisible(tester, find.text('Разобрать с AI'));

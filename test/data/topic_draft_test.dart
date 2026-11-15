@@ -44,7 +44,7 @@ void main() {
       ),
       isNull,
     );
-    // Пустой title → draft без названия (append-режим), questions валидны.
+
     final noTitle = parseTopicDraft(
       '{"title":"","questions":[{"prompt":"П","answer":"О"}]}',
     );

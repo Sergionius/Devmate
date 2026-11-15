@@ -1,8 +1,3 @@
-// Ручная e2e-проверка device-code входа в ChatGPT-подписку (Codex backend).
-//
-// Запуск: dart run tools/codex_device_login_smoke.dart
-// Открой выведенную ссылку в браузере, введи код, подтверди вход —
-// инструмент напечатает маскированные токены и проверит inference-запрос.
 import 'dart:convert';
 import 'dart:io';
 
@@ -42,8 +37,6 @@ Future<void> main() async {
     ..writeln('  refresh   : ${_mask(tokens.refresh)}')
     ..writeln('  expiresAt : ${tokens.expiresAt.toIso8601String()}');
 
-  // Мини-inference тем же путём, что и приложение:
-  // POST {base}/codex/responses, store:false + stream:true.
   final response = await http.post(
     Uri.parse('https://chatgpt.com/backend-api/codex/responses'),
     headers: <String, String>{

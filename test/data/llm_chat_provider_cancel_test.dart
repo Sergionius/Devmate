@@ -6,9 +6,6 @@ import 'package:devmate/data/llm_chat_provider.dart';
 import 'package:devmate/data/llm_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// Без TestWidgetsFlutterBinding: он перехватывает HTTP (все запросы → 400),
-// а тест отмены поднимает реальный локальный SSE-сервер.
-
 String _chunkJson(String text) => jsonEncode({
   'id': 'chatcmpl-test',
   'object': 'chat.completion.chunk',
@@ -23,7 +20,6 @@ String _chunkJson(String text) => jsonEncode({
   ],
 });
 
-/// Медленный SSE-сервер: 50 чанков по 30мс (~1.5с на полный ответ).
 Future<HttpServer> _startSlowServer(Completer<void> handled) =>
     HttpServer.bind(InternetAddress.loopbackIPv4, 0).then((server) {
       server.listen((request) async {
@@ -40,7 +36,6 @@ Future<HttpServer> _startSlowServer(Completer<void> handled) =>
           }
           await request.response.close();
         } catch (_) {
-          // Клиент оборвал соединение после dispose — это и есть цель.
         } finally {
           handled.complete();
         }
@@ -77,17 +72,16 @@ void main() {
             onError: streamDone.completeError,
             cancelOnError: true,
           );
-      // Ждём первый чанк: данные реально пошли по соединению.
+
       await firstChunk.future.timeout(const Duration(seconds: 2));
       expect(provider.history.last.text, isNotEmpty);
 
       provider.dispose();
-      // Отмена закрывает поток promptly — потребитель не висит до конца
-      // серверной генерации (~1.5с осталось бы без отмены).
+
       await streamDone.future.timeout(const Duration(seconds: 2));
-      // Стрим оборван: не все 50 кусков дошли до потребителя.
+
       expect(chunks.length, lessThan(50));
-      // Оборванный ответ не помечается ошибкой — это отмена, не сбой.
+
       expect(provider.history.last.failed, isFalse);
       expect(provider.history.last.errorKind, isNull);
 
@@ -111,7 +105,6 @@ void main() {
         systemPrompt: '',
       );
 
-      // Первый стрим: потребитель сам отменяет подписку посреди ответа.
       final firstChunk = Completer<void>();
       final sub = provider.sendMessageStream('Вопрос').listen((chunk) {
         if (!firstChunk.isCompleted) firstChunk.complete();
@@ -119,12 +112,10 @@ void main() {
       await firstChunk.future.timeout(const Duration(seconds: 2));
       await sub.cancel();
       await handled.future.timeout(const Duration(seconds: 2));
-      // Отмена потребителя — не сбой: abort не помечает ответ (контракт).
+
       expect(provider.history.last.failed, isFalse);
       expect(provider.history.last.errorKind, isNull);
 
-      // Отложенные колбэки старого стрима не должны затереть регистрацию
-      // нового: второй стрим обязан корректно отменяться dispose-ом.
       final secondDone = Completer<void>();
       final secondChunks = <String>[];
       provider

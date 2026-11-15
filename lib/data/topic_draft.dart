@@ -1,8 +1,5 @@
 import 'dart:convert';
 
-/// Черновик, сгенерированный моделью в чате. В режиме создания темы
-/// [title]/[description] заполнены; в режиме добавления вопросов в
-/// существующую тему модель возвращает только [questions].
 class TopicDraft {
   const TopicDraft(this.title, this.description, this.questions);
 
@@ -11,9 +8,6 @@ class TopicDraft {
   final List<(String prompt, String answer)> questions;
 }
 
-/// Вытаскивает JSON-блок темы из ответа модели: голый объект или
-/// ```json-фенс. Возвращает null, если валидной темы в тексте нет —
-/// тогда ответ считается обычным сообщением (например, уточнением).
 TopicDraft? parseTopicDraft(String text) {
   for (final candidate in _jsonCandidates(text)) {
     final draft = _decode(candidate);
@@ -22,8 +16,6 @@ TopicDraft? parseTopicDraft(String text) {
   return null;
 }
 
-/// Правка ответа существующего вопроса: JSON с action=update_answer,
-/// поля prompt (уточнённый вопрос) и answer (новый эталонный ответ).
 class AnswerUpdate {
   const AnswerUpdate(this.prompt, this.answer);
 
@@ -31,8 +23,6 @@ class AnswerUpdate {
   final String answer;
 }
 
-/// Вытаскивает из ответа модели команду замены ответа вопроса.
-/// Возвращает null, если команды в тексте нет.
 AnswerUpdate? parseAnswerUpdate(String text) {
   for (final candidate in _jsonCandidates(text)) {
     final Object? decoded;
@@ -74,8 +64,6 @@ TopicDraft? _decode(String raw) {
   try {
     decoded = jsonDecode(raw);
   } on FormatException {
-    // Ответ модели с «{» не обязан быть валидным JSON (уточнение, пример
-    // кода, обрезанный ответ) — это обычный текст, а не черновик темы.
     return null;
   }
   if (decoded is! Map<String, dynamic>) return null;

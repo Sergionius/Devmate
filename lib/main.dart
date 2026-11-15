@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'l10n/app_localizations.dart';
 import 'data/llm_settings.dart';
 import 'data/progress_repository.dart';
+import 'data/question_catalog.dart';
 import 'data/topic_catalog.dart';
 import 'router.dart';
 import 'ui/design_system.dart';
@@ -13,10 +14,7 @@ import 'ui/training_view_model.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // .env is optional: missing or empty file → start with empty settings.
-  // dotenv.load() throws EmptyEnvFileError on an empty file, and the fallback
-  // needs isOptional:true, otherwise the error escapes main() and the app
-  // freezes on the splash screen.
+
   try {
     await dotenv.load(fileName: 'assets/config/.env');
   } catch (_) {
@@ -25,9 +23,11 @@ Future<void> main() async {
   final llmSettings = LlmSettingsRepository();
   final catalog = TopicCatalog(
     userTopicsRepository: LocalUserTopicsRepository(SharedPreferencesAsync()),
+    baseTopics: questionCatalogFor(
+      WidgetsBinding.instance.platformDispatcher.locale.languageCode,
+    ),
   );
-  // Загружаем каталог ДО viewModel: чистка прогресса по knownQuestionIds
-  // должна видеть пользовательские темы, иначе их прогресс теряется.
+
   await catalog.load();
   runApp(
     DevmateApp(
@@ -47,14 +47,17 @@ class DevmateApp extends StatelessWidget {
     required TrainingViewModel viewModel,
     required LlmSettingsRepository llmSettings,
     required TopicCatalog catalog,
+    this.locale,
   }) : router = createRouter(viewModel, llmSettings, catalog);
 
   final GoRouter router;
+  final Locale? locale;
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
     title: 'Devmate',
     debugShowCheckedModeBanner: false,
+    locale: locale,
     theme: devmateTheme(),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,

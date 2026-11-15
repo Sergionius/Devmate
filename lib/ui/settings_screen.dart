@@ -127,8 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _testing = true;
       _testResult = null;
     });
-    // Codex-подписка проверяется тем же стрим-запросом, что и настоящий чат
-    // (превью-поток OpenAI требует store:false + stream:true).
+
     final error = settings.authMode == LlmAuthMode.codexDeviceCode
         ? await testCodexConnection(settings)
         : await testLlmConnection(settings);
@@ -320,8 +319,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           value: preset,
                           child: Text(
                             kIsWeb && preset.worksInBrowser
-                                ? '${preset.label} ${context.l10n.worksInBrowserSuffix}'
-                                : preset.label,
+                                ? '${context.presetLabel(preset)} '
+                                      '${context.l10n.worksInBrowserSuffix}'
+                                : context.presetLabel(preset),
                           ),
                         ),
                     ],
@@ -427,12 +427,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   );
 }
 
-/// Карточка входа в ChatGPT-подписку: статус токенов, вход по device-code,
-/// выход. Появляется вместо поля API-ключа для пресета Codex.
 class CodexLoginCard extends StatefulWidget {
   const CodexLoginCard({super.key, required this.onChanged});
 
-  /// Колбэк на случай, когда родителю нужно реагировать на смену входа.
   final VoidCallback onChanged;
 
   @override
@@ -459,8 +456,6 @@ class _CodexLoginCardState extends State<CodexLoginCard> {
   }
 
   Future<void> _login() async {
-    // Барьер-дисмисс запрещён: иначе фоновый опрос статуса продолжится
-    // до 15 минут; отменить можно только кнопкой.
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -520,8 +515,6 @@ class _CodexLoginCardState extends State<CodexLoginCard> {
   );
 }
 
-/// Диалог device-code входа: показывает код, ссылку на страницу входа,
-/// статус ожидания; отменяется кнопкой.
 class CodexDeviceLoginSheet extends StatefulWidget {
   const CodexDeviceLoginSheet({super.key});
 
@@ -558,11 +551,20 @@ class _CodexDeviceLoginSheetState extends State<CodexDeviceLoginSheet> {
       if (!mounted) return;
       if (error.kind == CodexAuthErrorKind.sessionExpired &&
           _cancel.isCompleted) {
-        // Отмена пользователем — тихо закрываем.
         Navigator.of(context).pop();
         return;
       }
-      setState(() => _error = error.message);
+      setState(
+        () => _error = switch (error.kind) {
+          CodexAuthErrorKind.network => context.l10n.codexErrorNetwork,
+          CodexAuthErrorKind.invalidResponse =>
+            context.l10n.codexErrorInvalidResponse,
+          CodexAuthErrorKind.rejected => context.l10n.codexErrorRejected,
+          CodexAuthErrorKind.sessionExpired =>
+            context.l10n.codexErrorSessionExpired,
+          CodexAuthErrorKind.timeout => context.l10n.codexErrorTimeout,
+        },
+      );
     } catch (error) {
       if (mounted) setState(() => _error = '$error');
     }
@@ -585,7 +587,7 @@ class _CodexDeviceLoginSheetState extends State<CodexDeviceLoginSheet> {
   }
 
   void _dismiss() {
-    if (_closed) return; // защита от двойного pop при быстрых тапах
+    if (_closed) return;
     _closed = true;
     if (!_cancel.isCompleted) _cancel.complete();
     Navigator.of(context).pop();

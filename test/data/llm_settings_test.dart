@@ -97,7 +97,7 @@ void main() {
       ),
     );
     expect((await repo.load()).authMode, LlmAuthMode.codexDeviceCode);
-    // Без записи authMode (старые версии) — apiKey.
+
     expect(
       LlmSettings.fromMap(<String, String>{}).authMode,
       LlmAuthMode.apiKey,

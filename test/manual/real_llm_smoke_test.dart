@@ -5,11 +5,9 @@ import 'package:devmate/data/llm_settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Real-provider smoke test: runs only when assets/config/.env has a key
-/// (`flutter test test/manual/real_llm_smoke_test.dart`). Skipped elsewhere.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  // flutter_test подменяет HttpClient заглушкой (всегда 400); вернём настоящую сеть.
+
   setUpAll(() {
     HttpOverrides.global = null;
   });

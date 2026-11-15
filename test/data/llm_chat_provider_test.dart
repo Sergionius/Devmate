@@ -10,9 +10,6 @@ const _unreachable = LlmSettings(
 );
 
 void main() {
-  // Без TestWidgetsFlutterBinding: он перехватывает HTTP (все запросы → 400),
-  // а тест отмены ниже поднимает реальный локальный SSE-сервер.
-
   group('classifyLlmError', () {
     test('ApiException 401 → keyRejected', () {
       final kind = classifyLlmError(
@@ -97,7 +94,7 @@ void main() {
       final detail = llmErrorDetail(
         oai.ApiException(message: 'x' * 400, statusCode: 500),
       );
-      expect(detail!.length, 301); // 300 + многоточие
+      expect(detail!.length, 301);
       expect(detail.endsWith('…'), isTrue);
     });
 
@@ -115,7 +112,7 @@ void main() {
         systemPrompt: 'sys',
       );
       final chunks = await provider.sendMessageStream('Вопрос').toList();
-      // Ошибка не приходит чанком: UI локализует её по errorKind.
+
       expect(chunks, isEmpty);
 
       final history = provider.history;
@@ -142,7 +139,5 @@ void main() {
     expect(history[3].failed, isTrue);
     expect(history[1].errorKind, isNotNull);
     expect(history[3].errorKind, isNotNull);
-    // Только успешные пары попадают в контекст запроса: обе попытки здесь
-    // провалились, значит запрос собирался только из system + prompt.
   });
 }

@@ -1,15 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Способ авторизации у провайдера.
-enum LlmAuthMode {
-  /// Классический ключ из поля «API-ключ».
-  apiKey,
-
-  /// OAuth device-code вход в ChatGPT-подписку (Codex backend);
-  /// ключи хранятся отдельно (см. codex_auth.dart).
-  codexDeviceCode,
-}
+enum LlmAuthMode { apiKey, codexDeviceCode }
 
 LlmAuthMode authModeFromName(String? name) => LlmAuthMode.values.firstWhere(
   (mode) => mode.name == name,
@@ -29,7 +21,6 @@ class LlmSettings {
   final String apiKey;
   final LlmAuthMode authMode;
 
-  /// Для codex-режима ключ не нужен — авторизация токенами из OAuth-входа.
   bool get isConfigured =>
       baseUrl.trim().isNotEmpty &&
       model.trim().isNotEmpty &&
@@ -76,17 +67,12 @@ class LlmPreset {
   final String baseUrl;
   final String defaultModel;
 
-  /// Whether the provider sends CORS headers and can be called from a web
-  /// build directly. Native iOS/Android apps work with all providers.
   final bool worksInBrowser;
 
   final LlmAuthMode authMode;
 }
 
 const llmPresets = <LlmPreset>[
-  // ⚠️ Эксперимент: device-вход опирается на client_id pi-coding-agent
-  // (см. codex_auth.dart). URL — корень Codex backend: openai_dart сам
-  // добавляет `/responses`.
   LlmPreset(
     'codex',
     'ChatGPT Codex (подписка)',
@@ -149,8 +135,6 @@ LlmPreset? presetById(String id) {
   return null;
 }
 
-/// Reads LLM settings from .env for defaults and stores user edits in
-/// secure storage (iOS Keychain / Android Keystore; web — local storage).
 class LlmSettingsRepository {
   LlmSettingsRepository({FlutterSecureStorage? storage})
     : _storage = storage ?? const FlutterSecureStorage();
@@ -165,7 +149,6 @@ class LlmSettingsRepository {
 
   final FlutterSecureStorage _storage;
 
-  /// Defaults from .env; empty strings when values (or the file) are missing.
   LlmSettings fromEnv() {
     try {
       return LlmSettings(

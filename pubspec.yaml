@@ -72,6 +72,7 @@ flutter:
   assets:
     - assets/branding/devmate_source.png
     - assets/data/questions.json
+    - assets/data/questions_en.json
     - assets/config/
 
   # To add assets to your application, add an assets section, like this:

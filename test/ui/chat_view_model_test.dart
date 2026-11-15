@@ -10,11 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/memory_secure_storage.dart';
 
-/// Подменяет [LlmSettingsRepository]'s storage — ключи пишутся в память.
 LlmSettingsRepository _settingsRepo() =>
     LlmSettingsRepository(storage: MemorySecureStorage());
 
-/// In-memory [UserTopicsRepository]: фиксирует все сохранения.
 class _MemoryTopicsRepository implements UserTopicsRepository {
   final savedTopics = <List<Map<String, dynamic>>>[];
   final savedExtra = <Map<String, List<Map<String, dynamic>>>>[];
@@ -42,10 +40,6 @@ class _MemoryTopicsRepository implements UserTopicsRepository {
       savedOverrides.add(overrides);
 }
 
-/// Фейк сессии: история как у провайдера, ответы — по очереди из списка.
-/// Элемент списка: String (чанки через |), Exception (сбой стрима)
-/// или готовый `Stream<String>` (например, незавершаемый).
-/// Контракт как у продакшн-провайдера: dispose() закрывает активный стрим.
 class _FakeSession extends ChangeNotifier implements ChatSession {
   _FakeSession(this._replies);
 
@@ -65,7 +59,6 @@ class _FakeSession extends ChangeNotifier implements ChatSession {
     notifyListeners();
     final reply = _replyIndex < _replies.length ? _replies[_replyIndex++] : '';
     if (reply is Stream<String>) {
-      // Мост через контроллер, чтобы dispose() мог закрыть поток немедленно.
       final controller = StreamController<String>();
       _pending = controller;
       reply.listen(
@@ -161,7 +154,7 @@ void main() {
     expect(viewModel.streaming, isTrue);
 
     await viewModel.send('второй');
-    expect(session.history, hasLength(2)); // второй не добавил сообщений
+    expect(session.history, hasLength(2));
 
     await controller.close();
     await sending;
@@ -301,7 +294,7 @@ void main() {
   });
 
   test('не сконфигурированные настройки: сессия не создаётся', () async {
-    final repo = _settingsRepo(); // пустое хранилище
+    final repo = _settingsRepo();
     final session = _FakeSession(['ответ']);
     final viewModel = _viewModel(settingsRepository: repo, session: session);
     await viewModel.loadSettings();
@@ -338,7 +331,7 @@ void main() {
     await viewModel.reloadSettings();
 
     expect(viewModel.messages, isEmpty);
-    viewModel.ensureSession(); // как build экрана после notify
+    viewModel.ensureSession();
     expect(viewModel.session, same(second));
     expect(viewModel.settings?.model, 'new-model');
   });
@@ -353,13 +346,13 @@ void main() {
 
     final sending = viewModel.send('вопрос');
     await viewModel.reloadSettings();
-    // Стрим ещё идёт: сессия на месте, диалог не тронут.
+
     expect(viewModel.streaming, isTrue);
     expect(viewModel.messages, hasLength(2));
 
     await controller.close();
     await sending;
-    // Отложенная перезагрузка выполнилась: сессия закрыта, диалог сброшен.
+
     expect(viewModel.messages, isEmpty);
     expect(viewModel.session, isNull);
     expect(viewModel.streaming, isFalse);
@@ -376,8 +369,6 @@ void main() {
     final sending = viewModel.send('вопрос');
     viewModel.dispose();
 
-    // Dispose сессии закрывает мост (контракт ChatSession) — send
-    // завершается сам, без внешнего закрытия и без notify-after-dispose.
     await sending.timeout(const Duration(seconds: 2));
     expect(viewModel.streaming, isFalse);
     await controller.close();
@@ -396,7 +387,6 @@ void main() {
   });
 }
 
-/// Хранилище, падающее при любом чтении — для error-фазы настроек.
 class _ThrowingStorage extends MemorySecureStorage {
   @override
   Future<String?> read({

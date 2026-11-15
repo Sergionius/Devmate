@@ -22,7 +22,6 @@ CodexTokens fixedTokens({DateTime? expiresAt}) => CodexTokens(
 
 String encodeTokens(CodexTokens tokens) => jsonEncode(tokens.toJson());
 
-/// Перехваченный запрос + простой SSE-ответ от фейкового Codex backend.
 class _CapturedRequest {
   Map<String, dynamic>? body;
   final Map<String, String> headers = {};
@@ -44,12 +43,11 @@ Future<(HttpServer, _CapturedRequest)> startFakeCodexServer() async {
       'event-stream',
       charset: 'utf-8',
     );
-    // Минимальный SSE: один дельта-ивент и конец потока. Полный
-    // response.completed парсить не нужно — provider доверяет onDone.
+
     final delta = jsonEncode(<String, dynamic>{
       'type': 'response.output_text.delta',
       'delta': 'ок',
-      // Обязательные для парсера openai_dart индексы.
+
       'output_index': 0,
       'content_index': 0,
     });
@@ -82,7 +80,7 @@ void main() {
       expect(json['instructions'], 'Тренер интервью');
       expect(json['temperature'], isNull);
       final items = (json['input'] as List).map(jsonEncode).toList();
-      // 2 успешных сообщения истории + новый вопрос; failed/пустые отфильтрованы.
+
       expect(items, hasLength(3));
       expect(items.join(), isNot(contains('неудачный')));
       expect(items.first, contains('"role":"user"'));
@@ -127,7 +125,6 @@ void main() {
         expect(chunks, ['ок']);
         expect(provider.history.map((m) => m.text), ['Скажи ок', 'ок']);
 
-        // Превью-требования ChatGPT plan usage и заголовки Codex backend.
         expect(captured.body, isNotNull);
         expect(captured.body!['store'], isFalse);
         expect(captured.body!['stream'], isTrue);
@@ -138,7 +135,7 @@ void main() {
         expect(captured.headers['chatgpt-account-id'], 'acc-1');
         expect(captured.headers['originator'], codexOriginator);
         expect(captured.headers['openai-beta'], 'responses=experimental');
-        // baseUrl задан как .../codex — клиент добавляет /responses.
+
         expect(
           captured.headers['host'],
           startsWith('${server.address.host}:${server.port}'),
@@ -240,7 +237,7 @@ void main() {
       );
       final tokens = await auth.ensureFreshTokens();
       expect(tokens.accountId, 'acc-refreshed');
-      // Ротация сохранена в хранилище.
+
       final saved = await auth.load();
       expect(saved?.refresh, 'rt-2');
     });

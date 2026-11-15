@@ -324,5 +324,15 @@
       }
     }
   },
-  "codexWebUnsupported": "Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере."
+  "codexWebUnsupported": "Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере.",
+  "presetCodexLabel": "ChatGPT Codex (подписка)",
+  "presetZaiCodingLabel": "z.ai GLM Coding (подписка)",
+  "presetZaiLabel": "z.ai API (оплата за токены)",
+  "presetOllamaLabel": "Ollama (локально)",
+  "presetCustomLabel": "Свой endpoint",
+  "codexErrorNetwork": "Ошибка сети. Проверьте подключение к интернету.",
+  "codexErrorInvalidResponse": "Некорректный ответ сервера входа. Попробуйте позже.",
+  "codexErrorRejected": "Код отклонён или истёк. Запросите новый.",
+  "codexErrorSessionExpired": "Вход отменён или время ожидания истекло.",
+  "codexErrorTimeout": "Превышено время ожидания подтверждения. Попробуйте ещё раз."
 }

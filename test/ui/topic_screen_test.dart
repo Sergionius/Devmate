@@ -1,4 +1,6 @@
 import 'package:devmate/data/progress_repository.dart';
+
+
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/ui/topic_screen.dart';
@@ -33,6 +35,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('ru'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: TopicScreen(topic: topic, viewModel: model, catalog: catalog),
