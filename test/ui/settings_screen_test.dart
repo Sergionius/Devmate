@@ -168,4 +168,165 @@ void main() {
     expect(appLocale.value, const Locale('en'));
     expect(await appPreferences.loadLanguage(), AppLanguage.english);
   });
+
+  testWidgets('import dialog Add mode appends questions and keeps progress', (
+    tester,
+  ) async {
+    final settings = LlmSettingsRepository(storage: MemorySecureStorage());
+    final catalog = TopicCatalog();
+    final topic = await catalog.addUserTopic('Docker', 'Containers', [
+      ('What is an image?', 'A template.'),
+    ]);
+    final progress = _MemoryProgress();
+    final model = TrainingViewModel(progress, catalogRepository: catalog);
+    await model.load();
+    await model.record(topic.questions.single, knewAnswer: true);
+    expect(model.points, 10);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(
+          settingsRepository: settings,
+          catalog: catalog,
+          viewModel: model,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final importButton = find.text('Import JSON');
+    await tester.scrollUntilVisible(
+      importButton,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(importButton);
+    await tester.pumpAndSettle();
+
+    // Both modes and cancel are offered in the dialog.
+    expect(find.widgetWithText(OutlinedButton, 'Add'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Replace all'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+
+    final dialogField = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(
+      dialogField,
+      '{"version":1,"topics":[{"title":"Docker","description":"",'
+      '"questions":[{"prompt":"What is a layer?","answer":"A step."}]}]}',
+    );
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Add'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Questions added; existing topics and progress'),
+      findsOneWidget,
+    );
+    final docker = catalog.topics.where((t) => t.title == 'Docker').single;
+    expect(docker.questions, hasLength(2));
+    expect(docker.questions.last.prompt, 'What is a layer?');
+    // Append keeps the recorded progress untouched.
+    expect(model.points, 10);
+    expect(progress.scores, isNotEmpty);
+  });
+
+  testWidgets('import dialog Replace all resets catalog and progress', (
+    tester,
+  ) async {
+    final settings = LlmSettingsRepository(storage: MemorySecureStorage());
+    final catalog = TopicCatalog();
+    final topic = await catalog.addUserTopic('Docker', 'Containers', [
+      ('What is an image?', 'A template.'),
+    ]);
+    final progress = _MemoryProgress();
+    final model = TrainingViewModel(progress, catalogRepository: catalog);
+    await model.load();
+    await model.record(topic.questions.single, knewAnswer: true);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(
+          settingsRepository: settings,
+          catalog: catalog,
+          viewModel: model,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final importButton = find.text('Import JSON');
+    await tester.scrollUntilVisible(
+      importButton,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(importButton);
+    await tester.pumpAndSettle();
+
+    final dialogField = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(
+      dialogField,
+      '{"version":1,"topics":[{"title":"Fresh Topic","description":"",'
+      '"questions":[{"prompt":"Only question?","answer":"Yes."}]}]}',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Replace all'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Catalog replaced from JSON, progress reset'),
+      findsOneWidget,
+    );
+    // Full replace behaves like the former import: user topics are swapped
+    // and all recorded progress is cleared.
+    expect(catalog.topics.map((t) => t.title), ['Fresh Topic']);
+    expect(model.points, 0);
+    expect(progress.scores, isEmpty);
+  });
+
+  testWidgets('agent instruction section shows localized Share button', (
+    tester,
+  ) async {
+    final settings = LlmSettingsRepository(storage: MemorySecureStorage());
+    final catalog = TopicCatalog();
+    final progress = _MemoryProgress();
+    final model = TrainingViewModel(progress, catalogRepository: catalog);
+    await model.load();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(
+          settingsRepository: settings,
+          catalog: catalog,
+          viewModel: model,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final instruction = find.textContaining('Agent instruction:');
+    await tester.scrollUntilVisible(
+      instruction,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    // Localized share affordance next to the selectable instruction text;
+    // the real system share sheet is never opened in the test.
+    final shareButton = find.byTooltip('Share instruction');
+    expect(shareButton, findsOneWidget);
+    final row = find
+        .ancestor(of: shareButton, matching: find.byType(Row))
+        .first;
+    expect(find.descendant(of: row, matching: instruction), findsOneWidget);
+  });
 }

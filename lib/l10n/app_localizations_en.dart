@@ -14,7 +14,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get questionsJsonHint =>
-      'Export copies questions JSON to the clipboard. Import replaces all topics and questions from the pasted JSON and clears progress.';
+      'Export copies questions JSON to the clipboard. Import offers two modes: \'Replace all\' swaps every topic and question for the pasted JSON and resets progress; \'Add\' appends questions into topics with matching titles, creates missing topics and keeps the existing catalog and progress.';
 
   @override
   String get exportQuestions => 'Copy questions as JSON';
@@ -29,7 +29,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get questionsCopied => 'Questions JSON copied to the clipboard';
 
   @override
-  String get questionsImported => 'Questions imported';
+  String get importAppendAction => 'Add';
+
+  @override
+  String get importReplaceAction => 'Replace all';
+
+  @override
+  String get questionsImported => 'Catalog replaced from JSON, progress reset';
+
+  @override
+  String get questionsAppended =>
+      'Questions added; existing topics and progress are kept';
 
   @override
   String get importFailed => 'Failed to import questions';
@@ -77,6 +87,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get agentJsonInstruction =>
       'Agent instruction: create valid JSON without Markdown. The root object must have version set to 1 and a non-empty topics array. Each topic has a non-empty title, a string description (may be empty) and a non-empty questions array. Every question has non-empty prompt and answer. For each topic prepare 4–12 distinct questions; answers should be precise, 2–4 sentences each. Don\'t include IDs — the app will generate them on import.';
+
+  @override
+  String get shareInstruction => 'Share instruction';
+
+  @override
+  String get shareFailed => 'Couldn\'t open the share menu';
 
   @override
   String get pageNotFound => 'This page does not exist.';

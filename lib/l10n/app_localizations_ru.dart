@@ -14,7 +14,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get questionsJsonHint =>
-      'Экспорт копирует JSON в буфер обмена. Импорт заменяет все темы и вопросы из вставленного JSON и очищает прогресс.';
+      'Экспорт копирует JSON в буфер обмена. Импорт предлагает два режима: «Заменить всё» заменяет все темы и вопросы из вставленного JSON и сбрасывает прогресс; «Добавить» дописывает вопросы в темы с совпадающими названиями, создаёт отсутствующие темы и сохраняет существующий каталог и прогресс.';
 
   @override
   String get exportQuestions => 'Скопировать вопросы в JSON';
@@ -29,7 +29,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get questionsCopied => 'JSON вопросов скопирован в буфер обмена';
 
   @override
-  String get questionsImported => 'Вопросы импортированы';
+  String get importAppendAction => 'Добавить';
+
+  @override
+  String get importReplaceAction => 'Заменить всё';
+
+  @override
+  String get questionsImported => 'Каталог заменён из JSON, прогресс сброшен';
+
+  @override
+  String get questionsAppended =>
+      'Вопросы добавлены, существующие темы и прогресс сохранены';
 
   @override
   String get importFailed => 'Не удалось импортировать вопросы';
@@ -77,6 +87,12 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get agentJsonInstruction =>
       'Инструкция для агента: создай валидный JSON без Markdown. Корневой объект содержит version со значением 1 и topics — непустой массив тем. Каждая тема содержит непустой title, строковое description (можно пустое) и непустой массив questions. Каждый вопрос содержит непустые prompt и answer. Для каждой темы подготовь 4–12 неповторяющихся вопросов на русском; ответы — точные, по 2–4 предложения. ID не нужны — приложение создаст их при импорте.';
+
+  @override
+  String get shareInstruction => 'Поделиться инструкцией';
+
+  @override
+  String get shareFailed => 'Не удалось открыть меню «Поделиться»';
 
   @override
   String get pageNotFound => 'Такой страницы нет.';
