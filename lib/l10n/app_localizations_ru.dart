@@ -262,6 +262,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsEyebrow => 'ЛЮБОЙ OPENAI-СОВМЕСТИМЫЙ ENDPOINT';
 
   @override
+  String get settingsLanguage => 'Язык приложения';
+
+  @override
+  String get settingsLanguageSystem => 'Как в системе';
+
+  @override
+  String get settingsLanguageRestartNote =>
+      'Интерфейс переключится сразу; вопросы будут на выбранном языке после перезапуска приложения.';
+
+  @override
   String get keyPrivacyNote =>
       'Ключ хранится только на этом устройстве и уходит напрямую выбранному провайдеру.';
 

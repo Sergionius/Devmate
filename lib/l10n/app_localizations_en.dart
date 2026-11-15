@@ -256,6 +256,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsEyebrow => 'ANY OPENAI-COMPATIBLE ENDPOINT';
 
   @override
+  String get settingsLanguage => 'App language';
+
+  @override
+  String get settingsLanguageSystem => 'System default';
+
+  @override
+  String get settingsLanguageRestartNote =>
+      'The interface switches immediately; questions use the new language after restarting the app.';
+
+  @override
   String get keyPrivacyNote =>
       'The key is stored only on this device and is sent directly to the chosen provider.';
 

@@ -1,5 +1,5 @@
+import 'package:devmate/data/app_preferences.dart';
 import 'package:devmate/data/llm_settings.dart';
-
 
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
@@ -8,6 +8,8 @@ import 'package:devmate/ui/settings_screen.dart';
 import 'package:devmate/ui/training_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 import '../support/memory_secure_storage.dart';
 
@@ -24,7 +26,7 @@ class _MemoryProgress implements ProgressRepository {
 }
 
 void main() {
-  testWidgets('сброс только прогресса сохраняет вопросы и настройки AI', (
+  testWidgets('reset progress only keeps topics and AI settings', (
     tester,
   ) async {
     final settings = LlmSettingsRepository(storage: MemorySecureStorage());
@@ -35,8 +37,8 @@ void main() {
     );
     await settings.save(aiConfig);
     final catalog = TopicCatalog();
-    final topic = await catalog.addUserTopic('Docker', 'Контейнеры', [
-      ('Что такое образ?', 'Шаблон.'),
+    final topic = await catalog.addUserTopic('Docker', 'Containers', [
+      ('What is an image?', 'A template.'),
     ]);
     final progress = _MemoryProgress();
     final model = TrainingViewModel(progress, catalogRepository: catalog);
@@ -46,7 +48,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        locale: const Locale('ru'),
+        locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: SettingsScreen(
@@ -57,10 +59,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final button = find.widgetWithText(
-      OutlinedButton,
-      'Сбросить только прогресс',
-    );
+    final button = find.widgetWithText(OutlinedButton, 'Reset progress only');
     await tester.scrollUntilVisible(
       button,
       220,
@@ -69,22 +68,22 @@ void main() {
     await tester.tap(button.first);
     await tester.pumpAndSettle();
     expect(
-      find.textContaining('Вопросы, темы и настройки AI сохранятся'),
+      find.textContaining('Questions, topics and AI settings will be kept'),
       findsOneWidget,
     );
-    await tester.tap(find.text('Отмена'));
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(model.points, 10);
     await tester.tap(button.first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Сбросить только прогресс').last);
+    await tester.tap(find.text('Reset progress only').last);
     await tester.pumpAndSettle();
     expect(model.completed, 0);
     expect(model.points, 0);
     expect(progress.scores, isEmpty);
     expect(
       catalog.topicById(topic.id)!.questions.single.prompt,
-      'Что такое образ?',
+      'What is an image?',
     );
     final saved = await settings.load();
     expect(saved.toMap(), aiConfig.toMap());
@@ -97,7 +96,7 @@ void main() {
       final repo = LlmSettingsRepository(storage: storage);
       await tester.pumpWidget(
         MaterialApp(
-          locale: const Locale('ru'),
+          locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: SettingsScreen(settingsRepository: repo),
@@ -107,12 +106,21 @@ void main() {
 
       await tester.tap(find.byType(DropdownButtonFormField<LlmPreset>));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('ChatGPT Codex (подписка)').last);
+      await tester.tap(find.text('ChatGPT Codex (subscription)').last);
 
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.tap(find.text('Сохранить'));
+      // The language dropdown pushed the form down: the button is beyond
+      // the lazy ListView cache extent — drag until visible. pumpAndSettle
+      // is not an option here: the Codex login card animates forever.
+      await tester.scrollUntilVisible(
+        find.text('Save'),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Save'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
@@ -122,4 +130,42 @@ void main() {
       expect(loaded.model, 'gpt-6-luna');
     },
   );
+
+  testWidgets('switching language applies the locale and persists the choice', (
+    tester,
+  ) async {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.withData({});
+    final settings = LlmSettingsRepository(storage: MemorySecureStorage());
+    const aiConfig = LlmSettings(
+      baseUrl: 'https://example.org',
+      model: 'test-model',
+      apiKey: 'secret',
+    );
+    await settings.save(aiConfig);
+    final appPreferences = AppPreferencesRepository();
+    final appLocale = ValueNotifier<Locale?>(null);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(
+          settingsRepository: settings,
+          appLocale: appLocale,
+          appPreferences: appPreferences,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<AppLanguage>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('English').last);
+    await tester.pumpAndSettle();
+
+    expect(appLocale.value, const Locale('en'));
+    expect(await appPreferences.loadLanguage(), AppLanguage.english);
+  });
 }

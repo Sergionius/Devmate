@@ -536,6 +536,24 @@ abstract class AppLocalizations {
   /// **'ЛЮБОЙ OPENAI-СОВМЕСТИМЫЙ ENDPOINT'**
   String get settingsEyebrow;
 
+  /// No description provided for @settingsLanguage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Язык приложения'**
+  String get settingsLanguage;
+
+  /// No description provided for @settingsLanguageSystem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как в системе'**
+  String get settingsLanguageSystem;
+
+  /// No description provided for @settingsLanguageRestartNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Интерфейс переключится сразу; вопросы будут на выбранном языке после перезапуска приложения.'**
+  String get settingsLanguageRestartNote;
+
   /// No description provided for @keyPrivacyNote.
   ///
   /// In ru, this message translates to:

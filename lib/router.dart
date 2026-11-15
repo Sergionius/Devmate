@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'data/app_preferences.dart';
 import 'data/llm_settings.dart';
 import 'data/topic_catalog.dart';
 import '../l10n/l10n.dart';
@@ -58,8 +59,10 @@ GoRoute _route({
 GoRouter createRouter(
   TrainingViewModel viewModel,
   LlmSettingsRepository llmSettings,
-  TopicCatalog catalog,
-) {
+  TopicCatalog catalog, {
+  ValueNotifier<Locale?>? appLocale,
+  AppPreferencesRepository? appPreferences,
+}) {
   GoRouter.optionURLReflectsImperativeAPIs = true;
   return GoRouter(
     initialLocation: '/',
@@ -79,6 +82,8 @@ GoRouter createRouter(
           settingsRepository: llmSettings,
           catalog: catalog,
           viewModel: viewModel,
+          appLocale: appLocale,
+          appPreferences: appPreferences,
         ),
       ),
       _route(
