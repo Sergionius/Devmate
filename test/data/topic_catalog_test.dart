@@ -356,4 +356,157 @@ void main() {
       'Added question',
     ]);
   });
+
+  test(
+    'addJson appends to built-in, extends user topic and creates new one',
+    () async {
+      final repo = MemoryUserTopics();
+      final catalog = TopicCatalog(userTopicsRepository: repo);
+      await catalog.load();
+      final docker = await catalog.addUserTopic('Docker', 'Container basics', [
+        ('Original docker question', 'Original docker answer'),
+      ]);
+      await catalog.addQuestionsToTopic('frontend', [
+        ('Pre-existing extra', 'Pre-existing extra answer'),
+      ]);
+      await catalog.updateQuestion('fe-1', 'Edited prompt', 'Edited answer');
+      final frontendBefore = catalog.topicById('frontend')!;
+      final dockerBefore = catalog.topicById(docker.id)!;
+
+      await catalog.addJson(
+        '{"version":1,"topics":['
+        '{"title":"  frontend  ","description":"Ignored","questions":['
+        '{"id":"ignored-input-id","prompt":"Appended to built-in","answer":"Yes"}]},'
+        '{"title":"docker","description":"Ignored","questions":['
+        '{"prompt":"Appended to user topic","answer":"Sure"}]},'
+        '{"title":"Kubernetes","description":"Orchestration","questions":['
+        '{"prompt":"What is a pod?","answer":"Smallest deployable unit."}]}'
+        ']}',
+      );
+
+      // Built-in topic extended, all existing ids preserved.
+      final frontend = catalog.topicById('frontend')!;
+      expect(
+        frontend.questions,
+        hasLength(frontendBefore.questions.length + 1),
+      );
+      expect(
+        frontend.questions.map((q) => q.id),
+        containsAll(frontendBefore.questions.map((q) => q.id)),
+      );
+      expect(frontend.questions.last.prompt, 'Appended to built-in');
+
+      // User topic extended in place, original id and questions preserved.
+      final dockerAfter = catalog.topicById(docker.id)!;
+      expect(
+        dockerAfter.questions,
+        hasLength(dockerBefore.questions.length + 1),
+      );
+      expect(dockerAfter.questions.first.prompt, 'Original docker question');
+      expect(dockerAfter.questions.last.prompt, 'Appended to user topic');
+
+      // New topic created with fresh ids.
+      final kubernetes = catalog.topics.firstWhere(
+        (t) => t.title == 'Kubernetes',
+      );
+      expect(kubernetes.description, 'Orchestration');
+      expect(kubernetes.questions.single.prompt, 'What is a pod?');
+      expect(kubernetes.id, isNot('frontend'));
+      expect(kubernetes.questions.single.id, isNot('ignored-input-id'));
+
+      // Extras, overrides and built-in topics stay untouched.
+      expect(repo.extraStored['frontend'], hasLength(2));
+      expect((repo.overridesStored['questionEdits'] as Map)['fe-1'], isNotNull);
+      expect(frontend.questions.first.prompt, 'Edited prompt');
+      expect(catalog.topicById('javascript'), isNotNull);
+
+      // Everything survives a reload into a fresh catalog.
+      final reloaded = TopicCatalog(userTopicsRepository: repo);
+      await reloaded.load();
+      final restoredFrontend = reloaded.topicById('frontend')!;
+      expect(
+        restoredFrontend.questions,
+        hasLength(frontendBefore.questions.length + 1),
+      );
+      expect(restoredFrontend.questions.first.prompt, 'Edited prompt');
+      expect(restoredFrontend.questions.last.prompt, 'Appended to built-in');
+      expect(reloaded.topicById(docker.id)!.questions, hasLength(2));
+      expect(
+        reloaded.topics
+            .firstWhere((t) => t.title == 'Kubernetes')
+            .questions
+            .single
+            .prompt,
+        'What is a pod?',
+      );
+    },
+  );
+
+  test(
+    'addJson handles duplicate titles sequentially against live catalog',
+    () async {
+      final repo = MemoryUserTopics();
+      final catalog = TopicCatalog(userTopicsRepository: repo);
+      await catalog.load();
+
+      await catalog.addJson(
+        '{"version":1,"topics":['
+        '{"title":"Docker","description":"First","questions":['
+        '{"prompt":"Q1","answer":"A1"}]},'
+        '{"title":"Docker","description":"Second","questions":['
+        '{"prompt":"Q2","answer":"A2"}]},'
+        '{"title":"frontend","description":"x","questions":['
+        '{"prompt":"B1","answer":"BA1"},{"prompt":"B2","answer":"BA2"}]}'
+        ']}',
+      );
+
+      // First occurrence created the topic, second appended into it.
+      expect(catalog.topics.where((t) => t.title == 'Docker'), hasLength(1));
+      final docker = catalog.topics.firstWhere((t) => t.title == 'Docker');
+      expect(docker.description, 'First');
+      expect(docker.questions.map((q) => q.prompt), ['Q1', 'Q2']);
+
+      // Both built-in entries appended to the same visible topic.
+      final frontend = catalog.topicById('frontend')!;
+      expect(frontend.questions.last.prompt, 'B2');
+      expect(repo.extraStored['frontend'], hasLength(2));
+    },
+  );
+
+  test(
+    'addJson rejects invalid JSON without touching catalog or storage',
+    () async {
+      final repo = MemoryUserTopics();
+      final catalog = TopicCatalog(userTopicsRepository: repo);
+      await catalog.load();
+      await catalog.addUserTopic('Docker', '', [('Q', 'A')]);
+      await catalog.addQuestionsToTopic('frontend', [
+        ('Extra', 'Extra answer'),
+      ]);
+      final beforeExport = catalog.exportJson();
+      final beforeStored = List.of(repo.stored);
+      final beforeExtra = Map.of(repo.extraStored);
+      final beforeOverrides = Map.of(repo.overridesStored);
+
+      await expectLater(
+        catalog.addJson(
+          '{"version":1,"topics":[{"title":"X","description":"D","questions":[{"prompt":"P"}]}]}',
+        ),
+        throwsFormatException,
+      );
+      await expectLater(catalog.addJson('not json'), throwsFormatException);
+      await expectLater(
+        catalog.addJson(
+          '{"version":2,"topics":[{"title":"X","description":"D","questions":[{"prompt":"P","answer":"A"}]}]}',
+        ),
+        throwsFormatException,
+      );
+
+      expect(catalog.exportJson(), beforeExport);
+      expect(repo.stored, beforeStored);
+      expect(repo.extraStored, beforeExtra);
+      expect(repo.overridesStored, beforeOverrides);
+      expect(catalog.topics.where((t) => t.title == 'X'), isEmpty);
+    },
+  );
 }
