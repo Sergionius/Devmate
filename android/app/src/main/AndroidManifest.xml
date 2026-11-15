@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- AI chat calls the user-configured provider directly from the device;
+         without this permission release builds lose network access. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Devmate"
         android:name="${applicationName}"
