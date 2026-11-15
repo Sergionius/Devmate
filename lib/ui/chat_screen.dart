@@ -11,6 +11,7 @@ import '../data/topic_draft.dart';
 import '../l10n/l10n.dart';
 import 'chat_view_model.dart';
 import 'design_system.dart';
+import 'reply_preview.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
@@ -23,25 +24,24 @@ class ChatScreen extends StatefulWidget {
     this.catalog,
     this.appendToTopic,
     this.editQuestionId,
+    this.sessionFactory,
   });
 
   final String title;
   final String systemPrompt;
   final LlmSettingsRepository settingsRepository;
 
-  /// Задан только в чатах работы с темами: после ответа модели код ищет
-  /// JSON-черновик и показывает карточку с действием.
   final TopicCatalog? catalog;
 
-  /// Если задан — черновик воспринимается как вопросы для этой темы
-  /// (без поля title), а кнопка добавляет их в неё.
   final String? appendToTopic;
 
-  /// Если задан — ответы модели в этом чате могут заменять ответ этого
-  /// вопроса (JSON action=update_answer).
   final String? editQuestionId;
   final List<String> suggestions;
   final String intro;
+
+  /// Подменяет фабрику сессии чата; используется в тестах.
+  final ChatSession Function(LlmSettings settings, String systemPrompt)?
+  sessionFactory;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -55,13 +55,14 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Логика чата живёт во ViewModel — как раньше тут жил провайдер.
+
     _viewModel = ChatViewModel(
       settingsRepository: widget.settingsRepository,
       systemPrompt: widget.systemPrompt,
       catalog: widget.catalog,
       appendToTopic: widget.appendToTopic,
       editQuestionId: widget.editQuestionId,
+      sessionFactory: widget.sessionFactory,
     )..loadSettings();
   }
 
@@ -71,9 +72,6 @@ class _ChatScreenState extends State<ChatScreen> {
     await _viewModel.reloadSettings();
   }
 
-  /// Точка входа для отправки из поля, кнопки и suggestions. Прежняя
-  /// семантика: поле очищается только когда сообщение реально ушло
-  /// (пустой текст, стрим или отсутствие сессии — не трогают поле).
   void _sendFromInput(String text) {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _viewModel.streaming || _viewModel.session == null) {
@@ -83,10 +81,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _viewModel.send(trimmed);
   }
 
-  /// Enter (аппаратная клавиатура: десктоп, web, симулятор iOS): не новая
-  /// строка, а отправка сообщения и скрытие клавиатуры. Shift+Enter —
-  /// перенос строки. Событие перехватывается до Shortcuts — иначе
-  /// многострочное поле вставило бы '\n'.
   KeyEventResult _inputKeyHandler(FocusNode node, KeyEvent event) {
     if (event is KeyUpEvent) return KeyEventResult.ignored;
     final key = event.logicalKey;
@@ -97,8 +91,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (HardwareKeyboard.instance.isShiftPressed) {
       return KeyEventResult.ignored;
     }
-    // Незавершённая композиция IME (китайский/японский ввод): Enter
-    // подтверждает состав — не отправляем сообщение.
+
     if (_input.value.composing != TextRange.empty) {
       return KeyEventResult.ignored;
     }
@@ -264,8 +257,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (!isLast || session == null) {
           return _Bubble(message: message, streaming: false);
         }
-        // Последний ответ слушает сессию напрямую: на каждый чанк
-        // перестраивается только этот пузырь, не весь список.
+
         return AnimatedBuilder(
           animation: session,
           builder: (context, _) =>
@@ -281,46 +273,46 @@ class _ChatScreenState extends State<ChatScreen> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Container(
-              decoration: BoxDecoration(
-                color: DevmateColors.surface,
-                border: Border.all(color: DevmateColors.border),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Focus(
-                onKeyEvent: _inputKeyHandler,
-                child: TextField(
-                  controller: _input,
-                  focusNode: _inputFocus,
-                  minLines: 1,
-                  maxLines: 5,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (text) {
-                    // Enter/«Отправить» на мягкой клавиатуре: не оставляем
-                    // клавиатуру раскрытой после отправки.
-                    _inputFocus.unfocus();
-                    _sendFromInput(text);
-                  },
-                  enabled: !_viewModel.streaming,
-                  style: const TextStyle(
-                    color: DevmateColors.primary,
-                    fontSize: 16,
-                    height: 1.4,
+          child: Container(
+            // Обводка рисуется самим контейнером: клип по тому же радиусу
+            // срезает внешнюю половину штриха, и рамка «пропадает» по краям.
+            decoration: BoxDecoration(
+              color: DevmateColors.surface,
+              border: Border.all(color: DevmateColors.border),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Focus(
+              onKeyEvent: _inputKeyHandler,
+              child: TextField(
+                controller: _input,
+                focusNode: _inputFocus,
+                minLines: 1,
+                maxLines: 5,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (text) {
+                  _inputFocus.unfocus();
+                  _sendFromInput(text);
+                },
+                enabled: !_viewModel.streaming,
+                style: const TextStyle(
+                  color: DevmateColors.primary,
+                  fontSize: 16,
+                  height: 1.4,
+                ),
+                decoration: InputDecoration(
+                  // Заливка из глобальной темы закрасила бы углы поля
+                  // квадратом поверх скруглённого контейнера.
+                  filled: false,
+                  hintText: context.l10n.chatInputHint,
+                  hintStyle: const TextStyle(color: DevmateColors.muted),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 14,
                   ),
-                  decoration: InputDecoration(
-                    hintText: context.l10n.chatInputHint,
-                    hintStyle: const TextStyle(color: DevmateColors.muted),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 14,
-                    ),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
                 ),
               ),
             ),
@@ -417,9 +409,6 @@ class _Bubble extends StatelessWidget {
   }
 
   Widget _assistantBody(BuildContext context) {
-    // Текст ошибки не вшивается в сообщение, а вычисляется при рендере:
-    // история сессии остаётся чистой для повторных запросов. К сырой ошибке
-    // провайдера добавляем его собственный ответ (лимиты подписки и т.п.).
     final errorKind = message.errorKind;
     final errorText = errorKind == null
         ? null
@@ -432,8 +421,6 @@ class _Bubble extends StatelessWidget {
         ? message.text
         : message.text.isEmpty
         ? '$errorText$detailSuffix'
-        // Стрим оборвался после частичного ответа: показываем и его,
-        // и причину обрыва.
         : '${message.text}\n\n$errorText$detailSuffix';
     if (text.isEmpty && streaming) {
       return const Padding(
@@ -445,60 +432,18 @@ class _Bubble extends StatelessWidget {
         ),
       );
     }
-    final markdown = MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-      p: const TextStyle(
-        color: DevmateColors.primary,
-        fontSize: 15.5,
-        height: 1.5,
-      ),
-      strong: const TextStyle(
-        color: DevmateColors.primary,
-        fontSize: 15.5,
-        fontWeight: FontWeight.bold,
-      ),
-      em: const TextStyle(
-        color: DevmateColors.primary,
-        fontSize: 15.5,
-        fontStyle: FontStyle.italic,
-      ),
-      h1: const TextStyle(
-        color: DevmateColors.primary,
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-      ),
-      h2: const TextStyle(
-        color: DevmateColors.primary,
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
-      h3: const TextStyle(
-        color: DevmateColors.primary,
-        fontSize: 16.5,
-        fontWeight: FontWeight.bold,
-      ),
-      listBullet: const TextStyle(
-        color: DevmateColors.primary,
-        fontSize: 15.5,
-        height: 1.5,
-      ),
-      code: const TextStyle(
-        color: DevmateColors.accent,
-        backgroundColor: DevmateColors.canvas,
-        fontSize: 14,
-      ),
-      codeblockDecoration: BoxDecoration(
-        color: DevmateColors.canvas,
-        border: Border.all(color: DevmateColors.border),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      blockquoteDecoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: DevmateColors.lavender, width: 3),
-        ),
-      ),
-      a: const TextStyle(color: DevmateColors.lavender),
-      blockSpacing: 10,
-    );
+    if (!streaming) {
+      final preview = replyPreviewMarkdown(text);
+      if (preview != null) {
+        return MarkdownBody(
+          data: preview,
+          softLineBreak: true,
+          shrinkWrap: true,
+          styleSheet: _assistantMarkdownStyle(context),
+        );
+      }
+    }
+    final markdown = _assistantMarkdownStyle(context);
     return MarkdownBody(
       data: streaming ? '$text ▍' : text,
       styleSheet: markdown,
@@ -506,6 +451,62 @@ class _Bubble extends StatelessWidget {
       shrinkWrap: true,
     );
   }
+
+  MarkdownStyleSheet _assistantMarkdownStyle(BuildContext context) =>
+      MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+        p: const TextStyle(
+          color: DevmateColors.primary,
+          fontSize: 15.5,
+          height: 1.5,
+        ),
+        strong: const TextStyle(
+          color: DevmateColors.primary,
+          fontSize: 15.5,
+          fontWeight: FontWeight.bold,
+        ),
+        em: const TextStyle(
+          color: DevmateColors.primary,
+          fontSize: 15.5,
+          fontStyle: FontStyle.italic,
+        ),
+        h1: const TextStyle(
+          color: DevmateColors.primary,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        h2: const TextStyle(
+          color: DevmateColors.primary,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+        h3: const TextStyle(
+          color: DevmateColors.primary,
+          fontSize: 16.5,
+          fontWeight: FontWeight.bold,
+        ),
+        listBullet: const TextStyle(
+          color: DevmateColors.primary,
+          fontSize: 15.5,
+          height: 1.5,
+        ),
+        code: const TextStyle(
+          color: DevmateColors.accent,
+          backgroundColor: DevmateColors.canvas,
+          fontSize: 14,
+        ),
+        codeblockDecoration: BoxDecoration(
+          color: DevmateColors.canvas,
+          border: Border.all(color: DevmateColors.border),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        blockquoteDecoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(color: DevmateColors.lavender, width: 3),
+          ),
+        ),
+        a: const TextStyle(color: DevmateColors.lavender),
+        blockSpacing: 10,
+      );
 }
 
 class _TopicDraftCard extends StatelessWidget {
@@ -520,7 +521,6 @@ class _TopicDraftCard extends StatelessWidget {
   final bool saving;
   final VoidCallback onAdd;
 
-  /// Название существующей темы в append-режиме; null — создание новой.
   final String? appendTitle;
 
   @override

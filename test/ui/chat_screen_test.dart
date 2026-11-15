@@ -1,4 +1,6 @@
+import 'package:devmate/data/llm_chat_provider.dart';
 import 'package:devmate/data/llm_settings.dart';
+
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/ui/chat_screen.dart';
 import 'package:flutter/material.dart';
@@ -25,20 +27,21 @@ void main() {
     final repo = repoWith(MemorySecureStorage());
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: ChatScreen(
           title: 'AI',
           systemPrompt: 'sys',
-          intro: 'Интро',
+          intro: 'Intro',
           settingsRepository: repo,
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Нужен API-ключ'), findsOneWidget);
-    expect(find.text('Открыть настройки'), findsOneWidget);
+    expect(find.text('API key required'), findsOneWidget);
+    expect(find.text('Open settings'), findsOneWidget);
   });
 
   testWidgets(
@@ -47,12 +50,13 @@ void main() {
       final repo = repoWith(configuredStorage);
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: ChatScreen(
             title: 'AI',
             systemPrompt: 'sys',
-            intro: 'Интро',
+            intro: 'Intro',
             settingsRepository: repo,
           ),
         ),
@@ -61,18 +65,16 @@ void main() {
 
       final input = find.byType(TextField);
       expect(input, findsOneWidget);
-      await tester.enterText(input, 'привет');
+      await tester.enterText(input, 'hello');
       await tester.pump();
 
-      // Аппаратный Enter (симулятор iOS, десктоп, web).
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 
-      // Сообщение ушло: пузырь пользователя появился, поле пустое.
-      expect(find.text('привет'), findsOneWidget);
+      expect(find.text('hello'), findsOneWidget);
       final editable = tester.widget<EditableText>(find.byType(EditableText));
       expect(editable.controller.text, isEmpty);
-      // Клавиатура закрыта: фокус больше не в поле ввода.
+
       expect(editable.focusNode.hasFocus, isFalse);
     },
   );
@@ -81,12 +83,13 @@ void main() {
     final repo = repoWith(configuredStorage);
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: ChatScreen(
           title: 'AI',
           systemPrompt: 'sys',
-          intro: 'Интро',
+          intro: 'Intro',
           settingsRepository: repo,
         ),
       ),
@@ -99,11 +102,66 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
 
-    // Пустой ввод не отправляется: пузыря нет, в поле — те же пробелы.
     expect(find.text('   '), findsOneWidget);
     final editable = tester.widget<EditableText>(find.byType(EditableText));
     expect(editable.controller.text, '   ');
-    // Но клавиатура закрывается.
+
     expect(editable.focusNode.hasFocus, isFalse);
   });
+
+  testWidgets('model JSON reply renders as a readable list', (tester) async {
+    const reply =
+        '{"questions":[{"prompt":"What is a commit?",'
+        '"answer":"A snapshot of the widget tree."}]}';
+    final session = _FakeSession(reply);
+    final repo = repoWith(configuredStorage);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChatScreen(
+          title: 'AI',
+          systemPrompt: 'sys',
+          intro: 'Intro',
+          settingsRepository: repo,
+          sessionFactory: (_, _) => session,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'add questions');
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('What is a commit?'), findsWidgets);
+    expect(find.textContaining('A snapshot of the widget tree.'), findsWidgets);
+    expect(find.textContaining('"questions"'), findsNothing);
+    expect(find.textContaining('"prompt"'), findsNothing);
+  });
+}
+
+class _FakeSession extends ChangeNotifier implements ChatSession {
+  _FakeSession(this._reply);
+
+  final String _reply;
+  final List<LlmChatMessage> _history = [];
+
+  @override
+  List<LlmChatMessage> get history => List.unmodifiable(_history);
+
+  @override
+  Stream<String> sendMessageStream(String prompt) async* {
+    _history
+      ..add(LlmChatMessage(LlmRole.user, prompt))
+      ..add(LlmChatMessage(LlmRole.assistant, ''));
+    notifyListeners();
+    for (final chunk in _reply.split('|')) {
+      _history.last.text += chunk;
+      notifyListeners();
+      yield chunk;
+    }
+  }
 }

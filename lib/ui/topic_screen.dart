@@ -74,7 +74,7 @@ class _TopicScreenState extends State<TopicScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: Text(context.l10n.topicEyebrowDirection),
-      // На web назад ведёт кнопка браузера; на мобильных — системная кнопка.
+
       automaticallyImplyLeading: !kIsWeb,
     ),
     body: ListenableBuilder(

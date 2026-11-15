@@ -1,0 +1,674 @@
+{
+  "topics": [
+    {
+      "id": "frontend",
+      "title": "Frontend",
+      "description": "Browser, networking and interfaces",
+      "questions": [
+        {
+          "id": "fe-1",
+          "prompt": "What happens after you type a URL in the browser?",
+          "answer": "The browser resolves DNS, establishes a connection (usually TCP and TLS), sends the HTTP request, receives the response, builds the DOM and CSSOM, executes JavaScript, computes styles and layout, and then paints the page."
+        },
+        {
+          "id": "fe-2",
+          "prompt": "How do debounce and throttle differ?",
+          "answer": "Debounce calls a function after a pause in events. Throttle limits the call rate, for example to at most once per given interval."
+        },
+        {
+          "id": "fe-3",
+          "prompt": "What is accessibility (a11y)?",
+          "answer": "It is the ability for people with different needs to use an interface: semantic markup, keyboard control, element labels, contrast, screen reader support, and visible focus."
+        },
+        {
+          "id": "fe-4",
+          "prompt": "What is CORS and why is it needed?",
+          "answer": "A mechanism by which the browser allows a web page to request resources from another origin. The server explicitly allows foreign origins via headers like Access-Control-Allow-Origin; without them the browser blocks the response to protect users."
+        },
+        {
+          "id": "fe-5",
+          "prompt": "How do SSR and CSR differ?",
+          "answer": "With SSR the HTML is produced on the server, so the first paint and SEO are better while the server carries the load. With CSR the browser assembles the page from data via JavaScript: convenient interactive apps but a slower first render. Often combined: an SSR shell plus hydration."
+        },
+        {
+          "id": "fe-6",
+          "prompt": "How do cookies differ from localStorage and sessionStorage?",
+          "answer": "Cookies are sent with every request to a domain, have a lifetime and HttpOnly/Secure flags, and suit sessions. localStorage persists on the client; sessionStorage is cleared when the tab closes. Neither is a place for secrets."
+        },
+        {
+          "id": "fe-7",
+          "prompt": "What are Core Web Vitals?",
+          "answer": "Google's user-experience metrics: LCP measures loading of the main content, INP responsiveness to interactions, CLS visual stability without layout shifts. They also affect search ranking."
+        },
+        {
+          "id": "fe-8",
+          "prompt": "What is XSS and how do you protect against it?",
+          "answer": "Injection of a malicious script into a page through untrusted data. Protection: output escaping, Content Security Policy, safe DOM APIs instead of innerHTML, and server-side validation."
+        },
+        {
+          "id": "fe-9",
+          "prompt": "What is CSRF?",
+          "answer": "An attack where a foreign site sends a request on behalf of a logged-in user by exploiting automatic cookie transmission. Protection: CSRF tokens, SameSite cookies, origin checks, and avoiding meaningful actions via GET."
+        },
+        {
+          "id": "fe-10",
+          "prompt": "When to choose WebSocket versus Server-Sent Events?",
+          "answer": "WebSocket provides a bidirectional real-time channel: chats, games, collaborative editing. SSE is a simpler one-way server stream: notifications, feeds, tickers; it works over plain HTTP and recovers easily."
+        },
+        {
+          "id": "fe-11",
+          "prompt": "What is lazy loading and what does it buy you?",
+          "answer": "Deferring resource loading until it is actually needed: off-screen images, unused modules, heavy components. It speeds up the initial load and saves bandwidth; key attributes are loading=\"lazy\" and dynamic import."
+        },
+        {
+          "id": "fe-12",
+          "prompt": "How does CSS specificity work?",
+          "answer": "The browser compares selectors by weight: inline styles, then IDs, then classes/attributes/pseudo-classes, then elements. The more specific wins; on a tie the one declared later wins. !important overrides everything but should not be abused."
+        }
+      ]
+    },
+    {
+      "id": "flutter",
+      "title": "Flutter",
+      "description": "Widgets, rendering and state",
+      "questions": [
+        {
+          "id": "fl-1",
+          "prompt": "How do StatelessWidget and StatefulWidget differ?",
+          "answer": "StatelessWidget describes UI from its inputs and stores no mutable state. StatefulWidget pairs with a State object that holds state and calls setState to rebuild the interface."
+        },
+        {
+          "id": "fl-2",
+          "prompt": "Why are keys (Key) needed in Flutter?",
+          "answer": "Keys help Flutter match widgets to elements when the tree rebuilds. They matter most in reorderable lists so that state stays with the right element."
+        },
+        {
+          "id": "fl-3",
+          "prompt": "Why does RenderFlex overflow happen?",
+          "answer": "Children of a Row or Column take more space than available on the main axis. Expanded or Flexible, scrolling, wrapping, or rethinking the size constraints helps."
+        },
+        {
+          "id": "fl-4",
+          "prompt": "What is BuildContext and why is it needed?",
+          "answer": "It is a widget's position in the tree through which the widget finds inherited dependencies: Theme, MediaQuery, providers. That is why context should not be stored for long or used after disposal — the tree may have changed."
+        },
+        {
+          "id": "fl-5",
+          "prompt": "Why mark widget constructors as const?",
+          "answer": "Flutter can reuse const widgets without recreating and rebuilding: if the instance is unchanged, the subtree is skipped on rebuild. It is a cheap performance optimization."
+        },
+        {
+          "id": "fl-6",
+          "prompt": "Which state management approaches do you know?",
+          "answer": "From built-in setState and InheritedWidget to Provider, Riverpod, BLoC and MobX. Local UI state lives in the widget; shared state moves outside. The choice depends on team size and complexity: there is no universal winner."
+        },
+        {
+          "id": "fl-7",
+          "prompt": "Describe the State lifecycle.",
+          "answer": "createState and initState initialize, didChangeDependencies runs after inherited dependencies, build runs on every rebuild, didUpdateWidget when the widget changes, deactivate on removal from the tree, dispose releases resources."
+        },
+        {
+          "id": "fl-8",
+          "prompt": "When should you use FutureBuilder and StreamBuilder?",
+          "answer": "When an asynchronous value must appear in the tree: FutureBuilder for a one-shot result, StreamBuilder for a stream of events. Handle waiting and error states, and create the Future/Stream in initState, not in build."
+        },
+        {
+          "id": "fl-9",
+          "prompt": "What is an isolate and when is it needed?",
+          "answer": "An isolate is an independent unit of execution with its own memory; Dart is single-threaded within an isolate. Heavy computation is moved to a separate isolate via Isolate.run so it does not block the UI thread."
+        },
+        {
+          "id": "fl-10",
+          "prompt": "How do hot reload and hot restart differ?",
+          "answer": "Hot reload swaps code and keeps the current app state while rebuilding widgets. Hot restart resets state to the initial one. Changes in main, class fields, or static data usually require a restart."
+        },
+        {
+          "id": "fl-11",
+          "prompt": "What are slivers and when are they needed?",
+          "answer": "A sliver is a lazily built fragment of the scrollable area; CustomScrollView combines them. They are needed for complex scroll effects: a collapsing header, grids and lists in one scroll, an app bar that collapses on scroll."
+        },
+        {
+          "id": "fl-12",
+          "prompt": "How do you render long lists efficiently?",
+          "answer": "ListView.builder or slivers build only visible items; itemExtent for known heights, const widgets, cacheExtent, and avoiding heavy work in build help. For images use caching and exact sizes."
+        }
+      ]
+    },
+    {
+      "id": "ios",
+      "title": "iOS",
+      "description": "Swift, memory and lifecycle",
+      "questions": [
+        {
+          "id": "ios-1",
+          "prompt": "How does ARC work in Swift?",
+          "answer": "Automatic Reference Counting counts strong references to a class instance and frees memory when the count reaches zero. Strong reference cycles are broken with weak or unowned references."
+        },
+        {
+          "id": "ios-2",
+          "prompt": "How do struct and class differ in Swift?",
+          "answer": "A struct is a value type: it is copied on assignment and does not support inheritance. A class is a reference type that supports inheritance and is managed by ARC."
+        },
+        {
+          "id": "ios-3",
+          "prompt": "What is MainActor for?",
+          "answer": "MainActor isolates code that must run on the main actor, such as UI updates. It helps coordinate access to state safely between concurrent tasks."
+        },
+        {
+          "id": "ios-4",
+          "prompt": "How do weak and unowned differ?",
+          "answer": "Neither increments the reference count and both break retain cycles. weak is optional: the object may be deallocated and the reference becomes nil. unowned skips the nil check: touching a deallocated object crashes, so it is used when the object is guaranteed to outlive the reference."
+        },
+        {
+          "id": "ios-5",
+          "prompt": "Describe the UIViewController lifecycle.",
+          "answer": "init and loadView create the view, viewDidLoad runs initial setup after the hierarchy loads, viewWillAppear/viewDidAppear before and after showing, viewWillDisappear/viewDidDisappear on leaving, deinit releases resources. Use these transitions to sync data and animations."
+        },
+        {
+          "id": "ios-6",
+          "prompt": "Why do Auto Layout constraint conflicts occur?",
+          "answer": "When the constraint system cannot satisfy all requirements simultaneously: contradictory or redundant constraints. The priority hierarchy (lowest is optional) breaks conflicts predictably; the console log shows which constraints conflict."
+        },
+        {
+          "id": "ios-7",
+          "prompt": "What is GCD and how does a serial queue differ from a concurrent one?",
+          "answer": "Grand Central Dispatch is the system's task queue. A serial queue runs blocks strictly one at a time, guaranteeing order and protecting data. A concurrent queue runs several blocks at once without guaranteeing completion order."
+        },
+        {
+          "id": "ios-8",
+          "prompt": "How do async/await work in Swift?",
+          "answer": "An async function can suspend at an await without blocking the thread; the compiler builds the suspension machinery via Task. Errors are handled with async throws. It replaces callback pyramids and some Combine use cases."
+        },
+        {
+          "id": "ios-9",
+          "prompt": "What is Combine for?",
+          "answer": "Apple's reactive framework: Publishers and Subscribers model streams of values over time with transformation operators. It suits data-to-UI binding, input debounce, and cancellable chains; it overlaps a lot with Swift's async sequences."
+        },
+        {
+          "id": "ios-10",
+          "prompt": "When to choose SwiftUI versus UIKit?",
+          "answer": "SwiftUI is faster to develop, declarative, and cross-platform within the Apple ecosystem; good for new features and standard interfaces. UIKit gives full control and mature APIs, needed for complex custom behavior and older OS support. They are often combined via UIHostingController."
+        },
+        {
+          "id": "ios-11",
+          "prompt": "What is the responder chain?",
+          "answer": "The chain of objects through which events — touches, menu actions, keyboard input — look for the first handler: from the specific view up the hierarchy to the view controller, window and application. If nobody handles the event, it is discarded."
+        },
+        {
+          "id": "ios-12",
+          "prompt": "What are the iOS app lifecycle states?",
+          "answer": "Not running; inactive — visible but not receiving events; active — active interaction; background — background work with a time limit; suspended — frozen in memory. Handle these transitions: save data, stop updates and animations."
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "title": "AI-first",
+      "description": "LLMs in the workflow",
+      "questions": [
+        {
+          "id": "ai-1",
+          "prompt": "How do you review code written by an AI assistant?",
+          "answer": "Check requirements and the diff, run tests and the analyzer, assess security, edge cases and performance. A model's answer is a hypothesis, not proof of correctness."
+        },
+        {
+          "id": "ai-2",
+          "prompt": "What is an LLM hallucination?",
+          "answer": "A confidently worded but wrong or invented model answer. It is reduced by checking against sources and docs, by adding tests, and by providing up-to-date context."
+        },
+        {
+          "id": "ai-3",
+          "prompt": "How do you pass context to an AI tool safely?",
+          "answer": "Share only necessary data, strip secrets and personal information, respect company policy, check access rights, and never paste API keys into requests or the repository."
+        },
+        {
+          "id": "ai-4",
+          "prompt": "What is a model's context window?",
+          "answer": "The maximum amount of text the model sees in one request, measured in tokens. Everything needed — code, documents, instructions — must fit; larger windows are costlier and slower, and the model absorbs long context unevenly."
+        },
+        {
+          "id": "ai-5",
+          "prompt": "What is a token and why count in tokens?",
+          "answer": "A token is a piece of a word or a symbol, the unit the model operates on. Token count drives request cost, speed, and fit into the context window, so prompts and code are optimized with token budgets in mind."
+        },
+        {
+          "id": "ai-6",
+          "prompt": "What is RAG and when is it useful?",
+          "answer": "Retrieval-Augmented Generation: before answering, the system searches relevant fragments in a knowledge base and passes them to the model. It reduces hallucinations and provides fresh data without fine-tuning; useful for documentation, knowledge bases and support."
+        },
+        {
+          "id": "ai-7",
+          "prompt": "What do few-shot examples in a prompt give you?",
+          "answer": "A couple of input-output examples define the response format and style far more reliably than long descriptions. It is a simple way to stabilize structured output without fine-tuning."
+        },
+        {
+          "id": "ai-8",
+          "prompt": "What do temperature and top-p mean?",
+          "answer": "Generation randomness parameters. Low temperature makes answers predictable — for code and fact extraction; high temperature adds variety — for brainstorming. top-p restricts the next-token choice to the most probable candidates."
+        },
+        {
+          "id": "ai-9",
+          "prompt": "How do you evaluate the quality of an AI feature in a product?",
+          "answer": "With evals: fixed cases with expected answer properties, automated checks, and sampled manual labeling. Metrics should track the end-to-end outcome — did the user solve their task — not how nice the model sounds."
+        },
+        {
+          "id": "ai-10",
+          "prompt": "When are local models preferable to cloud ones?",
+          "answer": "When data must not leave your environment, offline operation, predictable cost, or low latency with small models is needed. Cloud models are stronger in quality and need no hardware; the choice is often a privacy-price-quality trade-off."
+        },
+        {
+          "id": "ai-11",
+          "prompt": "Why do models need tools and MCP?",
+          "answer": "Tools let the model do more than write text: read code, call APIs, run tests. MCP standardizes how such tools connect, turning the model from an advisor into a participant in the workflow under human control."
+        },
+        {
+          "id": "ai-12",
+          "prompt": "What should you watch for with generated-code licensing?",
+          "answer": "A model may reproduce fragments resembling its training data. In enterprises, provider policies, similarity filters, and code review matter; for open models, the license and dataset terms matter."
+        }
+      ]
+    },
+    {
+      "id": "architecture",
+      "title": "Architecture",
+      "description": "Layers and responsibility boundaries",
+      "questions": [
+        {
+          "id": "arch-1",
+          "prompt": "Why separate the UI and data layers?",
+          "answer": "So that changing the interface does not change how data is stored, and vice versa. Separation simplifies testing, swapping data sources, and reasoning about dependencies."
+        },
+        {
+          "id": "arch-2",
+          "prompt": "What does the Repository pattern do?",
+          "answer": "A repository provides a single interface for data access and hides the details of APIs, local storage, or caches from business logic and UI."
+        },
+        {
+          "id": "arch-3",
+          "prompt": "What does the dependency inversion principle mean?",
+          "answer": "High-level logic depends on abstractions, not concrete low-level implementations. Implementations are passed in from outside, which simplifies replacement and testing."
+        },
+        {
+          "id": "arch-4",
+          "prompt": "Summarize SOLID briefly.",
+          "answer": "S — a class has one reason to change. O — extend without editing existing code. L — subtypes substitute the base type without surprises. I — many small interfaces instead of one huge one. D — depend on abstractions, not implementations."
+        },
+        {
+          "id": "arch-5",
+          "prompt": "What is MVVM and who owns state?",
+          "answer": "The View displays data, the ViewModel holds screen state and presentation logic, the Model covers data and domain. Screen state belongs to the ViewModel; the View stays dumb and subscribes to changes."
+        },
+        {
+          "id": "arch-6",
+          "prompt": "Why is DRY risky?",
+          "answer": "Chasing DRY creates premature abstractions that tie unrelated things together. Duplication is often cheaper than the wrong shared abstraction; merge code when the reasons for change coincide, not the text."
+        },
+        {
+          "id": "arch-7",
+          "prompt": "Why do you need modularity (feature modules)?",
+          "answer": "Modules constrain dependencies: explicit API boundaries, parallel team work, faster builds and simpler tests. Too fine a split adds overhead, so extract modules along business areas."
+        },
+        {
+          "id": "arch-8",
+          "prompt": "What is dependency injection and why is it needed?",
+          "answer": "Dependencies are passed into an object from outside rather than created inside. This makes dependencies explicit, allows fakes in tests, and lets you swap implementations without touching calling code."
+        },
+        {
+          "id": "arch-9",
+          "prompt": "How does event-driven architecture differ from direct calls?",
+          "answer": "A direct call creates an instant dependency between sender and receiver. Events break it: the publisher does not know subscribers, and new reactions are easy to add, but tracing the flow and guaranteeing handling gets harder — a trade-off."
+        },
+        {
+          "id": "arch-10",
+          "prompt": "What is the essence of Clean/Hexagonal architecture?",
+          "answer": "Business logic sits at the center and depends on neither UI, nor database, nor network; outer layers depend on the core through interfaces. This makes logic testable and portable, and infrastructure swaps local."
+        },
+        {
+          "id": "arch-11",
+          "prompt": "When is a monolith better than microservices?",
+          "answer": "For small teams and early-stage products: one deployment, simpler debugging, transactions and refactoring. Microservices pay off when parts scale differently and independent release processes are mature; their price is distribution and operations."
+        },
+        {
+          "id": "arch-12",
+          "prompt": "How do you make and record architecture decisions?",
+          "answer": "Through a deliberate trade-off: options, constraints, cost. It helps to write decisions down briefly (ADR style): context, decision, consequences. This preserves context for future changes and debates."
+        }
+      ]
+    },
+    {
+      "id": "complexity",
+      "title": "O(n) Complexity",
+      "description": "Algorithm time and memory",
+      "questions": [
+        {
+          "id": "big-1",
+          "prompt": "What does O(n) mean for an algorithm?",
+          "answer": "As the input size n grows, the upper bound on time or memory grows linearly, up to constant factors and lower-order terms."
+        },
+        {
+          "id": "big-2",
+          "prompt": "What is the complexity of binary search and under what condition?",
+          "answer": "Time O(log n), extra memory O(1) for the iterative version. The data must be sorted and support access to the middle element."
+        },
+        {
+          "id": "big-3",
+          "prompt": "What is the complexity of two nested loops over n items?",
+          "answer": "Usually O(n²) if each loop runs n times. But you must assess the actual iteration counts: nesting alone does not guarantee O(n²)."
+        },
+        {
+          "id": "big-4",
+          "prompt": "What is amortized O(1) complexity?",
+          "answer": "Individual operations may be expensive but cheap on average over a series. Appending to a dynamic array occasionally requires reallocation with copying, but the average per operation is constant, so the bound is stated over a series of operations."
+        },
+        {
+          "id": "big-5",
+          "prompt": "Compare the complexity of merge sort and quicksort.",
+          "answer": "Merge sort is O(n log n) always but needs O(n) extra memory. Quicksort averages O(n log n) with O(log n) stack, but the worst case is O(n²) with bad pivots; random pivots mitigate that."
+        },
+        {
+          "id": "big-6",
+          "prompt": "What is space complexity?",
+          "answer": "The bound on extra memory as a function of n: in-place sorting is O(1) beyond the input, recursion spends stack memory, a duplicate hash table is O(n). It is often a deliberate trade-off against time."
+        },
+        {
+          "id": "big-7",
+          "prompt": "Why does a hash table have an O(n) worst case?",
+          "answer": "With unlucky hashes many keys land in one bucket and lookup degrades into scanning a list. A good hash function and rehashing under growth keep the average case O(1)."
+        },
+        {
+          "id": "big-8",
+          "prompt": "What is the complexity of balanced search tree operations?",
+          "answer": "Search, insert and delete are O(log n) because balancing keeps the tree height logarithmic in the number of items. An unbalanced tree degenerates into a list with O(n)."
+        },
+        {
+          "id": "big-9",
+          "prompt": "How do big-O, big-Θ and big-Ω differ?",
+          "answer": "O is an upper growth bound, Ω is a lower bound, Θ is exact — both upper and lower. In interviews 'O(n log n) complexity' usually means Θ, but formally O allows any slower bound."
+        },
+        {
+          "id": "big-10",
+          "prompt": "How do you estimate the complexity of a recursive algorithm?",
+          "answer": "Multiply the number of nodes in the recursion tree by the work per node. Naive Fibonacci is O(2ⁿ) from repeated calls; with memoization it is O(n). For divide-and-conquer, log n depth with linear per-level work gives O(n log n)."
+        },
+        {
+          "id": "big-11",
+          "prompt": "Compare insertion into a linked list and an array.",
+          "answer": "Insertion at a known position in a linked list is O(1) by re-linking pointers, but finding the position is O(n). In an array, inserting in the middle requires shifting — O(n), while index access is O(1)."
+        },
+        {
+          "id": "big-12",
+          "prompt": "Why are constants sometimes more important than asymptotics?",
+          "answer": "At real data volumes, O(n) with an expensive operation can lose to O(n log n) with a cheap one, and O(n²) on small n can beat a fancy algorithm. Asymptotics is about scaling; measurements are about the specific case."
+        }
+      ]
+    },
+    {
+      "id": "javascript",
+      "title": "JavaScript / TypeScript",
+      "description": "Async and types",
+      "questions": [
+        {
+          "id": "js-1",
+          "prompt": "How do microtasks differ from macrotasks in JavaScript?",
+          "answer": "After the current stack, the microtask queue runs (for example Promise handlers), then the next macrotask (for example setTimeout). Before the next task, the microtask queue is usually drained."
+        },
+        {
+          "id": "js-2",
+          "prompt": "How does unknown differ from any in TypeScript?",
+          "answer": "any disables type checks for a value. unknown requires narrowing before use, which is safer for data of unknown origin."
+        },
+        {
+          "id": "js-3",
+          "prompt": "What is a closure?",
+          "answer": "A function together with access to the lexical environment where it was created. Thanks to this it can use the outer function's variables even after that function has finished."
+        },
+        {
+          "id": "js-4",
+          "prompt": "How does let differ from var?",
+          "answer": "let and const are block-scoped and are not hoisted with initialization: access before declaration is an error (TDZ). var is function-scoped and hoisted with undefined, which caused bugs in loops and closures."
+        },
+        {
+          "id": "js-5",
+          "prompt": "How does == differ from ===?",
+          "answer": "=== compares without type coercion; == coerces operands by abstract-equality rules, producing surprises like '1' == 1. The practical standard is always ===; the exception is a null/undefined check via == null."
+        },
+        {
+          "id": "js-6",
+          "prompt": "How does prototypal inheritance work?",
+          "answer": "An object references a prototype, and property lookup walks up the prototype chain. class is syntax over this mechanism; methods live on the prototype rather than being copied into each instance."
+        },
+        {
+          "id": "js-7",
+          "prompt": "How do Promise.all, allSettled and race differ?",
+          "answer": "all rejects on the first rejection, losing the rest. allSettled waits for all and returns statuses. race settles with whichever promise settles first, success or not. Promise.any also helps with partial failures."
+        },
+        {
+          "id": "js-8",
+          "prompt": "What is under the hood of async/await?",
+          "answer": "Syntax over Promise: an async function always returns a Promise, await unwraps it via the microtask queue. Errors are caught with try/catch; sequential awaits without dependencies can run in parallel via Promise.all."
+        },
+        {
+          "id": "js-9",
+          "prompt": "How is this determined in JavaScript?",
+          "answer": "By the way a function is called, not where it is declared: for a method — the object, for a plain function — undefined in strict mode, for an arrow function — this lexically from the outer function. bind and call/apply change the binding explicitly."
+        },
+        {
+          "id": "js-10",
+          "prompt": "How does shallow copying differ from deep copying?",
+          "answer": "Spread and Object.assign copy only the top level: nested objects remain shared references and mutations 'leak' through. Deep copying (structuredClone or libraries) duplicates the whole tree — important for immutable state."
+        },
+        {
+          "id": "js-11",
+          "prompt": "How does ESM differ from CommonJS?",
+          "answer": "ESM is the standard: static import/export, tree-shaking, asynchronous loading, top-level await. CommonJS — require/module.exports, synchronous and dynamic; still widespread in the Node ecosystem and tooling."
+        },
+        {
+          "id": "js-12",
+          "prompt": "How does TypeScript narrow types?",
+          "answer": "Through checks in code: typeof, instanceof, in, comparisons, and a discriminant field of a variant. After a guard check the compiler uses the narrowed type; custom checks are described with a predicate like value is Type."
+        }
+      ]
+    },
+    {
+      "id": "algorithms",
+      "title": "Algorithms & Data Structures",
+      "description": "Search, hash tables and arrays",
+      "questions": [
+        {
+          "id": "alg-1",
+          "prompt": "When to use a hash table instead of an array?",
+          "answer": "When you need fast key-based lookup, insertion and deletion: O(1) on average. An array suits ordered index access; a hash table costs extra memory."
+        },
+        {
+          "id": "alg-2",
+          "prompt": "How do you find duplicates in an array in O(n) time?",
+          "answer": "Walk the array once, storing seen values in a set. If a value is already in the set, it is a duplicate. Extra memory is O(n)."
+        },
+        {
+          "id": "alg-3",
+          "prompt": "How does a stack differ from a queue?",
+          "answer": "A stack is LIFO: last in, first out. A queue is FIFO: first in, first out."
+        },
+        {
+          "id": "alg-4",
+          "prompt": "Name the binary tree traversal orders.",
+          "answer": "Pre-order — root, left, right; in-order — left, root, right (sorted output for a BST); post-order — children, then root; plus level-order traversal via a queue. The choice depends on the task: copying a tree, validating a BST, deletion."
+        },
+        {
+          "id": "alg-5",
+          "prompt": "What makes recursion safe?",
+          "answer": "A correct base case that every call is guaranteed to reach, and reducing the task to a smaller one. Without progress toward the base — infinite recursion and stack overflow; deep recursion is unwound into a loop."
+        },
+        {
+          "id": "alg-6",
+          "prompt": "What is the two-pointer technique?",
+          "answer": "Two indices move through the array in coordination, usually from both ends toward each other or at different speeds, shrinking an O(n²) pair scan to O(n). Classics: pair sum in a sorted array, duplicate removal, palindrome check."
+        },
+        {
+          "id": "alg-7",
+          "prompt": "What is the idea behind a sliding window?",
+          "answer": "The window is a subarray that extends on the right and shrinks on the left while maintaining an aggregate (sum, counter) incrementally. Substring and subarray problems are solved in O(n) instead of recomputing the window from scratch."
+        },
+        {
+          "id": "alg-8",
+          "prompt": "When does a greedy algorithm give the optimum?",
+          "answer": "When the task has the greedy-choice property and optimal substructure: the locally best step does not ruin the global optimum. Classics — intervals, minimum spanning trees, Huffman. Without proof, a greedy choice may yield only an approximation."
+        },
+        {
+          "id": "alg-9",
+          "prompt": "What is the essence of dynamic programming?",
+          "answer": "Breaking a task into overlapping subproblems and storing their solutions — memoization top-down or a table bottom-up. The key is a correct state and transition; it turns exponential enumeration into polynomial time."
+        },
+        {
+          "id": "alg-10",
+          "prompt": "When BFS versus DFS on a graph?",
+          "answer": "BFS via a queue finds shortest paths by edge count, exploring in distance waves. DFS via a stack or recursion suits components, cycles and topological sorting. Memory: BFS may hold a whole level, DFS the depth."
+        },
+        {
+          "id": "alg-11",
+          "prompt": "Why is topological sorting needed?",
+          "answer": "It orders the vertices of a DAG so every edge goes from earlier to later: module build order, task plans with dependencies. Implemented via DFS with post-processing or Kahn's algorithm by in-degrees."
+        },
+        {
+          "id": "alg-12",
+          "prompt": "How do you approach the algorithmic interview section?",
+          "answer": "Clarify conditions and edge cases, work through a small example, sketch a rough solution with its complexity, then optimize with data structures. Think out loud — the interviewer assesses the process, not just the final code."
+        }
+      ]
+    },
+    {
+      "id": "testing",
+      "title": "Testing",
+      "description": "Verifying logic and interfaces",
+      "questions": [
+        {
+          "id": "test-1",
+          "prompt": "How does a unit test differ from an integration test?",
+          "answer": "A unit test checks a small piece of logic in isolation. An integration test checks the interaction of several components or a full user scenario."
+        },
+        {
+          "id": "test-2",
+          "prompt": "What does a widget test check in Flutter?",
+          "answer": "It builds the widget in a test environment and verifies rendering and interactions via WidgetTester: taps, text input and UI changes without launching the app on a device."
+        },
+        {
+          "id": "test-3",
+          "prompt": "Why must tests not depend on each other?",
+          "answer": "Run-order dependence makes results unstable and complicates root-cause searches. Every test should create and clean up its own state."
+        },
+        {
+          "id": "test-4",
+          "prompt": "What is the AAA test structure?",
+          "answer": "Arrange — prepare data and dependencies, Act — invoke the action under test, Assert — check the result. A test reads like a small scenario; several Acts are fine when they verify state transitions."
+        },
+        {
+          "id": "test-5",
+          "prompt": "How does a mock differ from a stub and a fake?",
+          "answer": "A stub returns canned answers. A fake is a working simplified implementation, like an in-memory store. A mock additionally records interactions — which calls and how many times — and can verify them."
+        },
+        {
+          "id": "test-6",
+          "prompt": "Why measure coverage, and why is 100% not the goal?",
+          "answer": "Coverage reveals untested spots and dead code. But a high percentage does not guarantee meaningful checking: code can run without assertions. The goal is covering key paths and regressions, not a metric for its own sake."
+        },
+        {
+          "id": "test-7",
+          "prompt": "When are golden (snapshot) tests useful?",
+          "answer": "For verifying the rendering of stable components: comparison against a committed reference catches visual regressions. Updating them on intentional changes is painful, so apply them selectively and review reference diffs."
+        },
+        {
+          "id": "test-8",
+          "prompt": "Describe the TDD cycle.",
+          "answer": "Red — write a failing test for the new behavior, green — write the minimal code to pass, refactor — improve the code while keeping the test green. The cycle is short and keeps the design testable."
+        },
+        {
+          "id": "test-9",
+          "prompt": "What do tests give beyond 'it works now'?",
+          "answer": "They are executable documentation of behavior and a safety net for refactoring: a green build lets you change boldly. A good test name explains a module's contract better than a comment."
+        },
+        {
+          "id": "test-10",
+          "prompt": "How do you test asynchronous code?",
+          "answer": "Test runners can await Futures: async/await in the test, fakeAsync for time control, replacing timers and sources with deterministic fakes. The main thing is to rule out real waiting and luck-based ordering."
+        },
+        {
+          "id": "test-11",
+          "prompt": "Why do tests turn flaky and what to do about it?",
+          "answer": "Because of dependence on time, ordering, network, animations and shared resources. Fixed by isolating state, deterministic time, waiting on conditions instead of sleeps. Fix a flaky test or disable it with a ticket — do not tolerate it."
+        },
+        {
+          "id": "test-12",
+          "prompt": "Why run tests in CI on every PR?",
+          "answer": "Fast feedback before merge: regressions and broken contracts are caught before review. A red CI blocks merging, which disciplines fixing problems now rather than 'later'."
+        }
+      ]
+    },
+    {
+      "id": "system",
+      "title": "System Design",
+      "description": "Scaling and reliability",
+      "questions": [
+        {
+          "id": "sys-1",
+          "prompt": "How do you design an app's offline mode?",
+          "answer": "Store the needed data locally, surface sync state explicitly, queue changes, and design a conflict-resolution strategy for when connectivity returns."
+        },
+        {
+          "id": "sys-2",
+          "prompt": "Why is a cache needed and what is its invalidation?",
+          "answer": "A cache speeds up access and reduces load on the source. Invalidation is removing or refreshing stale data by TTL, change events, or explicit commands."
+        },
+        {
+          "id": "sys-3",
+          "prompt": "Which questions should you ask before designing a system?",
+          "answer": "Clarify features, data volume and load, latency, availability, security and cost requirements, plus constraints and expected growth."
+        },
+        {
+          "id": "sys-4",
+          "prompt": "Why is a load balancer needed?",
+          "answer": "It distributes requests across service instances while tracking their health. That gives horizontal scaling, node-failure resilience and deploys without downtime. Strategies: round robin, least connections, latency-based."
+        },
+        {
+          "id": "sys-5",
+          "prompt": "State the CAP theorem in plain words.",
+          "answer": "Under network partitioning a distributed system chooses: availability (answer everyone) or consistency (single version of data). In practice you trade per data type: consistency for money, availability for feeds."
+        },
+        {
+          "id": "sys-6",
+          "prompt": "What are replication and read lag?",
+          "answer": "Copies of data on replicas scale reads and improve resilience. Replicas lag behind the primary — replication lag; a user writes data and does not see it when reading from a replica. Fixed by reading your own shard, read-after-write sessions."
+        },
+        {
+          "id": "sys-7",
+          "prompt": "How does sharding differ from partitioning?",
+          "answer": "Partitioning divides data within one node by key or time; sharding distributes it across nodes to scale writes and volume. The shard key is chosen so load and data spread evenly."
+        },
+        {
+          "id": "sys-8",
+          "prompt": "What is API idempotency and why is it needed?",
+          "answer": "Repeating the same request does not change the result again. It is critical for retries: the client cannot know whether the request arrived. Approaches — idempotency keys, versioned updates, PUT instead of double POST."
+        },
+        {
+          "id": "sys-9",
+          "prompt": "Why limit request rate (rate limiting)?",
+          "answer": "To protect the service from bursts, client errors and abuse: limits per key/user returning 429 with Retry-After headers. Inside services — throttling and circuit breakers for cascade resilience."
+        },
+        {
+          "id": "sys-10",
+          "prompt": "Why is a message queue needed?",
+          "answer": "It decouples producer and consumer: smooths peaks, survives outages, provides retries and processing order. The price is eventual consistency and the need for idempotent consumers that tolerate duplicates."
+        },
+        {
+          "id": "sys-11",
+          "prompt": "What is an SLO and why alert on it?",
+          "answer": "A Service Level Objective is a target reliability level, for example 99.9% successful requests per month. Alerts are built on the error budget and user-visible symptoms rather than every metric — otherwise they bury the on-call in noise."
+        },
+        {
+          "id": "sys-12",
+          "prompt": "How is load testing performed?",
+          "answer": "Define the target profile: RPS, ramp shape, duration. Reproduce realistic scenarios, measure latency percentiles and errors, find the bottleneck, fix and repeat. The goal is knowing your limits, not 'running it once and moving on'."
+        }
+      ]
+    }
+  ]
+}

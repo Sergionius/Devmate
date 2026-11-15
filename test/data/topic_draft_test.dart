@@ -2,83 +2,86 @@ import 'package:devmate/data/topic_draft.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('голый JSON-объект парсится', () {
+  test('a bare JSON object parses', () {
     const text =
-        '{"title":"Основы Git","description":"Система контроля версий",'
-        '"questions":[{"prompt":"Что такое коммит?","answer":"Снимок состояния."}]}';
+        '{"title":"Git basics","description":"A version control system",'
+        '"questions":[{"prompt":"What is a commit?","answer":"A snapshot of the tree."}]}';
     final draft = parseTopicDraft(text);
     expect(draft, isNotNull);
-    expect(draft!.title, 'Основы Git');
-    expect(draft.description, 'Система контроля версий');
-    expect(draft.questions.single, ('Что такое коммит?', 'Снимок состояния.'));
+    expect(draft!.title, 'Git basics');
+    expect(draft.description, 'A version control system');
+    expect(draft.questions.single, (
+      'What is a commit?',
+      'A snapshot of the tree.',
+    ));
   });
 
-  test('JSON в markdown-фенсе парсится с пояснениями вокруг', () {
+  test('JSON in a markdown fence parses with prose around it', () {
     const text =
-        'Вот тема:\n```json\n{"title":"SQL","description":"",'
-        '"questions":[{"prompt":"Индекс?","answer":"Ускоряет поиск."}]}\n```\n'
-        'Подойдёт?';
+        'Here is a topic:\n```json\n{"title":"SQL","description":"",'
+        '"questions":[{"prompt":"Index?","answer":"It speeds up lookups."}]}\n```\n'
+        'Works for you?';
     final draft = parseTopicDraft(text);
     expect(draft, isNotNull);
     expect(draft!.title, 'SQL');
     expect(draft.description, isEmpty);
   });
 
-  test('вложенные скобки в ответах не ломают парсинг фенса', () {
+  test('nested braces in answers do not break fence parsing', () {
     const text =
-        '```json\n{"title":"Алгоритмы","description":"O(n)",'
-        '"questions":[{"prompt":"Хм {так}?","answer":"Ответ {в} скобках."}]}\n```';
+        '```json\n{"title":"Algorithms","description":"O(n)",'
+        '"questions":[{"prompt":"Hmm {like this}?","answer":"An answer {in} braces."}]}\n```';
     expect(parseTopicDraft(text), isNotNull);
   });
 
-  test('уточняющий вопрос с фигурными скобками — не черновик', () {
-    const text = 'Уточни: уровень junior или middle? Пример кода: {"a": 1}';
+  test('a clarifying question with braces is not a draft', () {
+    const text = 'Clarify: junior or middle level? Code sample: {"a": 1}';
     expect(parseTopicDraft(text), isNull);
   });
 
-  test('обрезанный JSON и невалидные поля — не черновик', () {
+  test('truncated JSON and invalid fields are not a draft', () {
     expect(parseTopicDraft('{"title":"Git","questions":[{"prompt":'), isNull);
     expect(
       parseTopicDraft(
-        '{"title":"Git","questions":[{"prompt":"П","answer":""}]}',
+        '{"title":"Git","questions":[{"prompt":"Q","answer":""}]}',
       ),
       isNull,
     );
-    // Пустой title → draft без названия (append-режим), questions валидны.
+
     final noTitle = parseTopicDraft(
-      '{"title":"","questions":[{"prompt":"П","answer":"О"}]}',
+      '{"title":"","questions":[{"prompt":"Q","answer":"A"}]}',
     );
     expect(noTitle, isNotNull);
     expect(noTitle!.title, isNull);
     expect(parseTopicDraft('{"title":"Git","questions":[]}'), isNull);
-    expect(parseTopicDraft('["не","объект"]'), isNull);
+    expect(parseTopicDraft('["not","an object"]'), isNull);
   });
 
-  test('пробелы обрезаются', () {
+  test('whitespace is trimmed', () {
     final draft = parseTopicDraft(
-      '{"title":"  Git  ","description":"  д  ",'
-      '"questions":[{"prompt":"  П  ","answer":"  О  "}]}',
+      '{"title":"  Git  ","description":"  d  ",'
+      '"questions":[{"prompt":"  Q  ","answer":"  A  "}]}',
     );
     expect(draft!.title, 'Git');
-    expect(draft.questions.single.$1, 'П');
+    expect(draft.questions.single.$1, 'Q');
   });
 
-  test('parseAnswerUpdate: fenced с action=update_answer', () {
+  test('parseAnswerUpdate: fenced with action=update_answer', () {
     const text =
-        '```json\n{"action":"update_answer","prompt":"Уточнённый вопрос",'
-        '"answer":"Новый эталонный ответ."}\n```';
+        '```json\n{"action":"update_answer","prompt":"Refined question",'
+        '"answer":"New reference answer."}\n```';
     final update = parseAnswerUpdate(text);
     expect(update, isNotNull);
-    expect(update!.prompt, 'Уточнённый вопрос');
-    expect(update.answer, 'Новый эталонный ответ.');
+    expect(update!.prompt, 'Refined question');
+    expect(update.answer, 'New reference answer.');
   });
 
-  test('parseAnswerUpdate: без action и с пустыми полями — null', () {
-    expect(parseAnswerUpdate('{"prompt":"П","answer":"О"}'), isNull);
+  test('parseAnswerUpdate: missing action or empty fields yield null', () {
+    expect(parseAnswerUpdate('{"prompt":"Q","answer":"A"}'), isNull);
     expect(
-      parseAnswerUpdate('{"action":"update_answer","prompt":" ","answer":"О"}'),
+      parseAnswerUpdate('{"action":"update_answer","prompt":" ","answer":"A"}'),
       isNull,
     );
-    expect(parseAnswerUpdate('Уточняющий вопрос без JSON'), isNull);
+    expect(parseAnswerUpdate('A clarifying question without JSON'), isNull);
   });
 }

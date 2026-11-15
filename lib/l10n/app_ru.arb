@@ -101,6 +101,9 @@
   "answerSaveError": "Не удалось сохранить ответ. Попробуйте ещё раз.",
   "settingsTitle": "AI-провайдер (BYOK)",
   "settingsEyebrow": "ЛЮБОЙ OPENAI-СОВМЕСТИМЫЙ ENDPOINT",
+  "settingsLanguage": "Язык приложения",
+  "settingsLanguageSystem": "Как в системе",
+  "settingsLanguageRestartNote": "Интерфейс переключится сразу; вопросы будут на выбранном языке после перезапуска приложения.",
   "keyPrivacyNote": "Ключ хранится только на этом устройстве и уходит напрямую выбранному провайдеру.",
   "webCorsNote": "На web работают только провайдеры с CORS: OpenAI, OpenRouter, Groq. z.ai и DeepSeek блокируют запросы из браузера — используйте приложение на iOS/Android или другой провайдер.",
   "worksInBrowserSuffix": "· работает в браузере",
@@ -324,5 +327,15 @@
       }
     }
   },
-  "codexWebUnsupported": "Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере."
+  "codexWebUnsupported": "Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере.",
+  "presetCodexLabel": "ChatGPT Codex (подписка)",
+  "presetZaiCodingLabel": "z.ai GLM Coding (подписка)",
+  "presetZaiLabel": "z.ai API (оплата за токены)",
+  "presetOllamaLabel": "Ollama (локально)",
+  "presetCustomLabel": "Свой endpoint",
+  "codexErrorNetwork": "Ошибка сети. Проверьте подключение к интернету.",
+  "codexErrorInvalidResponse": "Некорректный ответ сервера входа. Попробуйте позже.",
+  "codexErrorRejected": "Код отклонён или истёк. Запросите новый.",
+  "codexErrorSessionExpired": "Вход отменён или время ожидания истекло.",
+  "codexErrorTimeout": "Превышено время ожидания подтверждения. Попробуйте ещё раз."
 }

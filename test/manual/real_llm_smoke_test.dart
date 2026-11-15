@@ -5,11 +5,9 @@ import 'package:devmate/data/llm_settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Real-provider smoke test: runs only when assets/config/.env has a key
-/// (`flutter test test/manual/real_llm_smoke_test.dart`). Skipped elsewhere.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  // flutter_test подменяет HttpClient заглушкой (всегда 400); вернём настоящую сеть.
+
   setUpAll(() {
     HttpOverrides.global = null;
   });
@@ -22,23 +20,23 @@ void main() {
   test('real provider streams a reply', () async {
     if (!settings.isConfigured) {
       markTestSkipped(
-        'assets/config/.env не задан — пропускаем реальный запрос',
+        'assets/config/.env is not set — skipping the real request',
       );
       return;
     }
     final provider = OpenAiCompatibleProvider(
       settings: settings,
-      systemPrompt: 'Отвечай по-русски одним словом.',
+      systemPrompt: 'Reply with a single word.',
     );
     final chunks = await provider
-        .sendMessageStream('Скажи ровно одно слово: ок')
+        .sendMessageStream('Say exactly one word: ok')
         .toList();
     final reply = chunks.join();
     debugPrint(
       '=== provider reply (${reply.length} chars): ${reply.trim().substring(0, reply.length.clamp(0, 120))}',
     );
     expect(reply, isNotEmpty);
-    expect(reply, isNot(contains('Ошибка')));
+    expect(reply, isNot(contains('Error')));
   }, timeout: const Timeout(Duration(minutes: 2)));
 }
 

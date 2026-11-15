@@ -5,9 +5,6 @@ import '../domain/question.dart';
 import '../l10n/l10n.dart';
 import 'design_system.dart';
 
-/// Ручное редактирование темы: название/описание и вопросы.
-/// Работает одинаково для встроенных и пользовательских тем —
-/// правки хранятся оверлеями в TopicCatalog.
 class EditTopicScreen extends StatefulWidget {
   const EditTopicScreen({
     super.key,

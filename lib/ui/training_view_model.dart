@@ -4,7 +4,6 @@ import '../data/progress_repository.dart';
 import '../data/topic_catalog.dart';
 import '../domain/question.dart';
 
-/// Ошибки тренировки; текст локализуется в UI.
 enum TrainingError { progressLoad, answerSave }
 
 class TrainingViewModel extends ChangeNotifier {
@@ -32,7 +31,7 @@ class TrainingViewModel extends ChangeNotifier {
   Future<void> load() async {
     try {
       _scores = await _repository.load();
-      // Мусор от удалённых вопросов не должен завышать статистику.
+
       final known = _catalog?.knownQuestionIds;
       if (known != null) {
         _scores = {
@@ -49,7 +48,6 @@ class TrainingViewModel extends ChangeNotifier {
     }
   }
 
-  /// Записи выполняются по порядку вызова; сбой одной не блокирует следующие.
   Future<T> _enqueueWrite<T>(Future<T> Function() write) {
     final result = _pendingWrite.then((_) => write());
     _pendingWrite = result.then<void>(
@@ -59,7 +57,6 @@ class TrainingViewModel extends ChangeNotifier {
     return result;
   }
 
-  /// Удаляет результаты только для вопросов выбранной темы.
   Future<void> resetTopicProgress(InterviewTopic topic) =>
       _enqueueWrite(() async {
         final ids = {for (final question in topic.questions) question.id};
@@ -76,7 +73,6 @@ class TrainingViewModel extends ChangeNotifier {
         notifyListeners();
       });
 
-  /// Очищает статистику и сразу обновляет открытые экраны.
   Future<void> resetProgress() => _enqueueWrite(() async {
     await _repository.save({});
     _scores = {};

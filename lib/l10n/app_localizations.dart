@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_en.dart';
 import 'app_localizations_ru.dart';
 
 // ignore_for_file: type=lint
@@ -92,7 +93,10 @@ abstract class AppLocalizations {
       ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('ru')];
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('ru'),
+  ];
 
   /// No description provided for @questionsManagement.
   ///
@@ -531,6 +535,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'ЛЮБОЙ OPENAI-СОВМЕСТИМЫЙ ENDPOINT'**
   String get settingsEyebrow;
+
+  /// No description provided for @settingsLanguage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Язык приложения'**
+  String get settingsLanguage;
+
+  /// No description provided for @settingsLanguageSystem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как в системе'**
+  String get settingsLanguageSystem;
+
+  /// No description provided for @settingsLanguageRestartNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Интерфейс переключится сразу; вопросы будут на выбранном языке после перезапуска приложения.'**
+  String get settingsLanguageRestartNote;
 
   /// No description provided for @keyPrivacyNote.
   ///
@@ -1149,6 +1171,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере.'**
   String get codexWebUnsupported;
+
+  /// No description provided for @presetCodexLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'ChatGPT Codex (подписка)'**
+  String get presetCodexLabel;
+
+  /// No description provided for @presetZaiCodingLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'z.ai GLM Coding (подписка)'**
+  String get presetZaiCodingLabel;
+
+  /// No description provided for @presetZaiLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'z.ai API (оплата за токены)'**
+  String get presetZaiLabel;
+
+  /// No description provided for @presetOllamaLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ollama (локально)'**
+  String get presetOllamaLabel;
+
+  /// No description provided for @presetCustomLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свой endpoint'**
+  String get presetCustomLabel;
+
+  /// No description provided for @codexErrorNetwork.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ошибка сети. Проверьте подключение к интернету.'**
+  String get codexErrorNetwork;
+
+  /// No description provided for @codexErrorInvalidResponse.
+  ///
+  /// In ru, this message translates to:
+  /// **'Некорректный ответ сервера входа. Попробуйте позже.'**
+  String get codexErrorInvalidResponse;
+
+  /// No description provided for @codexErrorRejected.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код отклонён или истёк. Запросите новый.'**
+  String get codexErrorRejected;
+
+  /// No description provided for @codexErrorSessionExpired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход отменён или время ожидания истекло.'**
+  String get codexErrorSessionExpired;
+
+  /// No description provided for @codexErrorTimeout.
+  ///
+  /// In ru, this message translates to:
+  /// **'Превышено время ожидания подтверждения. Попробуйте ещё раз.'**
+  String get codexErrorTimeout;
 }
 
 class _AppLocalizationsDelegate
@@ -1162,7 +1244,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['ru'].contains(locale.languageCode);
+      <String>['en', 'ru'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -1171,6 +1253,8 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
     case 'ru':
       return AppLocalizationsRu();
   }

@@ -1,6 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// In-memory [FlutterSecureStorage] stand-in for tests.
 class MemorySecureStorage extends FlutterSecureStorage {
   final Map<String, String> values = {};
 

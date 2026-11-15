@@ -118,6 +118,21 @@ ThemeData devmateTheme() {
       ),
       contentPadding: const EdgeInsets.all(20),
     ),
+    snackBarTheme: const SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: DevmateColors.surfaceRaised,
+      elevation: 0,
+      contentTextStyle: TextStyle(
+        color: DevmateColors.primary,
+        fontSize: 14,
+        height: 1.45,
+      ),
+      actionTextColor: DevmateColors.accent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(14)),
+        side: BorderSide(color: DevmateColors.border),
+      ),
+    ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(
       color: DevmateColors.accent,
       linearTrackColor: DevmateColors.border,

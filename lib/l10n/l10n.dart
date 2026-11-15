@@ -1,14 +1,13 @@
 import 'package:flutter/widgets.dart';
 
 import '../data/llm_chat_provider.dart';
+import '../data/llm_settings.dart';
 import 'app_localizations.dart';
 
-/// Быстрый доступ к локализованным строкам: `context.l10n.someKey`.
 extension L10n on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 }
 
-/// Локализованный текст для вида ошибки LLM-провайдера.
 extension LlmErrorText on BuildContext {
   String llmErrorText(LlmErrorKind kind) => switch (kind) {
     LlmErrorKind.keyRejected => l10n.llmKeyRejected,
@@ -20,5 +19,16 @@ extension LlmErrorText on BuildContext {
     LlmErrorKind.emptyTestResponse => l10n.llmTestEmptyResponse,
     LlmErrorKind.emptyReply => l10n.llmEmptyReply,
     LlmErrorKind.subscriptionExpired => l10n.llmSubscriptionExpired,
+  };
+}
+
+extension PresetLabel on BuildContext {
+  String presetLabel(LlmPreset preset) => switch (preset.id) {
+    'codex' => l10n.presetCodexLabel,
+    'zaiCoding' => l10n.presetZaiCodingLabel,
+    'zai' => l10n.presetZaiLabel,
+    'ollama' => l10n.presetOllamaLabel,
+    'custom' => l10n.presetCustomLabel,
+    _ => preset.label,
   };
 }

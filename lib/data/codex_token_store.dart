@@ -5,8 +5,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'codex_auth.dart';
 
-/// Хранилище токенов Codex-подписки: тот же secure storage (iOS Keychain /
-/// Android Keystore), что и ключи API.
 class CodexTokenStore {
   CodexTokenStore({FlutterSecureStorage? storage})
     : _storage = storage ?? const FlutterSecureStorage();
@@ -21,7 +19,6 @@ class CodexTokenStore {
     try {
       return CodexTokens.fromJson(jsonDecode(raw) as Map<String, dynamic>);
     } catch (_) {
-      // Повреждённая запись эквивалентна отсутствию токенов: вход заново.
       return null;
     }
   }
@@ -32,15 +29,11 @@ class CodexTokenStore {
   Future<void> clear() => _storage.delete(key: _key);
 }
 
-/// Фасад над [CodexDeviceAuthApi] и [CodexTokenStore]: выдаёт свежие токены
-/// с авто-обновлением (single-flight — параллельные запросы не устраивают
-/// гонку за ротирующийся refresh-токен).
 class CodexAuth {
   CodexAuth({CodexDeviceAuthApi? api, CodexTokenStore? store})
     : _api = api ?? CodexDeviceAuthApi(),
       _store = store ?? CodexTokenStore();
 
-  /// Экземпляр по умолчанию для UI/чата; тесты создают свои.
   static final CodexAuth shared = CodexAuth();
 
   final CodexDeviceAuthApi _api;
@@ -50,17 +43,10 @@ class CodexAuth {
 
   Future<CodexTokens?> load() => _store.load();
 
-  /// Сохраняет токены после успешного [runCodexDeviceLogin].
   Future<void> completeLogin(CodexTokens tokens) => _store.save(tokens);
 
-  /// Локальная очистка. Remote-revocation для этого флоу у OpenAI не
-  /// задокументирован, поэтому выход — только локальный; пользователь может
-  /// отозвать доступ в настройках ChatGPT.
   Future<void> logout() => _store.clear();
 
-  /// Свежие токены: возвращает сохранённые или обновляет, если истекают
-  /// в пределах [margin]. Нет токенов/мёртвый refresh —
-  /// [CodexAuthException] c [CodexAuthErrorKind.sessionExpired].
   Future<CodexTokens> ensureFreshTokens({
     Duration margin = codexRefreshMargin,
   }) {
