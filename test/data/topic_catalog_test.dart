@@ -37,6 +37,52 @@ class MemoryUserTopics implements UserTopicsRepository {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('JSON roundtrip replaces catalog, rejects malformed input, reset restores builtins', () async {
+    final repo = MemoryUserTopics();
+    final catalog = TopicCatalog(userTopicsRepository: repo);
+    await catalog.load();
+    final original = catalog.topicById('frontend')!;
+    await catalog.addUserTopic('Docker', 'Контейнеры', [('Образ?', 'Шаблон.')]);
+    final json = catalog.exportJson();
+    await catalog.importJson(json);
+    expect(catalog.topics.length, 11);
+    expect(catalog.topics.first.title, 'Frontend');
+    expect(
+      catalog.topics.first.questions.first.prompt,
+      original.questions.first.prompt,
+    );
+    final before = catalog.exportJson();
+    await expectLater(
+      catalog.importJson(
+        '{"version":1,"topics":[{"title":"X","description":"D","questions":[{"prompt":"P"}]}]}',
+      ),
+      throwsFormatException,
+    );
+    expect(catalog.exportJson(), before);
+    await catalog.reset();
+    expect(catalog.topics.length, 10);
+    expect(
+      catalog.topicById('frontend')!.questions.length,
+      original.questions.length,
+    );
+    expect(repo.stored, isEmpty);
+    expect(repo.extraStored, isEmpty);
+    expect(repo.overridesStored, isEmpty);
+    final reloaded = TopicCatalog(userTopicsRepository: repo);
+    await reloaded.load();
+    expect(reloaded.topics.length, 10);
+  });
+
+  test('экспорт темы без описания можно импортировать обратно', () async {
+    final catalog = TopicCatalog();
+    await catalog.addUserTopic('Docker', '', [('Образ?', 'Шаблон.')]);
+    final json = catalog.exportJson();
+    final restored = TopicCatalog();
+    await restored.importJson(json);
+    expect(restored.topics.last.description, isEmpty);
+    expect(restored.topics.last.questions.single.prompt, 'Образ?');
+  });
+
   test(
     'addUserTopic строит уникальные u-префиксованные id и персистит',
     () async {

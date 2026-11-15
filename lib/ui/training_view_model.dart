@@ -16,6 +16,7 @@ class TrainingViewModel extends ChangeNotifier {
   Map<String, int> _scores = {};
   bool _loading = true;
   bool _saving = false;
+  Future<void> _pendingWrite = Future<void>.value();
   TrainingError? _error;
 
   bool get loading => _loading;
@@ -48,6 +49,41 @@ class TrainingViewModel extends ChangeNotifier {
     }
   }
 
+  /// Записи выполняются по порядку вызова; сбой одной не блокирует следующие.
+  Future<T> _enqueueWrite<T>(Future<T> Function() write) {
+    final result = _pendingWrite.then((_) => write());
+    _pendingWrite = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace stackTrace) {},
+    );
+    return result;
+  }
+
+  /// Удаляет результаты только для вопросов выбранной темы.
+  Future<void> resetTopicProgress(InterviewTopic topic) =>
+      _enqueueWrite(() async {
+        final ids = {for (final question in topic.questions) question.id};
+        final known = _catalog?.knownQuestionIds;
+        final remaining = {
+          for (final entry in _scores.entries)
+            if (!ids.contains(entry.key) &&
+                (known == null || known.contains(entry.key)))
+              entry.key: entry.value,
+        };
+        await _repository.save(remaining);
+        _scores = remaining;
+        _error = null;
+        notifyListeners();
+      });
+
+  /// Очищает статистику и сразу обновляет открытые экраны.
+  Future<void> resetProgress() => _enqueueWrite(() async {
+    await _repository.save({});
+    _scores = {};
+    _error = null;
+    notifyListeners();
+  });
+
   Future<bool> record(
     InterviewQuestion question, {
     required bool knewAnswer,
@@ -57,16 +93,25 @@ class TrainingViewModel extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final score = knewAnswer ? 10 : 5;
-      final updated = {
-        ..._scores,
-        question.id: score > (_scores[question.id] ?? 0)
-            ? score
-            : _scores[question.id]!,
-      };
-      await _repository.save(updated);
-      _scores = updated;
-      return true;
+      return await _enqueueWrite(() async {
+        final score = knewAnswer ? 10 : 5;
+        final known = _catalog?.knownQuestionIds;
+        if (known != null && !known.contains(question.id)) {
+          _error = TrainingError.answerSave;
+          return false;
+        }
+        final updated = {
+          for (final entry in _scores.entries)
+            if (known == null || known.contains(entry.key))
+              entry.key: entry.value,
+          question.id: score > (_scores[question.id] ?? 0)
+              ? score
+              : _scores[question.id]!,
+        };
+        await _repository.save(updated);
+        _scores = updated;
+        return true;
+      });
     } catch (_) {
       _error = TrainingError.answerSave;
       return false;

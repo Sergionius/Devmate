@@ -10,6 +10,75 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
+  String get questionsManagement => 'Управление вопросами';
+
+  @override
+  String get questionsJsonHint =>
+      'Экспорт копирует JSON в буфер обмена. Импорт заменяет все темы и вопросы из вставленного JSON и очищает прогресс.';
+
+  @override
+  String get exportQuestions => 'Скопировать вопросы в JSON';
+
+  @override
+  String get importQuestions => 'Импортировать JSON';
+
+  @override
+  String get pasteQuestionsJson => 'Вставьте JSON с темами и вопросами';
+
+  @override
+  String get questionsCopied => 'JSON вопросов скопирован в буфер обмена';
+
+  @override
+  String get questionsImported => 'Вопросы импортированы';
+
+  @override
+  String get importFailed => 'Не удалось импортировать вопросы';
+
+  @override
+  String get resetTopicProgress => 'Сбросить прогресс раздела';
+
+  @override
+  String resetTopicProgressWarning(String title) {
+    return 'Удалить результаты тренировок только в разделе «$title»? Прогресс других разделов, вопросы и настройки сохранятся.';
+  }
+
+  @override
+  String get resetTopicProgressDone => 'Прогресс раздела сброшен';
+
+  @override
+  String get resetProgress => 'Сбросить только прогресс';
+
+  @override
+  String get resetProgressWarning =>
+      'Удалить все результаты тренировок и очки? Вопросы, темы и настройки AI сохранятся. Это действие нельзя отменить.';
+
+  @override
+  String get resetProgressDone => 'Прогресс сброшен';
+
+  @override
+  String get resetProgressFailed => 'Не удалось сбросить прогресс';
+
+  @override
+  String get resetAll => 'Сбросить всё';
+
+  @override
+  String get resetWarning =>
+      'Удалить пользовательские темы, вопросы, изменения, прогресс и настройки AI? Встроенные вопросы вернутся к исходному состоянию. Это действие нельзя отменить.';
+
+  @override
+  String get resetDone => 'Исходное состояние восстановлено';
+
+  @override
+  String get resetFailed => 'Не удалось завершить сброс';
+
+  @override
+  String get cancelAction => 'Отмена';
+
+  @override
+  String get agentJsonInstruction =>
+      'Инструкция для агента: создай валидный JSON без Markdown. Корневой объект содержит version со значением 1 и topics — непустой массив тем. Каждая тема содержит непустой title, строковое description (можно пустое) и непустой массив questions. Каждый вопрос содержит непустые prompt и answer. Для каждой темы подготовь 4–12 неповторяющихся вопросов на русском; ответы — точные, по 2–4 предложения. ID не нужны — приложение создаст их при импорте.';
+
+  @override
   String get pageNotFound => 'Такой страницы нет.';
 
   @override
@@ -313,6 +382,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get llmEmptyReply => 'Провайдер вернул пустой ответ.';
 
   @override
+  String llmProviderDetail(String detail) {
+    return 'Ответ провайдера: $detail';
+  }
+
+  @override
   String topicChatTitle(String title) {
     return 'AI · $title';
   }
@@ -519,4 +593,53 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get llmSubscriptionExpired =>
+      'Сессия подписки ChatGPT истекла — войдите заново в настройках.';
+
+  @override
+  String get codexLogin => 'Войти через ChatGPT';
+
+  @override
+  String get codexLogout => 'Выйти';
+
+  @override
+  String get codexLoginHint =>
+      'Откроется код подтверждения: введите его на странице auth.openai.com в браузере.';
+
+  @override
+  String get codexDeviceCodeLabel => 'Код подтверждения';
+
+  @override
+  String get codexOpenLoginPage => 'Открыть страницу входа';
+
+  @override
+  String get codexCopyCode => 'Скопировать код';
+
+  @override
+  String get codexCopied => 'Скопировано';
+
+  @override
+  String get codexWaitingApproval => 'Ожидаем подтверждение в браузере…';
+
+  @override
+  String get codexLoginSuccess => 'Подписка подключена ✓';
+
+  @override
+  String get codexLoginCancelled => 'Вход отменён';
+
+  @override
+  String codexLoginError(String error) {
+    return 'Не удалось выполнить вход: $error';
+  }
+
+  @override
+  String codexLoggedInUntil(String time) {
+    return 'Подписка подключена, обновится до $time';
+  }
+
+  @override
+  String get codexWebUnsupported =>
+      'Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере.';
 }

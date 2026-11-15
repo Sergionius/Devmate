@@ -268,7 +268,11 @@ class TopicCatalog extends ChangeNotifier {
   /// Компилируемая база + пользовательские темы, с применёнными оверлеями.
   List<InterviewTopic> get topics => [
     for (final topic in questionCatalog)
-      applyOverrides(_withExtra(topic), _overrides),
+      if (topic.questions.any(
+            (q) => !_overrides.deletedQuestionIds.contains(q.id),
+          ) ||
+          (_extraQuestions[topic.id]?.isNotEmpty ?? false))
+        applyOverrides(_withExtra(topic), _overrides),
     ...[
       for (final topic in _userList)
         applyOverrides(_withExtra(topic), _overrides),
@@ -511,6 +515,103 @@ class TopicCatalog extends ChangeNotifier {
     final repository = _userTopics;
     if (repository == null) return;
     await repository.saveOverrides(_overrides.toJson());
+  }
+
+  /// Полный снимок видимого каталога для переноса вопросов между устройствами.
+  String exportJson() => const JsonEncoder.withIndent('  ').convert({
+    'version': 1,
+    'topics': [for (final topic in topics) userTopicToJson(topic)],
+  });
+
+  /// Заменяет каталог импортированными темами. Проверяет весь документ до записи.
+  /// Встроенные вопросы скрываются оверлеем, пока пользователь не выполнит сброс.
+  Future<void> importJson(String source) async {
+    final dynamic decoded;
+    try {
+      decoded = jsonDecode(source);
+    } on FormatException {
+      throw const FormatException('Некорректный JSON');
+    }
+    if (decoded is! Map<String, dynamic> ||
+        decoded['version'] != 1 ||
+        decoded['topics'] is! List ||
+        (decoded['topics'] as List).isEmpty) {
+      throw const FormatException(
+        'Ожидается объект version: 1 с непустым topics',
+      );
+    }
+    final imported = <InterviewTopic>[];
+    for (final raw in decoded['topics'] as List) {
+      if (raw is! Map<String, dynamic> ||
+          raw['title'] is! String ||
+          (raw['title'] as String).trim().isEmpty ||
+          raw['description'] is! String ||
+          raw['questions'] is! List ||
+          (raw['questions'] as List).isEmpty) {
+        throw const FormatException('Некорректная тема');
+      }
+      final questions = <InterviewQuestion>[];
+      for (final q in raw['questions'] as List) {
+        if (q is! Map<String, dynamic> ||
+            q['prompt'] is! String ||
+            (q['prompt'] as String).trim().isEmpty ||
+            q['answer'] is! String ||
+            (q['answer'] as String).trim().isEmpty) {
+          throw const FormatException(
+            'Каждый вопрос должен иметь prompt и answer',
+          );
+        }
+        questions.add(
+          InterviewQuestion(
+            _uuid.v4(),
+            (q['prompt'] as String).trim(),
+            (q['answer'] as String).trim(),
+          ),
+        );
+      }
+      imported.add(
+        InterviewTopic(
+          _uuid.v4(),
+          (raw['title'] as String).trim(),
+          raw['description'] as String,
+          questions,
+        ),
+      );
+    }
+    final repository = _userTopics;
+    final overrides = CatalogOverrides(
+      deletedQuestionIds: {
+        for (final topic in questionCatalog)
+          for (final question in topic.questions) question.id,
+      },
+    );
+    if (repository != null) {
+      await repository.save([
+        for (final topic in imported) userTopicToJson(topic),
+      ]);
+      await repository.saveExtra({});
+      await repository.saveOverrides(overrides.toJson());
+    }
+    _userList = imported;
+    _extraQuestions.clear();
+    _overrides = overrides;
+    notifyListeners();
+  }
+
+  /// Возвращает исходные темы и вопросы, удаляя пользовательские изменения.
+  Future<void> reset() async {
+    final repository = _userTopics;
+    if (repository != null) {
+      // Сначала возвращаем встроенные вопросы: сбой на последующей записи
+      // не оставит приложение с полностью пустым каталогом после перезапуска.
+      await repository.saveOverrides({});
+      await repository.saveExtra({});
+      await repository.save([]);
+    }
+    _userList = [];
+    _extraQuestions.clear();
+    _overrides = CatalogOverrides();
+    notifyListeners();
   }
 
   /// Загружает пользовательский контент; ошибки хранения не роняют
