@@ -45,7 +45,7 @@ Future<HttpServer> _startSlowServer(Completer<void> handled) =>
 
 void main() {
   test(
-    'dispose посреди стрима рвёт соединение и завершает потребитель',
+    'dispose mid-stream tears down the connection and completes the consumer',
     () async {
       final handled = Completer<void>();
       final server = await _startSlowServer(handled);
@@ -62,7 +62,7 @@ void main() {
       final firstChunk = Completer<void>();
       final streamDone = Completer<void>();
       provider
-          .sendMessageStream('Вопрос')
+          .sendMessageStream('Question')
           .listen(
             (chunk) {
               chunks.add(chunk);
@@ -90,48 +90,45 @@ void main() {
     },
   );
 
-  test(
-    'cancel потребителя не помечает ответ failed и не ломает новый стрим',
-    () async {
-      final handled = Completer<void>();
-      final server = await _startSlowServer(handled);
+  test('consumer cancel does not mark the answer failed and keeps a new stream working', () async {
+    final handled = Completer<void>();
+    final server = await _startSlowServer(handled);
 
-      final provider = OpenAiCompatibleProvider(
-        settings: LlmSettings(
-          baseUrl: 'http://127.0.0.1:${server.port}/v1',
-          model: 'test-model',
-          apiKey: 'k',
-        ),
-        systemPrompt: '',
-      );
+    final provider = OpenAiCompatibleProvider(
+      settings: LlmSettings(
+        baseUrl: 'http://127.0.0.1:${server.port}/v1',
+        model: 'test-model',
+        apiKey: 'k',
+      ),
+      systemPrompt: '',
+    );
 
-      final firstChunk = Completer<void>();
-      final sub = provider.sendMessageStream('Вопрос').listen((chunk) {
-        if (!firstChunk.isCompleted) firstChunk.complete();
-      });
-      await firstChunk.future.timeout(const Duration(seconds: 2));
-      await sub.cancel();
-      await handled.future.timeout(const Duration(seconds: 2));
+    final firstChunk = Completer<void>();
+    final sub = provider.sendMessageStream('Question').listen((chunk) {
+      if (!firstChunk.isCompleted) firstChunk.complete();
+    });
+    await firstChunk.future.timeout(const Duration(seconds: 2));
+    await sub.cancel();
+    await handled.future.timeout(const Duration(seconds: 2));
 
-      expect(provider.history.last.failed, isFalse);
-      expect(provider.history.last.errorKind, isNull);
+    expect(provider.history.last.failed, isFalse);
+    expect(provider.history.last.errorKind, isNull);
 
-      final secondDone = Completer<void>();
-      final secondChunks = <String>[];
-      provider
-          .sendMessageStream('Вопрос 2')
-          .listen(
-            secondChunks.add,
-            onDone: secondDone.complete,
-            onError: secondDone.completeError,
-            cancelOnError: true,
-          );
-      await Future<void>.delayed(const Duration(milliseconds: 120));
-      provider.dispose();
-      await secondDone.future.timeout(const Duration(seconds: 2));
-      expect(secondChunks.length, lessThan(50));
+    final secondDone = Completer<void>();
+    final secondChunks = <String>[];
+    provider
+        .sendMessageStream('Question 2')
+        .listen(
+          secondChunks.add,
+          onDone: secondDone.complete,
+          onError: secondDone.completeError,
+          cancelOnError: true,
+        );
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    provider.dispose();
+    await secondDone.future.timeout(const Duration(seconds: 2));
+    expect(secondChunks.length, lessThan(50));
 
-      await server.close(force: true);
-    },
-  );
+    await server.close(force: true);
+  });
 }

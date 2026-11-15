@@ -64,7 +64,9 @@ void main() {
     final catalog = TopicCatalog(userTopicsRepository: repo);
     await catalog.load();
     final original = catalog.topicById('frontend')!;
-    await catalog.addUserTopic('Docker', 'Контейнеры', [('Образ?', 'Шаблон.')]);
+    await catalog.addUserTopic('Docker', 'Containers', [
+      ('Image?', 'A template.'),
+    ]);
     final json = catalog.exportJson();
     await catalog.importJson(json);
     expect(catalog.topics.length, 11);
@@ -95,54 +97,51 @@ void main() {
     expect(reloaded.topics.length, 10);
   });
 
-  test('экспорт темы без описания можно импортировать обратно', () async {
+  test('exporting a topic without description imports back fine', () async {
     final catalog = TopicCatalog();
-    await catalog.addUserTopic('Docker', '', [('Образ?', 'Шаблон.')]);
+    await catalog.addUserTopic('Docker', '', [('Image?', 'A template.')]);
     final json = catalog.exportJson();
     final restored = TopicCatalog();
     await restored.importJson(json);
     expect(restored.topics.last.description, isEmpty);
-    expect(restored.topics.last.questions.single.prompt, 'Образ?');
+    expect(restored.topics.last.questions.single.prompt, 'Image?');
   });
 
-  test(
-    'addUserTopic строит уникальные u-префиксованные id и персистит',
-    () async {
-      final repo = MemoryUserTopics();
-      final catalog = TopicCatalog(userTopicsRepository: repo);
-      await catalog.load();
+  test('addUserTopic builds unique u-prefixed ids and persists', () async {
+    final repo = MemoryUserTopics();
+    final catalog = TopicCatalog(userTopicsRepository: repo);
+    await catalog.load();
 
-      final added = await catalog.addUserTopic('Docker', 'Основы контейнеров', [
-        ('Что такое образ?', 'Шаблон файловой системы.'),
-        ('Чем контейнер отличается от VM?', 'Общий кернел.'),
-      ]);
+    final added = await catalog.addUserTopic('Docker', 'Container basics', [
+      ('What is an image?', 'A filesystem template.'),
+      ('How is a container different from a VM?', 'A shared kernel.'),
+    ]);
 
-      expect(added.questions.first.id, isNot(added.id));
-      expect(catalog.topics.first.id, 'frontend');
-      final found = catalog.topicById(added.id)!;
-      expect(found.title, 'Docker');
-      expect(found.questions, hasLength(2));
-      expect(catalog.hasTitle('docker'), isTrue);
-      expect(catalog.hasTitle('Frontend'), isTrue);
+    expect(added.questions.first.id, isNot(added.id));
+    expect(catalog.topics.first.id, 'frontend');
+    final found = catalog.topicById(added.id)!;
+    expect(found.title, 'Docker');
+    expect(found.questions, hasLength(2));
+    expect(catalog.hasTitle('docker'), isTrue);
+    expect(catalog.hasTitle('Frontend'), isTrue);
 
-      final persisted = repo.stored.single;
-      expect(persisted['id'], added.id);
-      expect((persisted['questions'] as List).length, 2);
-    },
-  );
+    final persisted = repo.stored.single;
+    expect(persisted['id'], added.id);
+    expect((persisted['questions'] as List).length, 2);
+  });
 
-  test('load восстанавливает темы из JSON хранилища', () async {
+  test('load restores topics from the JSON store', () async {
     final repo = MemoryUserTopics();
     repo.stored = [
       {
         'id': 'u123_t0',
         'title': 'SQL',
-        'description': 'Запросы',
+        'description': 'Queries',
         'questions': [
           {
             'id': 'u123_q0',
-            'prompt': 'Что такое индекс?',
-            'answer': 'Структура для быстрого поиска.',
+            'prompt': 'What is an index?',
+            'answer': 'A structure for fast lookups.',
           },
         ],
       },
@@ -153,13 +152,13 @@ void main() {
 
     expect(catalog.topicById('u123_t0'), isNotNull);
     final topic = catalog.topicById('u123_t0')!;
-    expect(topic.questions.single.prompt, 'Что такое индекс?');
+    expect(topic.questions.single.prompt, 'What is an index?');
     expect(catalog.hasTitle('sql'), isTrue);
-    expect(catalog.hasTitle('Без вопросов'), isFalse);
+    expect(catalog.hasTitle('No questions'), isFalse);
   });
 
   test(
-    'addQuestionsToTopic дополняет встроенную тему и персистит extras',
+    'addQuestionsToTopic extends a built-in topic and persists extras',
     () async {
       final repo = MemoryUserTopics();
       final catalog = TopicCatalog(userTopicsRepository: repo);
@@ -167,13 +166,13 @@ void main() {
       final before = catalog.topicById('frontend')!;
 
       await catalog.addQuestionsToTopic('frontend', [
-        ('Новый вопрос?', 'Новый ответ.'),
-        ('Ещё вопрос?', 'Ещё ответ.'),
+        ('A new question?', 'A new answer.'),
+        ('Another question?', 'Another answer.'),
       ]);
 
       final merged = catalog.topicById('frontend')!;
       expect(merged.questions, hasLength(before.questions.length + 2));
-      expect(merged.questions.last.prompt, 'Ещё вопрос?');
+      expect(merged.questions.last.prompt, 'Another question?');
 
       final ids = merged.questions.map((q) => q.id).toSet();
       expect(ids.length, merged.questions.length);
@@ -190,105 +189,112 @@ void main() {
     },
   );
 
-  test('овереи правят встроенные вопросы, темы и удаляют вопросы', () async {
-    final repo = MemoryUserTopics();
-    final catalog = TopicCatalog(userTopicsRepository: repo);
-    await catalog.load();
+  test(
+    'overrides edit built-in questions and topics, and delete questions',
+    () async {
+      final repo = MemoryUserTopics();
+      final catalog = TopicCatalog(userTopicsRepository: repo);
+      await catalog.load();
 
-    await catalog.updateQuestion(
-      'fe-1',
-      'Правленный вопрос',
-      'Правленный ответ',
-    );
-    final frontend = catalog.topicById('frontend')!;
-    final edited = frontend.questions.firstWhere((q) => q.id == 'fe-1');
-    expect(edited.prompt, 'Правленный вопрос');
-    expect(edited.answer, 'Правленный ответ');
+      final frontendBefore = catalog.topicById('frontend')!;
+      final builtinPrompt = frontendBefore.questions.first.prompt;
 
-    expect(repo.overridesStored['questionEdits'], isNotNull);
-    expect(
-      questionCatalog
+      await catalog.updateQuestion(
+        'fe-1',
+        'An edited question',
+        'An edited answer',
+      );
+      final frontend = catalog.topicById('frontend')!;
+      final edited = frontend.questions.firstWhere((q) => q.id == 'fe-1');
+      expect(edited.prompt, 'An edited question');
+      expect(edited.answer, 'An edited answer');
+
+      expect(repo.overridesStored['questionEdits'], isNotNull);
+      expect(
+        // Built-in constant must stay untouched by overrides.
+        questionCatalog
+            .firstWhere((t) => t.id == 'frontend')
+            .questions
+            .first
+            .prompt,
+        builtinPrompt,
+      );
+
+      final baseQuestion = questionCatalog
           .firstWhere((t) => t.id == 'frontend')
           .questions
-          .first
-          .prompt,
-      'Что происходит после ввода URL в браузере?',
-    );
+          .firstWhere((q) => q.id == 'fe-1');
+      await catalog.updateQuestion(
+        'fe-1',
+        baseQuestion.prompt,
+        baseQuestion.answer,
+      );
+      final editsAfter = repo.overridesStored['questionEdits'] as Map?;
+      expect(editsAfter?['fe-1'], isNull);
 
-    final baseQuestion = questionCatalog
-        .firstWhere((t) => t.id == 'frontend')
-        .questions
-        .firstWhere((q) => q.id == 'fe-1');
-    await catalog.updateQuestion(
-      'fe-1',
-      baseQuestion.prompt,
-      baseQuestion.answer,
-    );
-    final editsAfter = repo.overridesStored['questionEdits'] as Map?;
-    expect(editsAfter?['fe-1'], isNull);
+      await catalog.deleteQuestion('fe-2');
+      final afterDelete = catalog.topicById('frontend')!;
+      expect(afterDelete.questions.map((q) => q.id), isNot(contains('fe-2')));
+      expect(repo.overridesStored['deletedQuestionIds'], contains('fe-2'));
 
-    await catalog.deleteQuestion('fe-2');
-    final afterDelete = catalog.topicById('frontend')!;
-    expect(afterDelete.questions.map((q) => q.id), isNot(contains('fe-2')));
-    expect(repo.overridesStored['deletedQuestionIds'], contains('fe-2'));
+      await catalog.updateTopicMeta('frontend', 'Frontend (edited)', 'Updated');
+      expect(catalog.topicById('frontend')!.title, 'Frontend (edited)');
+      expect(repo.overridesStored['topicEdits'], isNotNull);
+    },
+  );
 
-    await catalog.updateTopicMeta('frontend', 'Frontend (новый)', 'Обновлено');
-    expect(catalog.topicById('frontend')!.title, 'Frontend (новый)');
-    expect(repo.overridesStored['topicEdits'], isNotNull);
-  });
-
-  test('оверлеи применяются к добавленным вопросам встроенной темы', () async {
+  test('overrides apply to questions added to a built-in topic', () async {
     final repo = MemoryUserTopics();
     final catalog = TopicCatalog(userTopicsRepository: repo);
     await catalog.load();
 
     await catalog.addQuestionsToTopic('frontend', [
-      ('Доп. вопрос про кеш', 'Доп. ответ про кеш.'),
+      ('An extra cache question', 'An extra cache answer.'),
     ]);
     final withExtra = catalog.topicById('frontend')!;
-    expect(withExtra.questions.last.prompt, 'Доп. вопрос про кеш');
+    expect(withExtra.questions.last.prompt, 'An extra cache question');
 
     await catalog.updateQuestion(
       withExtra.questions.last.id,
-      'Правленный доп. вопрос',
-      'Правленный доп. ответ.',
+      'An edited extra question',
+      'An edited extra answer.',
     );
     final merged = catalog.topicById('frontend')!;
-    expect(merged.questions.last.prompt, 'Правленный доп. вопрос');
-    expect(merged.questions.last.answer, 'Правленный доп. ответ.');
+    expect(merged.questions.last.prompt, 'An edited extra question');
+    expect(merged.questions.last.answer, 'An edited extra answer.');
 
     await catalog.deleteQuestion(merged.questions.last.id);
     final afterDelete = catalog.topicById('frontend')!;
     expect(
       afterDelete.questions.map((q) => q.prompt),
-      isNot(contains('Правленный доп. вопрос')),
+      isNot(contains('An edited extra question')),
     );
   });
 
-  test('правка пользовательского вопроса идёт напрямую в тему', () async {
+  test('editing a user question writes straight into the topic', () async {
     final repo = MemoryUserTopics();
     final catalog = TopicCatalog(userTopicsRepository: repo);
     await catalog.load();
-    final created = await catalog.addUserTopic('Моя тема', '', [
-      ('Вопрос до правки', 'Ответ до правки'),
+    final created = await catalog.addUserTopic('My topic', '', [
+      ('Question before the edit', 'Answer before the edit'),
     ]);
 
     await catalog.updateQuestion(
       created.questions.first.id,
-      'Вопрос после правки',
-      'Ответ после правки',
+      'Question after the edit',
+      'Answer after the edit',
     );
 
     final stored = repo.stored.single;
     expect(
       (stored['questions'] as List).first['prompt'],
-      'Вопрос после правки',
+      'Question after the edit',
     );
     final edits = repo.overridesStored['questionEdits'] as Map? ?? {};
     expect(edits, isEmpty);
   });
 
-  test('knownQuestionIds покрывает все вопросы каталога и extras', () async {
+  test('knownQuestionIds covers catalog questions and extras', () async {
     final repo = MemoryUserTopics();
     final catalog = TopicCatalog(userTopicsRepository: repo);
     await catalog.load();
@@ -296,46 +302,48 @@ void main() {
     final known = catalog.knownQuestionIds;
     expect(known, contains('fe-1'));
 
-    await catalog.addQuestionsToTopic('frontend', [('Ещё один', 'Да')]);
+    await catalog.addQuestionsToTopic('frontend', [('One more', 'Yes')]);
     final frontend = catalog.topicById('frontend')!;
     final addedId = frontend.questions.last.id;
     expect(catalog.knownQuestionIds, contains(addedId));
   });
 
-  test('два добавления подряд в одну тему накапливаются без дублей', () async {
+  test('two appends into one topic accumulate without duplicates', () async {
     final repo = MemoryUserTopics();
     final catalog = TopicCatalog(userTopicsRepository: repo);
     await catalog.load();
 
-    await catalog.addQuestionsToTopic('frontend', [('Первая пара', 'Ответ 1')]);
-    await catalog.addQuestionsToTopic('frontend', [('Вторая пара', 'Ответ 2')]);
+    await catalog.addQuestionsToTopic('frontend', [('First pair', 'Answer 1')]);
+    await catalog.addQuestionsToTopic('frontend', [
+      ('Second pair', 'Answer 2'),
+    ]);
 
     final merged = catalog.topicById('frontend')!;
     final prompts = merged.questions.map((q) => q.prompt).toList();
-    expect(prompts, contains('Первая пара'));
-    expect(prompts, contains('Вторая пара'));
+    expect(prompts, contains('First pair'));
+    expect(prompts, contains('Second pair'));
     final ids = merged.questions.map((q) => q.id).toSet();
     expect(ids.length, merged.questions.length);
     expect(repo.extraStored['frontend'], hasLength(2));
   });
 
-  test('addQuestionsToTopic в пользовательской теме сохраняет исходные вопросы и не дублирует через extras', () async {
+  test('addQuestionsToTopic in a user topic keeps original questions and skips extras', () async {
     final repo = MemoryUserTopics();
     final catalog = TopicCatalog(userTopicsRepository: repo);
     await catalog.load();
-    final created = await catalog.addUserTopic('Моя тема', '', [
-      ('Исходный вопрос', 'Исходный ответ'),
+    final created = await catalog.addUserTopic('My topic', '', [
+      ('Original question', 'Original answer'),
     ]);
 
     await catalog.addQuestionsToTopic(created.id, [
-      ('Добавленный вопрос', 'Добавленный ответ'),
+      ('Added question', 'Added answer'),
     ]);
 
     final topic = catalog.topicById(created.id)!;
     expect(topic.questions, hasLength(2));
     expect(topic.questions.map((q) => q.prompt), [
-      'Исходный вопрос',
-      'Добавленный вопрос',
+      'Original question',
+      'Added question',
     ]);
 
     expect(repo.extraStored[created.id], isNull);
@@ -344,8 +352,8 @@ void main() {
     await second.load();
     final restored = second.topicById(created.id)!;
     expect(restored.questions.map((q) => q.prompt), [
-      'Исходный вопрос',
-      'Добавленный вопрос',
+      'Original question',
+      'Added question',
     ]);
   });
 }

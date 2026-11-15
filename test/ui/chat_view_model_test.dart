@@ -119,15 +119,15 @@ Future<LlmSettingsRepository> _configuredRepo() async {
 }
 
 const _draftJson =
-    '{"title":"Docker","description":"Основы","questions":'
-    '[{"prompt":"Что такое image?","answer":"Шаблон файловой системы"}]}';
+    '{"title":"Docker","description":"Basics","questions":'
+    '[{"prompt":"What is an image?","answer":"A filesystem template"}]}';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('send проходит стрим до конца и наполняет историю', () async {
+  test('send consumes the stream to the end and fills the history', () async {
     final repo = await _configuredRepo();
-    final session = _FakeSession(['Привет|, мир']);
+    final session = _FakeSession(['Hello|, world']);
     final viewModel = _viewModel(settingsRepository: repo, session: session);
 
     await viewModel.loadSettings();
@@ -135,14 +135,14 @@ void main() {
     viewModel.ensureSession();
     expect(viewModel.session, same(session));
 
-    await viewModel.send('  вопрос  ');
+    await viewModel.send('  question  ');
     expect(viewModel.messages, hasLength(2));
-    expect(viewModel.messages.first.text, 'вопрос');
-    expect(viewModel.messages.last.text, 'Привет, мир');
+    expect(viewModel.messages.first.text, 'question');
+    expect(viewModel.messages.last.text, 'Hello, world');
     expect(viewModel.streaming, isFalse);
   });
 
-  test('send при незавершённом стриме игнорирует повторные вызовы', () async {
+  test('send ignores reentrant calls while a stream is in flight', () async {
     final repo = await _configuredRepo();
     final controller = StreamController<String>();
     final session = _FakeSession([controller.stream]);
@@ -150,10 +150,10 @@ void main() {
     await viewModel.loadSettings();
     viewModel.ensureSession();
 
-    final sending = viewModel.send('первый');
+    final sending = viewModel.send('first');
     expect(viewModel.streaming, isTrue);
 
-    await viewModel.send('второй');
+    await viewModel.send('second');
     expect(session.history, hasLength(2));
 
     await controller.close();
@@ -161,23 +161,26 @@ void main() {
     expect(viewModel.streaming, isFalse);
   });
 
-  test('сбой стрима не роняет send и завершает streaming', () async {
-    final repo = await _configuredRepo();
-    final session = _FakeSession([Exception('network')]);
-    final viewModel = _viewModel(settingsRepository: repo, session: session);
-    await viewModel.loadSettings();
-    viewModel.ensureSession();
+  test(
+    'a stream failure does not crash send and completes streaming',
+    () async {
+      final repo = await _configuredRepo();
+      final session = _FakeSession([Exception('network')]);
+      final viewModel = _viewModel(settingsRepository: repo, session: session);
+      await viewModel.loadSettings();
+      viewModel.ensureSession();
 
-    await viewModel.send('вопрос');
-    expect(viewModel.messages, hasLength(2));
-    expect(viewModel.streaming, isFalse);
-  });
+      await viewModel.send('question');
+      expect(viewModel.messages, hasLength(2));
+      expect(viewModel.streaming, isFalse);
+    },
+  );
 
-  test('черновик темы парсится и добавляется новой темой', () async {
+  test('a topic draft is parsed and added as a new topic', () async {
     final repo = await _configuredRepo();
     final topics = _MemoryTopicsRepository();
     final catalog = TopicCatalog(userTopicsRepository: topics);
-    final session = _FakeSession(['Вот тема: $_draftJson']);
+    final session = _FakeSession(['Here is a topic: $_draftJson']);
     final viewModel = _viewModel(
       settingsRepository: repo,
       catalog: catalog,
@@ -186,7 +189,7 @@ void main() {
     await viewModel.loadSettings();
     viewModel.ensureSession();
 
-    await viewModel.send('сделай тему');
+    await viewModel.send('make a topic');
     expect(viewModel.draft?.title, 'Docker');
     expect(viewModel.draft?.questions, hasLength(1));
 
@@ -196,10 +199,10 @@ void main() {
     expect(topics.savedTopics, hasLength(1));
   });
 
-  test('уточнение вместо черновика сбрасывает устаревшую карточку', () async {
+  test('a clarifying reply instead of a draft drops the stale card', () async {
     final repo = await _configuredRepo();
     final catalog = TopicCatalog();
-    final session = _FakeSession([_draftJson, 'Уточню: вы про образы?']);
+    final session = _FakeSession([_draftJson, 'Clarify: do you mean images?']);
     final viewModel = _viewModel(
       settingsRepository: repo,
       catalog: catalog,
@@ -208,20 +211,20 @@ void main() {
     await viewModel.loadSettings();
     viewModel.ensureSession();
 
-    await viewModel.send('сделай тему');
+    await viewModel.send('make a topic');
     expect(viewModel.draft, isNotNull);
 
-    await viewModel.send('уточнение');
+    await viewModel.send('clarify');
     expect(viewModel.draft, isNull);
   });
 
-  test('append-режим добавляет вопросы в существующую тему', () async {
+  test('append mode adds questions to the existing topic', () async {
     final repo = await _configuredRepo();
     final topics = _MemoryTopicsRepository();
     final catalog = TopicCatalog(userTopicsRepository: topics);
     final topicId = catalog.topics.first.id;
     const questionsJson =
-        '{"questions":[{"prompt":"Что такое pod?","answer":"Группа контейнеров"}]}';
+        '{"questions":[{"prompt":"What is a pod?","answer":"A group of containers"}]}';
     final session = _FakeSession([questionsJson]);
     final viewModel = _viewModel(
       settingsRepository: repo,
@@ -232,7 +235,7 @@ void main() {
     await viewModel.loadSettings();
     viewModel.ensureSession();
 
-    await viewModel.send('добавь вопрос');
+    await viewModel.send('add a question');
     expect(viewModel.draft?.questions, hasLength(1));
     expect(viewModel.appendTopicTitle, catalog.topics.first.title);
 
@@ -241,45 +244,42 @@ void main() {
     expect(topics.savedExtra, hasLength(1));
   });
 
-  test(
-    'update_answer показывает правку и replaceAnswer применяет её',
-    () async {
-      final repo = await _configuredRepo();
-      final topics = _MemoryTopicsRepository();
-      final catalog = TopicCatalog(userTopicsRepository: topics);
-      final question = catalog.topics.first.questions.first;
-      final reply =
-          '{"action":"update_answer","prompt":"Уточнённый вопрос",'
-          '"answer":"Новый ответ"}';
-      final session = _FakeSession([reply]);
-      final viewModel = _viewModel(
-        settingsRepository: repo,
-        catalog: catalog,
-        editQuestionId: question.id,
-        session: session,
-      );
-      await viewModel.loadSettings();
-      viewModel.ensureSession();
-
-      await viewModel.send('перепиши ответ');
-      expect(viewModel.answerUpdate?.prompt, 'Уточнённый вопрос');
-      expect(viewModel.draft, isNull);
-
-      final outcome = await viewModel.replaceAnswer();
-      expect(outcome, ChatSaveOutcome.answerReplaced);
-      expect(viewModel.answerUpdate, isNull);
-      expect(topics.savedOverrides, hasLength(1));
-      final updated = catalog
-          .topicById(catalog.topics.first.id)!
-          .questions
-          .firstWhere((q) => q.id == question.id);
-      expect(updated.answer, 'Новый ответ');
-    },
-  );
-
-  test('applyDraft без черновика и replaceAnswer без правки — null', () async {
+  test('update_answer shows the edit and replaceAnswer applies it', () async {
     final repo = await _configuredRepo();
-    final session = _FakeSession(['Просто текст']);
+    final topics = _MemoryTopicsRepository();
+    final catalog = TopicCatalog(userTopicsRepository: topics);
+    final question = catalog.topics.first.questions.first;
+    final reply =
+        '{"action":"update_answer","prompt":"Refined question",'
+        '"answer":"A new answer"}';
+    final session = _FakeSession([reply]);
+    final viewModel = _viewModel(
+      settingsRepository: repo,
+      catalog: catalog,
+      editQuestionId: question.id,
+      session: session,
+    );
+    await viewModel.loadSettings();
+    viewModel.ensureSession();
+
+    await viewModel.send('rewrite the answer');
+    expect(viewModel.answerUpdate?.prompt, 'Refined question');
+    expect(viewModel.draft, isNull);
+
+    final outcome = await viewModel.replaceAnswer();
+    expect(outcome, ChatSaveOutcome.answerReplaced);
+    expect(viewModel.answerUpdate, isNull);
+    expect(topics.savedOverrides, hasLength(1));
+    final updated = catalog
+        .topicById(catalog.topics.first.id)!
+        .questions
+        .firstWhere((q) => q.id == question.id);
+    expect(updated.answer, 'A new answer');
+  });
+
+  test('applyDraft without a draft and replaceAnswer without an update return null', () async {
+    final repo = await _configuredRepo();
+    final session = _FakeSession(['Just text']);
     final viewModel = _viewModel(
       settingsRepository: repo,
       catalog: TopicCatalog(),
@@ -287,15 +287,15 @@ void main() {
     );
     await viewModel.loadSettings();
     viewModel.ensureSession();
-    await viewModel.send('привет');
+    await viewModel.send('hello');
 
     expect(await viewModel.applyDraft(), isNull);
     expect(await viewModel.replaceAnswer(), isNull);
   });
 
-  test('не сконфигурированные настройки: сессия не создаётся', () async {
+  test('unconfigured settings: no session is created', () async {
     final repo = _settingsRepo();
-    final session = _FakeSession(['ответ']);
+    final session = _FakeSession(['reply']);
     final viewModel = _viewModel(settingsRepository: repo, session: session);
     await viewModel.loadSettings();
 
@@ -303,40 +303,43 @@ void main() {
     expect(viewModel.settings?.isConfigured, isFalse);
     viewModel.ensureSession();
     expect(viewModel.session, isNull);
-    await viewModel.send('вопрос');
+    await viewModel.send('question');
     expect(session.history, isEmpty);
   });
 
-  test('reloadSettings сбрасывает диалог и создаёт новую сессию', () async {
-    final repo = await _configuredRepo();
-    var call = 0;
-    final first = _FakeSession(['ответ 1']);
-    final second = _FakeSession(['ответ 2']);
-    final viewModel = ChatViewModel(
-      settingsRepository: repo,
-      sessionFactory: (_, _) => ++call == 1 ? first : second,
-    );
-    await viewModel.loadSettings();
-    viewModel.ensureSession();
-    await viewModel.send('вопрос');
-    expect(viewModel.messages, hasLength(2));
+  test(
+    'reloadSettings resets the conversation and creates a new session',
+    () async {
+      final repo = await _configuredRepo();
+      var call = 0;
+      final first = _FakeSession(['reply 1']);
+      final second = _FakeSession(['reply 2']);
+      final viewModel = ChatViewModel(
+        settingsRepository: repo,
+        sessionFactory: (_, _) => ++call == 1 ? first : second,
+      );
+      await viewModel.loadSettings();
+      viewModel.ensureSession();
+      await viewModel.send('question');
+      expect(viewModel.messages, hasLength(2));
 
-    await repo.save(
-      const LlmSettings(
-        baseUrl: 'https://api.test/v1',
-        model: 'new-model',
-        apiKey: 'k2',
-      ),
-    );
-    await viewModel.reloadSettings();
+      await repo.save(
+        const LlmSettings(
+          baseUrl: 'https://api.test/v1',
+          model: 'new-model',
+          apiKey: 'k2',
+        ),
+      );
+      await viewModel.reloadSettings();
 
-    expect(viewModel.messages, isEmpty);
-    viewModel.ensureSession();
-    expect(viewModel.session, same(second));
-    expect(viewModel.settings?.model, 'new-model');
-  });
+      expect(viewModel.messages, isEmpty);
+      viewModel.ensureSession();
+      expect(viewModel.session, same(second));
+      expect(viewModel.settings?.model, 'new-model');
+    },
+  );
 
-  test('reloadSettings во время стрима откладывается до его конца', () async {
+  test('reloadSettings during a stream is deferred until it ends', () async {
     final repo = await _configuredRepo();
     final controller = StreamController<String>();
     final session = _FakeSession([controller.stream]);
@@ -344,7 +347,7 @@ void main() {
     await viewModel.loadSettings();
     viewModel.ensureSession();
 
-    final sending = viewModel.send('вопрос');
+    final sending = viewModel.send('question');
     await viewModel.reloadSettings();
 
     expect(viewModel.streaming, isTrue);
@@ -358,25 +361,28 @@ void main() {
     expect(viewModel.streaming, isFalse);
   });
 
-  test('dispose во время стрима отменяет стрим и завершает send', () async {
-    final repo = await _configuredRepo();
-    final controller = StreamController<String>();
-    final session = _FakeSession([controller.stream]);
-    final viewModel = _viewModel(settingsRepository: repo, session: session);
-    await viewModel.loadSettings();
-    viewModel.ensureSession();
+  test(
+    'dispose during a stream cancels the stream and completes send',
+    () async {
+      final repo = await _configuredRepo();
+      final controller = StreamController<String>();
+      final session = _FakeSession([controller.stream]);
+      final viewModel = _viewModel(settingsRepository: repo, session: session);
+      await viewModel.loadSettings();
+      viewModel.ensureSession();
 
-    final sending = viewModel.send('вопрос');
-    viewModel.dispose();
+      final sending = viewModel.send('question');
+      viewModel.dispose();
 
-    await sending.timeout(const Duration(seconds: 2));
-    expect(viewModel.streaming, isFalse);
-    await controller.close();
-  });
+      await sending.timeout(const Duration(seconds: 2));
+      expect(viewModel.streaming, isFalse);
+      await controller.close();
+    },
+  );
 
-  test('сбой чтения настроек даёт error-фазу', () async {
+  test('a settings read failure yields the error phase', () async {
     final repo = LlmSettingsRepository(storage: _ThrowingStorage());
-    final session = _FakeSession(['ответ']);
+    final session = _FakeSession(['reply']);
     final viewModel = _viewModel(settingsRepository: repo, session: session);
 
     await viewModel.loadSettings();

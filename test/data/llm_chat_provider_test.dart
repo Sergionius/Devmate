@@ -35,18 +35,21 @@ void main() {
       expect(kind, LlmErrorKind.rateLimited);
     });
 
-    test('лимит подписки в сообщении → noBalance, а не connection', () {
-      final kind = classifyLlmError(
-        const oai.ApiException(
-          message:
-              'Your subscription has expired or the usage limit is reached.',
-          statusCode: 403,
-        ),
-      );
-      expect(kind, LlmErrorKind.noBalance);
-    });
+    test(
+      'a subscription limit in the message maps to noBalance, not connection',
+      () {
+        final kind = classifyLlmError(
+          const oai.ApiException(
+            message:
+                'Your subscription has expired or the usage limit is reached.',
+            statusCode: 403,
+          ),
+        );
+        expect(kind, LlmErrorKind.noBalance);
+      },
+    );
 
-    test('ApiException 429 c кодом insufficient_quota → noBalance', () {
+    test('ApiException 429 with insufficient_quota maps to noBalance', () {
       final kind = classifyLlmError(
         const oai.ApiException(
           message: 'You exceeded your current quota',
@@ -57,7 +60,7 @@ void main() {
       expect(kind, LlmErrorKind.noBalance);
     });
 
-    test('ApiException 403 без признаков квоты → keyRejected', () {
+    test('ApiException 403 without quota signs maps to keyRejected', () {
       final kind = classifyLlmError(
         const oai.ApiException(message: 'forbidden', statusCode: 403),
       );
@@ -71,7 +74,7 @@ void main() {
       expect(kind, LlmErrorKind.connection);
     });
 
-    test('не-API ошибка (сеть) → connection', () {
+    test('a non-API error (network) maps to connection', () {
       expect(
         classifyLlmError(Exception('Connection refused')),
         LlmErrorKind.connection,
@@ -80,7 +83,7 @@ void main() {
   });
 
   group('llmErrorDetail', () {
-    test('из ApiException берётся сообщение', () {
+    test('the message is taken from ApiException', () {
       final detail = llmErrorDetail(
         const oai.ApiException(
           message: 'subscription limit reached',
@@ -90,7 +93,7 @@ void main() {
       expect(detail, 'subscription limit reached');
     });
 
-    test('длинное сообщение обрезается до 300 символов', () {
+    test('a long message is truncated to 300 characters', () {
       final detail = llmErrorDetail(
         oai.ApiException(message: 'x' * 400, statusCode: 500),
       );
@@ -98,7 +101,7 @@ void main() {
       expect(detail.endsWith('…'), isTrue);
     });
 
-    test('для обычных исключений берётся toString', () {
+    test('toString is used for plain exceptions', () {
       final detail = llmErrorDetail(Exception('boom'));
       expect(detail, contains('boom'));
     });
@@ -111,14 +114,14 @@ void main() {
         settings: _unreachable,
         systemPrompt: 'sys',
       );
-      final chunks = await provider.sendMessageStream('Вопрос').toList();
+      final chunks = await provider.sendMessageStream('Question').toList();
 
       expect(chunks, isEmpty);
 
       final history = provider.history;
       expect(history.length, 2);
       expect(history.first.role, LlmRole.user);
-      expect(history.first.text, 'Вопрос');
+      expect(history.first.text, 'Question');
       expect(history.last.role, LlmRole.assistant);
       expect(history.last.failed, isTrue);
       expect(history.last.errorKind, LlmErrorKind.connection);
@@ -130,8 +133,8 @@ void main() {
       settings: _unreachable,
       systemPrompt: 'sys',
     );
-    await provider.sendMessageStream('Первый').toList();
-    await provider.sendMessageStream('Второй').toList();
+    await provider.sendMessageStream('First').toList();
+    await provider.sendMessageStream('Second').toList();
 
     final history = provider.history;
     expect(history.length, 4);

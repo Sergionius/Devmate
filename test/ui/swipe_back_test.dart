@@ -1,6 +1,5 @@
 import 'package:devmate/data/llm_settings.dart';
 
-
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
@@ -42,7 +41,7 @@ void main() {
         MaterialApp.router(
           theme: devmateTheme(),
           routerConfig: router,
-          locale: const Locale('ru'),
+          locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
         ),
@@ -52,7 +51,7 @@ void main() {
       unawaited(router.push('/chat/free'));
       await tester.pumpAndSettle();
 
-      const inputHint = 'Спросите что угодно…';
+      const inputHint = 'Ask anything…';
       expect(find.text(inputHint), findsOneWidget);
 
       final gesture = await tester.startGesture(const Offset(2, 300));

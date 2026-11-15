@@ -19,45 +19,49 @@ void main() {
     return match == null ? '' : match.group(1)!.trim();
   }
 
-  test('модель отвечает JSON-темой по свободному запросу', () async {
-    final settings = LlmSettings(
-      baseUrl: value('LLM_BASE_URL'),
-      model: value('LLM_MODEL'),
-      apiKey: value('LLM_API_KEY'),
-    );
-    if (!settings.isConfigured) {
-      markTestSkipped('ключ не задан — пропускаем реальную генерацию');
-      return;
-    }
+  test(
+    'the model replies with a JSON topic from a free-form request',
+    () async {
+      final settings = LlmSettings(
+        baseUrl: value('LLM_BASE_URL'),
+        model: value('LLM_MODEL'),
+        apiKey: value('LLM_API_KEY'),
+      );
+      if (!settings.isConfigured) {
+        markTestSkipped('key is not set — skipping real generation');
+        return;
+      }
 
-    final provider = OpenAiCompatibleProvider(
-      settings: settings,
-      systemPrompt:
-          'Ты помогаешь пользователю создавать тренировочные темы для '
-          'подготовки к собеседованиям. Отвечай по-русски. Правила: '
-          '(1) Если запрос ясен — ответь ровно одним JSON-объектом без '
-          'markdown-обёрток и пояснений. Схема объекта: поле title — строка, '
-          'название темы; поле description — строка, одно предложение о теме; '
-          'поле questions — массив объектов, где каждый объект имеет поле '
-          'prompt (вопрос) и поле answer (эталонный ответ в 2-4 предложения). '
-          'Вопросов от 4 до 12, вопросы и ответы — на русском. '
-          '(2) Если чего-то не хватает для хорошей темы — задай один короткий '
-          'уточняющий вопрос обычным текстом, без JSON. '
-          '(3) Дополнительный текст рядом с JSON запрещён.',
-    );
-    final chunks = await provider
-        .sendMessageStream('Собери тему «Основы Git» — 4 вопроса')
-        .toList();
-    final reply = chunks.join();
-    debugPrint('=== reply (${reply.length} chars)');
+      final provider = OpenAiCompatibleProvider(
+        settings: settings,
+        systemPrompt:
+            'You help the user create training topics for interview prep. '
+            'Reply in English. Rules: '
+            '(1) If the request is clear, reply with exactly one JSON object without '
+            'markdown wrappers or explanations. Object schema: field title — a string, '
+            'the topic name; field description — a string, one sentence about the topic; '
+            'field questions — an array of objects where each object has a '
+            'prompt field (the question) and an answer field (the reference answer in 2-4 sentences). '
+            'From 4 to 12 questions, questions and answers in English. '
+            '(2) If anything is missing for a good topic, ask one short '
+            'clarifying question in plain text, no JSON. '
+            '(3) Extra text next to the JSON is forbidden.',
+      );
+      final chunks = await provider
+          .sendMessageStream('Build a "Git basics" topic — 4 questions')
+          .toList();
+      final reply = chunks.join();
+      debugPrint('=== reply (${reply.length} chars)');
 
-    final draft = parseTopicDraft(reply);
-    expect(
-      draft,
-      isNotNull,
-      reason: 'модель не вернула распознаваемый JSON:\n$reply',
-    );
-    expect(draft!.title?.toLowerCase(), contains('git'));
-    expect(draft.questions.length, inInclusiveRange(4, 12));
-  }, timeout: const Timeout(Duration(minutes: 3)));
+      final draft = parseTopicDraft(reply);
+      expect(
+        draft,
+        isNotNull,
+        reason: 'the model did not return recognizable JSON:\n$reply',
+      );
+      expect(draft!.title?.toLowerCase(), contains('git'));
+      expect(draft.questions.length, inInclusiveRange(4, 12));
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
 }

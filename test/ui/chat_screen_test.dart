@@ -27,21 +27,21 @@ void main() {
     final repo = repoWith(MemorySecureStorage());
     await tester.pumpWidget(
       MaterialApp(
-        locale: const Locale('ru'),
+        locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: ChatScreen(
           title: 'AI',
           systemPrompt: 'sys',
-          intro: 'Интро',
+          intro: 'Intro',
           settingsRepository: repo,
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Нужен API-ключ'), findsOneWidget);
-    expect(find.text('Открыть настройки'), findsOneWidget);
+    expect(find.text('API key required'), findsOneWidget);
+    expect(find.text('Open settings'), findsOneWidget);
   });
 
   testWidgets(
@@ -50,13 +50,13 @@ void main() {
       final repo = repoWith(configuredStorage);
       await tester.pumpWidget(
         MaterialApp(
-          locale: const Locale('ru'),
+          locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: ChatScreen(
             title: 'AI',
             systemPrompt: 'sys',
-            intro: 'Интро',
+            intro: 'Intro',
             settingsRepository: repo,
           ),
         ),
@@ -65,13 +65,13 @@ void main() {
 
       final input = find.byType(TextField);
       expect(input, findsOneWidget);
-      await tester.enterText(input, 'привет');
+      await tester.enterText(input, 'hello');
       await tester.pump();
 
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 
-      expect(find.text('привет'), findsOneWidget);
+      expect(find.text('hello'), findsOneWidget);
       final editable = tester.widget<EditableText>(find.byType(EditableText));
       expect(editable.controller.text, isEmpty);
 
@@ -83,13 +83,13 @@ void main() {
     final repo = repoWith(configuredStorage);
     await tester.pumpWidget(
       MaterialApp(
-        locale: const Locale('ru'),
+        locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: ChatScreen(
           title: 'AI',
           systemPrompt: 'sys',
-          intro: 'Интро',
+          intro: 'Intro',
           settingsRepository: repo,
         ),
       ),
@@ -109,23 +109,21 @@ void main() {
     expect(editable.focusNode.hasFocus, isFalse);
   });
 
-  testWidgets('ответ модели с JSON вопросов виден как читаемый список', (
-    tester,
-  ) async {
+  testWidgets('model JSON reply renders as a readable list', (tester) async {
     const reply =
-        '{"questions":[{"prompt":"Что такое коммит?",'
-        '"answer":"Снимок состояния."}]}';
+        '{"questions":[{"prompt":"What is a commit?",'
+        '"answer":"A snapshot of the widget tree."}]}';
     final session = _FakeSession(reply);
     final repo = repoWith(configuredStorage);
     await tester.pumpWidget(
       MaterialApp(
-        locale: const Locale('ru'),
+        locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: ChatScreen(
           title: 'AI',
           systemPrompt: 'sys',
-          intro: 'Интро',
+          intro: 'Intro',
           settingsRepository: repo,
           sessionFactory: (_, _) => session,
         ),
@@ -133,13 +131,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'добавь вопросы');
+    await tester.enterText(find.byType(TextField), 'add questions');
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Что такое коммит?'), findsWidgets);
-    expect(find.textContaining('Снимок состояния.'), findsWidgets);
+    expect(find.textContaining('What is a commit?'), findsWidgets);
+    expect(find.textContaining('A snapshot of the widget tree.'), findsWidgets);
     expect(find.textContaining('"questions"'), findsNothing);
     expect(find.textContaining('"prompt"'), findsNothing);
   });

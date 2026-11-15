@@ -1,6 +1,5 @@
 import 'package:devmate/data/progress_repository.dart';
 
-
 import 'package:devmate/domain/question.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/ui/practice_screen.dart';
@@ -10,8 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
-  const topic = InterviewTopic('t1', 'Тема', 'Описание', [
-    InterviewQuestion('q1', 'Вопрос?', 'Эталон.'),
+  const topic = InterviewTopic('t1', 'Topic', 'Description', [
+    InterviewQuestion('q1', 'Question?', 'Reference.'),
   ]);
 
   Future<GoRouter> pumpPractice(WidgetTester tester) async {
@@ -29,7 +28,7 @@ void main() {
         GoRoute(
           path: '/chat/question/:topicId/:index',
           builder: (context, state) =>
-              const Center(child: Text('маркер-чата-вопроса')),
+              const Center(child: Text('question-chat-marker')),
         ),
       ],
     );
@@ -37,7 +36,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: router,
-        locale: const Locale('ru'),
+        locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),
@@ -53,34 +52,38 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('на сравнении есть кнопка разбора с AI, она открывает чат', (
+  testWidgets(
+    'the comparison step offers an AI walkthrough button that opens chat',
+    (tester) async {
+      await pumpPractice(tester);
+
+      await tester.enterText(
+        find.byKey(const Key('answer-field')),
+        'My answer',
+      );
+      await tapVisible(tester, find.text('Compare with reference'));
+
+      expect(find.text('Needs review'), findsOneWidget);
+
+      await tapVisible(tester, find.text('Work through it with AI'));
+      expect(find.text('question-chat-marker'), findsOneWidget);
+    },
+  );
+
+  testWidgets('the needs-review step also offers an AI walkthrough button', (
     tester,
   ) async {
     await pumpPractice(tester);
 
-    await tester.enterText(find.byKey(const Key('answer-field')), 'Мой ответ');
-    await tapVisible(tester, find.text('Сверить с эталоном'));
-
-    expect(find.text('Нужно повторить'), findsOneWidget);
-
-    await tapVisible(tester, find.text('Разобрать с AI'));
-    expect(find.text('маркер-чата-вопроса'), findsOneWidget);
-  });
-
-  testWidgets('на «нужно повторить» тоже есть кнопка разбора с AI', (
-    tester,
-  ) async {
-    await pumpPractice(tester);
-
-    await tester.enterText(find.byKey(const Key('answer-field')), 'Мой ответ');
-    await tapVisible(tester, find.text('Сверить с эталоном'));
-    expect(find.text('Нужно повторить'), findsOneWidget);
-    await tapVisible(tester, find.text('Нужно повторить'));
+    await tester.enterText(find.byKey(const Key('answer-field')), 'My answer');
+    await tapVisible(tester, find.text('Compare with reference'));
+    expect(find.text('Needs review'), findsOneWidget);
+    await tapVisible(tester, find.text('Needs review'));
 
     expect(find.byKey(const Key('rewrite-field')), findsOneWidget);
 
-    await tapVisible(tester, find.text('Разобрать с AI'));
-    expect(find.text('маркер-чата-вопроса'), findsOneWidget);
+    await tapVisible(tester, find.text('Work through it with AI'));
+    expect(find.text('question-chat-marker'), findsOneWidget);
   });
 }
 

@@ -1,6 +1,5 @@
 import 'package:devmate/data/progress_repository.dart';
 
-
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/ui/topic_screen.dart';
@@ -21,7 +20,7 @@ class _MemoryProgress implements ProgressRepository {
 }
 
 void main() {
-  testWidgets('сброс раздела требует подтверждения и сохраняет остальные', (
+  testWidgets('section reset requires confirmation and keeps other topics', (
     tester,
   ) async {
     final catalog = TopicCatalog();
@@ -35,17 +34,14 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        locale: const Locale('ru'),
+        locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: TopicScreen(topic: topic, viewModel: model, catalog: catalog),
       ),
     );
     await tester.pumpAndSettle();
-    final button = find.widgetWithText(
-      OutlinedButton,
-      'Сбросить прогресс раздела',
-    );
+    final button = find.widgetWithText(OutlinedButton, 'Reset topic progress');
     await tester.scrollUntilVisible(
       button,
       180,
@@ -53,13 +49,13 @@ void main() {
     );
     await tester.tap(button.first);
     await tester.pumpAndSettle();
-    expect(find.textContaining('«Frontend»'), findsOneWidget);
-    await tester.tap(find.text('Отмена'));
+    expect(find.textContaining('Frontend'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(model.completedIn(topic), 1);
     await tester.tap(button.first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Сбросить прогресс раздела').last);
+    await tester.tap(find.text('Reset topic progress').last);
     await tester.pumpAndSettle();
     expect(model.completedIn(topic), 0);
     expect(model.completedIn(other), 1);

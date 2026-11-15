@@ -46,7 +46,7 @@ Future<(HttpServer, _CapturedRequest)> startFakeCodexServer() async {
 
     final delta = jsonEncode(<String, dynamic>{
       'type': 'response.output_text.delta',
-      'delta': 'ок',
+      'delta': 'ok',
 
       'output_index': 0,
       'content_index': 0,
@@ -62,29 +62,29 @@ void main() {
   group('buildCodexRequest', () {
     test('maps history, excludes failed and empty, sets preview fields', () {
       final history = [
-        LlmChatMessage(LlmRole.user, 'вопрос 1'),
-        LlmChatMessage(LlmRole.assistant, 'ответ 1'),
-        LlmChatMessage(LlmRole.user, 'неудачный', failed: true),
+        LlmChatMessage(LlmRole.user, 'question 1'),
+        LlmChatMessage(LlmRole.assistant, 'answer 1'),
+        LlmChatMessage(LlmRole.user, 'failed one', failed: true),
         LlmChatMessage(LlmRole.assistant, ''),
       ];
       final request = buildCodexRequest(
         model: 'gpt-6-luna',
-        systemPrompt: 'Тренер интервью',
+        systemPrompt: 'Interview coach',
         history: history,
-        prompt: 'вопрос 2',
+        prompt: 'question 2',
       );
       final json = request.toJson();
       expect(json['model'], 'gpt-6-luna');
       expect(json['store'], isFalse);
       expect(json['stream'], isTrue);
-      expect(json['instructions'], 'Тренер интервью');
+      expect(json['instructions'], 'Interview coach');
       expect(json['temperature'], isNull);
       final items = (json['input'] as List).map(jsonEncode).toList();
 
       expect(items, hasLength(3));
-      expect(items.join(), isNot(contains('неудачный')));
+      expect(items.join(), isNot(contains('failed one')));
       expect(items.first, contains('"role":"user"'));
-      expect(items.join(), contains('вопрос 2'));
+      expect(items.join(), contains('question 2'));
     });
 
     test('empty system prompt omits instructions', () {
@@ -92,7 +92,7 @@ void main() {
         model: 'm',
         systemPrompt: '',
         history: const [],
-        prompt: 'привет',
+        prompt: 'hello',
       );
       expect(request.toJson().containsKey('instructions'), isFalse);
     });
@@ -117,18 +117,18 @@ void main() {
                 ..values['codex.auth'] = encodeTokens(fixedTokens()),
             ),
           ),
-          systemPrompt: 'Тренер',
+          systemPrompt: 'Coach',
         );
         addTearDown(provider.dispose);
 
-        final chunks = await provider.sendMessageStream('Скажи ок').toList();
-        expect(chunks, ['ок']);
-        expect(provider.history.map((m) => m.text), ['Скажи ок', 'ок']);
+        final chunks = await provider.sendMessageStream('Say ok').toList();
+        expect(chunks, ['ok']);
+        expect(provider.history.map((m) => m.text), ['Say ok', 'ok']);
 
         expect(captured.body, isNotNull);
         expect(captured.body!['store'], isFalse);
         expect(captured.body!['stream'], isTrue);
-        expect(captured.body!['instructions'], 'Тренер');
+        expect(captured.body!['instructions'], 'Coach');
         expect(captured.body!['model'], 'gpt-6-luna');
         expect(captured.body!['input'], isA<List>());
         expect(captured.headers['authorization'], 'Bearer fake.access.token');
@@ -161,7 +161,7 @@ void main() {
         );
         addTearDown(provider.dispose);
 
-        await provider.sendMessageStream('привет').toList();
+        await provider.sendMessageStream('hello').toList();
         final assistant = provider.history.last;
         expect(assistant.failed, isTrue);
         expect(assistant.errorKind, LlmErrorKind.subscriptionExpired);
@@ -202,7 +202,7 @@ void main() {
         ),
         api: CodexDeviceAuthApi(
           client: MockClient(
-            (_) => fail('сеть не должна вызываться при свежих токенах'),
+            (_) => fail('network must not be called with fresh tokens'),
           ),
         ),
       );
@@ -246,7 +246,7 @@ void main() {
       final auth = CodexAuth(
         store: CodexTokenStore(storage: MemorySecureStorage()),
         api: CodexDeviceAuthApi(
-          client: MockClient((_) => fail('не должно быть сетевых вызовов')),
+          client: MockClient((_) => fail('no network calls expected')),
         ),
       );
       await expectLater(
