@@ -243,6 +243,19 @@ class _PracticeScreenState extends State<PracticeScreen> {
                           label: Text(context.l10n.needsRepeat),
                         ),
                       ),
+                      const SizedBox(height: 10),
+                      // Обсуждение ответа и эталона с AI — до выбора оценки.
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push(
+                            '/chat/question/${widget.topic.id}/$_index',
+                            extra: _answer.text.trim(),
+                          ),
+                          icon: const Icon(Icons.chat_rounded, size: 20),
+                          label: Text(context.l10n.discussWithAi),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -282,6 +295,17 @@ class _PracticeScreenState extends State<PracticeScreen> {
                     _scrollToTop();
                   },
                   child: Text(context.l10n.viewReferenceAgain),
+                ),
+                const SizedBox(height: 12),
+                // Как и на сравнении — возможность обсудить с AI перед
+                // сохранением результата.
+                OutlinedButton.icon(
+                  onPressed: () => context.push(
+                    '/chat/question/${widget.topic.id}/$_index',
+                    extra: _answer.text.trim(),
+                  ),
+                  icon: const Icon(Icons.chat_rounded, size: 20),
+                  label: Text(context.l10n.discussWithAi),
                 ),
               ] else ...[
                 Container(

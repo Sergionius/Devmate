@@ -1,39 +1,64 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// Способ авторизации у провайдера.
+enum LlmAuthMode {
+  /// Классический ключ из поля «API-ключ».
+  apiKey,
+
+  /// OAuth device-code вход в ChatGPT-подписку (Codex backend);
+  /// ключи хранятся отдельно (см. codex_auth.dart).
+  codexDeviceCode,
+}
+
+LlmAuthMode authModeFromName(String? name) => LlmAuthMode.values.firstWhere(
+  (mode) => mode.name == name,
+  orElse: () => LlmAuthMode.apiKey,
+);
+
 class LlmSettings {
   const LlmSettings({
     required this.baseUrl,
     required this.model,
     required this.apiKey,
+    this.authMode = LlmAuthMode.apiKey,
   });
 
   final String baseUrl;
   final String model;
   final String apiKey;
+  final LlmAuthMode authMode;
 
+  /// Для codex-режима ключ не нужен — авторизация токенами из OAuth-входа.
   bool get isConfigured =>
-      apiKey.trim().isNotEmpty &&
       baseUrl.trim().isNotEmpty &&
-      model.trim().isNotEmpty;
+      model.trim().isNotEmpty &&
+      (authMode == LlmAuthMode.apiKey ? apiKey.trim().isNotEmpty : true);
 
-  LlmSettings copyWith({String? baseUrl, String? model, String? apiKey}) =>
-      LlmSettings(
-        baseUrl: baseUrl ?? this.baseUrl,
-        model: model ?? this.model,
-        apiKey: apiKey ?? this.apiKey,
-      );
+  LlmSettings copyWith({
+    String? baseUrl,
+    String? model,
+    String? apiKey,
+    LlmAuthMode? authMode,
+  }) => LlmSettings(
+    baseUrl: baseUrl ?? this.baseUrl,
+    model: model ?? this.model,
+    apiKey: apiKey ?? this.apiKey,
+    authMode: authMode ?? this.authMode,
+  );
 
   Map<String, String> toMap() => {
     'baseUrl': baseUrl,
     'model': model,
     'apiKey': apiKey,
+    'authMode': authMode.name,
   };
 
   static LlmSettings fromMap(Map<String, String> map) => LlmSettings(
     baseUrl: map['baseUrl'] ?? '',
     model: map['model'] ?? '',
     apiKey: map['apiKey'] ?? '',
+    authMode: authModeFromName(map['authMode']),
   );
 }
 
@@ -44,6 +69,7 @@ class LlmPreset {
     this.baseUrl,
     this.defaultModel, {
     this.worksInBrowser = false,
+    this.authMode = LlmAuthMode.apiKey,
   });
   final String id;
   final String label;
@@ -53,9 +79,21 @@ class LlmPreset {
   /// Whether the provider sends CORS headers and can be called from a web
   /// build directly. Native iOS/Android apps work with all providers.
   final bool worksInBrowser;
+
+  final LlmAuthMode authMode;
 }
 
 const llmPresets = <LlmPreset>[
+  // ⚠️ Эксперимент: device-вход опирается на client_id pi-coding-agent
+  // (см. codex_auth.dart). URL — корень Codex backend: openai_dart сам
+  // добавляет `/responses`.
+  LlmPreset(
+    'codex',
+    'ChatGPT Codex (подписка)',
+    'https://chatgpt.com/backend-api/codex',
+    'gpt-6-luna',
+    authMode: LlmAuthMode.codexDeviceCode,
+  ),
   LlmPreset(
     'zaiCoding',
     'z.ai GLM Coding (подписка)',
@@ -120,6 +158,7 @@ class LlmSettingsRepository {
   static const _baseUrlKey = 'llm.baseUrl';
   static const _modelKey = 'llm.model';
   static const _apiKeyKey = 'llm.apiKey';
+  static const _authModeKey = 'llm.authMode';
   static const _baseUrlEnv = 'LLM_BASE_URL';
   static const _modelEnv = 'LLM_MODEL';
   static const _apiKeyEnv = 'LLM_API_KEY';
@@ -153,10 +192,14 @@ class LlmSettingsRepository {
     final baseUrl = await _storage.read(key: _baseUrlKey);
     final model = await _storage.read(key: _modelKey);
     final apiKey = await _storage.read(key: _apiKeyKey);
+    final authMode = await _storage.read(key: _authModeKey);
     return LlmSettings(
       baseUrl: baseUrl ?? env.baseUrl,
       model: model ?? env.model,
       apiKey: apiKey ?? env.apiKey,
+      authMode: authMode == null
+          ? LlmAuthMode.apiKey
+          : authModeFromName(authMode),
     );
   }
 
@@ -164,11 +207,13 @@ class LlmSettingsRepository {
     await _storage.write(key: _baseUrlKey, value: settings.baseUrl.trim());
     await _storage.write(key: _modelKey, value: settings.model.trim());
     await _storage.write(key: _apiKeyKey, value: settings.apiKey.trim());
+    await _storage.write(key: _authModeKey, value: settings.authMode.name);
   }
 
   Future<void> clear() async {
     await _storage.delete(key: _baseUrlKey);
     await _storage.delete(key: _modelKey);
     await _storage.delete(key: _apiKeyKey);
+    await _storage.delete(key: _authModeKey);
   }
 }

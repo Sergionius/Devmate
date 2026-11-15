@@ -70,4 +70,54 @@ void main() {
       'custom',
     );
   });
+
+  test('codex preset is detected and implies codex auth mode', () {
+    final repo = LlmSettingsRepository(storage: MemorySecureStorage());
+    final preset = repo.detectPreset(
+      const LlmSettings(
+        baseUrl: 'https://chatgpt.com/backend-api/codex',
+        model: 'gpt-6-luna',
+        apiKey: '',
+        authMode: LlmAuthMode.codexDeviceCode,
+      ),
+    );
+    expect(preset?.id, 'codex');
+    expect(preset?.authMode, LlmAuthMode.codexDeviceCode);
+  });
+
+  test('authMode is persisted and restored; unknown name falls back', () async {
+    final storage = MemorySecureStorage();
+    final repo = LlmSettingsRepository(storage: storage);
+    await repo.save(
+      const LlmSettings(
+        baseUrl: 'https://chatgpt.com/backend-api/codex',
+        model: 'gpt-6-luna',
+        apiKey: '',
+        authMode: LlmAuthMode.codexDeviceCode,
+      ),
+    );
+    expect((await repo.load()).authMode, LlmAuthMode.codexDeviceCode);
+    // Без записи authMode (старые версии) — apiKey.
+    expect(
+      LlmSettings.fromMap(<String, String>{}).authMode,
+      LlmAuthMode.apiKey,
+    );
+    expect(authModeFromName('nonsense'), LlmAuthMode.apiKey);
+  });
+
+  test('codex mode is configured without an API key, apiKey mode is not', () {
+    const codex = LlmSettings(
+      baseUrl: 'https://chatgpt.com/backend-api/codex',
+      model: 'gpt-6-luna',
+      apiKey: '',
+      authMode: LlmAuthMode.codexDeviceCode,
+    );
+    expect(codex.isConfigured, isTrue);
+    const byKey = LlmSettings(
+      baseUrl: 'https://api.openai.com/v1',
+      model: 'gpt-4.1-mini',
+      apiKey: '',
+    );
+    expect(byKey.isConfigured, isFalse);
+  });
 }

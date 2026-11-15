@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -236,21 +236,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		F1A7B2C3D4E5F60718293A4B /* Prune Empty Embedded Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Prune Empty Embedded Frameworks";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Static frameworks linked via Swift Package Manager must not be embedded:\n# their code is already linked into the app binary, and the copied bundle has\n# no executable, which breaks app installation (e.g. RecaptchaEnterpriseSDK).\nFRAMEWORKS_DIR=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\nif [ -d \"$FRAMEWORKS_DIR\" ]; then\n  find \"$FRAMEWORKS_DIR\" -maxdepth 1 -name '*.framework' | while read -r fw; do\n    name=\"$(basename \"$fw\" .framework)\"\n    if [ ! -e \"$fw/$name\" ]; then\n      echo \"Removing embedded framework without a binary: $name\"\n      rm -rf \"$fw\"\n    fi\n  done\nfi\n";
-		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -281,6 +266,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		F1A7B2C3D4E5F60718293A4B /* Prune Empty Embedded Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Prune Empty Embedded Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Static frameworks linked via Swift Package Manager must not be embedded:\n# their code is already linked into the app binary, and the copied bundle has\n# no executable, which breaks app installation (e.g. RecaptchaEnterpriseSDK).\nFRAMEWORKS_DIR=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\nif [ -d \"$FRAMEWORKS_DIR\" ]; then\n  find \"$FRAMEWORKS_DIR\" -maxdepth 1 -name '*.framework' | while read -r fw; do\n    name=\"$(basename \"$fw\" .framework)\"\n    if [ ! -e \"$fw/$name\" ]; then\n      echo \"Removing embedded framework without a binary: $name\"\n      rm -rf \"$fw\"\n    fi\n  done\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

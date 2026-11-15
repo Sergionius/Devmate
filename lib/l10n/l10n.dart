@@ -19,5 +19,6 @@ extension LlmErrorText on BuildContext {
     LlmErrorKind.connection => l10n.llmConnectionError,
     LlmErrorKind.emptyTestResponse => l10n.llmTestEmptyResponse,
     LlmErrorKind.emptyReply => l10n.llmEmptyReply,
+    LlmErrorKind.subscriptionExpired => l10n.llmSubscriptionExpired,
   };
 }
