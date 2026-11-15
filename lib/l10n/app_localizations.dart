@@ -616,6 +616,12 @@ abstract class AppLocalizations {
   /// **'Провайдер вернул пустой ответ.'**
   String get llmEmptyReply;
 
+  /// No description provided for @llmProviderDetail.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ провайдера: {detail}'**
+  String llmProviderDetail(String detail);
+
   /// No description provided for @topicChatTitle.
   ///
   /// In ru, this message translates to:

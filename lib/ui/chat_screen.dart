@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:go_router/go_router.dart';
 
@@ -82,6 +83,30 @@ class _ChatScreenState extends State<ChatScreen> {
     }
     _input.clear();
     _viewModel.send(trimmed);
+  }
+
+  /// Enter (аппаратная клавиатура: десктоп, web, симулятор iOS): не новая
+  /// строка, а отправка сообщения и скрытие клавиатуры. Shift+Enter —
+  /// перенос строки. Событие перехватывается до Shortcuts — иначе
+  /// многострочное поле вставило бы '\n'.
+  KeyEventResult _inputKeyHandler(FocusNode node, KeyEvent event) {
+    if (event is KeyUpEvent) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    final isEnter =
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter;
+    if (!isEnter) return KeyEventResult.ignored;
+    if (HardwareKeyboard.instance.isShiftPressed) {
+      return KeyEventResult.ignored;
+    }
+    // Незавершённая композиция IME (китайский/японский ввод): Enter
+    // подтверждает состав — не отправляем сообщение.
+    if (_input.value.composing != TextRange.empty) {
+      return KeyEventResult.ignored;
+    }
+    _sendFromInput(_input.text);
+    _inputFocus.unfocus();
+    return KeyEventResult.handled;
   }
 
   Future<void> _applyDraft() async {
@@ -269,30 +294,38 @@ class _ChatScreenState extends State<ChatScreen> {
                 border: Border.all(color: DevmateColors.border),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: TextField(
-                controller: _input,
-                focusNode: _inputFocus,
-                minLines: 1,
-                maxLines: 5,
-                textInputAction: TextInputAction.send,
-                onSubmitted: _sendFromInput,
-                enabled: !_viewModel.streaming,
-                style: const TextStyle(
-                  color: DevmateColors.primary,
-                  fontSize: 16,
-                  height: 1.4,
-                ),
-                decoration: InputDecoration(
-                  hintText: context.l10n.chatInputHint,
-                  hintStyle: const TextStyle(color: DevmateColors.muted),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 14,
+              child: Focus(
+                onKeyEvent: _inputKeyHandler,
+                child: TextField(
+                  controller: _input,
+                  focusNode: _inputFocus,
+                  minLines: 1,
+                  maxLines: 5,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (text) {
+                    // Enter/«Отправить» на мягкой клавиатуре: не оставляем
+                    // клавиатуру раскрытой после отправки.
+                    _inputFocus.unfocus();
+                    _sendFromInput(text);
+                  },
+                  enabled: !_viewModel.streaming,
+                  style: const TextStyle(
+                    color: DevmateColors.primary,
+                    fontSize: 16,
+                    height: 1.4,
                   ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  disabledBorder: InputBorder.none,
+                  decoration: InputDecoration(
+                    hintText: context.l10n.chatInputHint,
+                    hintStyle: const TextStyle(color: DevmateColors.muted),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 14,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                  ),
                 ),
               ),
             ),
@@ -390,16 +423,24 @@ class _Bubble extends StatelessWidget {
 
   Widget _assistantBody(BuildContext context) {
     // Текст ошибки не вшивается в сообщение, а вычисляется при рендере:
-    // история сессии остаётся чистой для повторных запросов.
+    // история сессии остаётся чистой для повторных запросов. К сырой ошибке
+    // провайдера добавляем его собственный ответ (лимиты подписки и т.п.).
     final errorKind = message.errorKind;
     final errorText = errorKind == null
         ? null
         : context.llmErrorText(errorKind);
+    final detail = message.errorDetail?.trim();
+    final detailSuffix =
+        detail == null || detail.isEmpty
+            ? ''
+            : '\n\n${context.l10n.llmProviderDetail(detail)}';
     final text = errorText == null
         ? message.text
         : message.text.isEmpty
-        ? errorText
-        : '${message.text}\n\n$errorText';
+        ? '$errorText$detailSuffix'
+        // Стрим оборвался после частичного ответа: показываем и его,
+        // и причину обрыва.
+        : '${message.text}\n\n$errorText$detailSuffix';
     if (text.isEmpty && streaming) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 4),

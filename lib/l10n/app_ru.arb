@@ -108,6 +108,8 @@
   "llmConnectionError": "Ошибка соединения с провайдером. Проверьте настройки и интернет.",
   "llmTestEmptyResponse": "Провайдер ответил пустым сообщением.",
   "llmEmptyReply": "Провайдер вернул пустой ответ.",
+  "llmProviderDetail": "Ответ провайдера: {detail}",
+  "@llmProviderDetail": { "placeholders": { "detail": { "type": "String" } } },
 
   "topicChatTitle": "AI · {title}",
   "@topicChatTitle": { "placeholders": { "title": { "type": "String" } } },

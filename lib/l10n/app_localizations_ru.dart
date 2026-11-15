@@ -313,6 +313,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get llmEmptyReply => 'Провайдер вернул пустой ответ.';
 
   @override
+  String llmProviderDetail(String detail) {
+    return 'Ответ провайдера: $detail';
+  }
+
+  @override
   String topicChatTitle(String title) {
     return 'AI · $title';
   }

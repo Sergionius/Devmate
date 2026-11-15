@@ -13,6 +13,58 @@ import 'ui/settings_screen.dart';
 import 'ui/topic_screen.dart';
 import 'ui/training_view_model.dart';
 
+/// go_router 18 не распознаёт MaterialApp из package:flutter/material:
+/// его isMaterialApp() ищет одноимённый класс из пакета material_ui, а это
+/// другой класс. Все builder-маршруты получают NoTransitionPage — без
+/// переходов и без Cupertino-жеста «назад» на iOS. Поэтому страницы строим
+/// явно: переходы берём из PageTransitionsTheme (на iOS — Cupertino со
+/// свайпом от края, на Android — predictive back, и т.д.).
+CustomTransitionPage<Object?> _transitionPage(
+  BuildContext context,
+  GoRouterState state,
+  Widget child,
+) {
+  // Длительность берём у выбранного платформой builder'а: у Cupertino 500 мс,
+  // у Zoom/предиктивного на Android и десктопных переходов — 300 мс.
+  final theme = Theme.of(context);
+  final duration =
+      theme.pageTransitionsTheme.builders[theme.platform]?.transitionDuration ??
+      const Duration(milliseconds: 300);
+  return CustomTransitionPage<Object?>(
+    key: state.pageKey,
+    name: state.name ?? state.path,
+    arguments: <String, String>{
+      ...state.pathParameters,
+      ...state.uri.queryParameters,
+    },
+    restorationId: state.pageKey.value,
+    transitionDuration: duration,
+    reverseTransitionDuration: duration,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+        Theme.of(context).pageTransitionsTheme.buildTransitions(
+          ModalRoute.of(context)! as PageRoute,
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+        ),
+  );
+}
+
+/// GoRoute с явным pageBuilder: обходит указанный выше баг go_router,
+/// сохраняя обычную семантику builder.
+GoRoute _route({
+  required String path,
+  required GoRouterWidgetBuilder builder,
+  List<GoRoute> routes = const [],
+}) => GoRoute(
+  path: path,
+  pageBuilder: (context, state) =>
+      _transitionPage(context, state, builder(context, state)),
+  routes: routes,
+);
+
 GoRouter createRouter(
   TrainingViewModel viewModel,
   LlmSettingsRepository llmSettings,
@@ -23,7 +75,7 @@ GoRouter createRouter(
     initialLocation: '/',
     errorBuilder: (context, state) => const NotFoundScreen(),
     routes: [
-      GoRoute(
+      _route(
         path: '/',
         builder: (context, state) => HomeScreen(
           viewModel: viewModel,
@@ -31,12 +83,12 @@ GoRouter createRouter(
           settingsRepository: llmSettings,
         ),
       ),
-      GoRoute(
+      _route(
         path: '/settings',
         builder: (context, state) =>
             SettingsScreen(settingsRepository: llmSettings),
       ),
-      GoRoute(
+      _route(
         path: '/chat/free',
         builder: (context, state) => ChatScreen(
           title: context.l10n.freeChatTitle,
@@ -50,7 +102,7 @@ GoRouter createRouter(
           ],
         ),
       ),
-      GoRoute(
+      _route(
         path: '/chat/create/:topicId',
         builder: (context, state) {
           final topic = catalog.topicById(state.pathParameters['topicId']!);
@@ -73,7 +125,7 @@ GoRouter createRouter(
           );
         },
       ),
-      GoRoute(
+      _route(
         path: '/chat/create',
         builder: (context, state) => ChatScreen(
           title: context.l10n.createChatTitle,
@@ -88,7 +140,7 @@ GoRouter createRouter(
           ],
         ),
       ),
-      GoRoute(
+      _route(
         path: '/chat/topic/:topicId',
         builder: (context, state) {
           final topic = catalog.topicById(state.pathParameters['topicId']!);
@@ -109,7 +161,7 @@ GoRouter createRouter(
           );
         },
       ),
-      GoRoute(
+      _route(
         path: '/chat/question/:topicId/:index',
         builder: (context, state) {
           final topic = catalog.topicById(state.pathParameters['topicId']!);
@@ -135,7 +187,7 @@ GoRouter createRouter(
           );
         },
       ),
-      GoRoute(
+      _route(
         path: '/topic/:topicId',
         builder: (context, state) {
           final topic = catalog.topicById(state.pathParameters['topicId']!);
@@ -147,7 +199,7 @@ GoRouter createRouter(
           );
         },
         routes: [
-          GoRoute(
+          _route(
             path: 'edit',
             builder: (context, state) {
               final topic = catalog.topicById(state.pathParameters['topicId']!);
@@ -155,7 +207,7 @@ GoRouter createRouter(
               return EditTopicScreen(catalog: catalog, topicId: topic.id);
             },
           ),
-          GoRoute(
+          _route(
             path: 'edit/question/:questionId',
             builder: (context, state) {
               final topic = catalog.topicById(state.pathParameters['topicId']!);
@@ -180,7 +232,7 @@ GoRouter createRouter(
               );
             },
           ),
-          GoRoute(
+          _route(
             path: 'practice/:index',
             builder: (context, state) {
               final topic = catalog.topicById(state.pathParameters['topicId']!);
