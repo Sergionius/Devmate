@@ -103,7 +103,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: Text(widget.topic.title),
-      // На web назад ведёт кнопка браузера; на мобильных — системная кнопка.
+
       automaticallyImplyLeading: !kIsWeb,
     ),
     body: Center(
@@ -244,7 +244,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      // Обсуждение ответа и эталона с AI — до выбора оценки.
+
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
@@ -297,8 +297,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   child: Text(context.l10n.viewReferenceAgain),
                 ),
                 const SizedBox(height: 12),
-                // Как и на сравнении — возможность обсудить с AI перед
-                // сохранением результата.
+
                 OutlinedButton.icon(
                   onPressed: () => context.push(
                     '/chat/question/${widget.topic.id}/$_index',

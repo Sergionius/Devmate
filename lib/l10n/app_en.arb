@@ -1,0 +1,340 @@
+{
+  "@@locale": "en",
+  "questionsManagement": "Question management",
+  "questionsJsonHint": "Export copies questions JSON to the clipboard. Import replaces all topics and questions from the pasted JSON and clears progress.",
+  "exportQuestions": "Copy questions as JSON",
+  "importQuestions": "Import JSON",
+  "pasteQuestionsJson": "Paste JSON with topics and questions",
+  "questionsCopied": "Questions JSON copied to the clipboard",
+  "questionsImported": "Questions imported",
+  "importFailed": "Failed to import questions",
+  "resetProgress": "Reset progress only",
+  "resetProgressWarning": "Delete all training results and points? Questions, topics and AI settings will be kept. This action cannot be undone.",
+  "resetProgressDone": "Progress reset",
+  "resetProgressFailed": "Failed to reset progress",
+  "resetTopicProgress": "Reset topic progress",
+  "resetTopicProgressWarning": "Delete training results for \"{title}\" only?",
+  "resetTopicProgressDone": "Topic progress reset",
+  "resetAll": "Reset everything",
+  "resetWarning": "Delete user topics, questions, edits, progress and AI settings? Built-in questions will return to their original state. This action cannot be undone.",
+  "resetDone": "Original state restored",
+  "resetFailed": "Failed to complete the reset",
+  "cancelAction": "Cancel",
+  "agentJsonInstruction": "Agent instruction: create valid JSON without Markdown. The root object must have version set to 1 and a non-empty topics array. Each topic has a non-empty title, a string description (may be empty) and a non-empty questions array. Every question has non-empty prompt and answer. For each topic prepare 4–12 distinct questions; answers should be precise, 2–4 sentences each. Don't include IDs — the app will generate them on import.",
+  "pageNotFound": "This page does not exist.",
+  "goHome": "Home",
+  "aiSettings": "AI settings",
+  "offlineBadge": "OFFLINE",
+  "logoSemantics": "Devmate logo",
+  "homeEyebrow": "TECH INTERVIEW PREP",
+  "homeTitle": "Sharpen your answer.\nDon't guess.",
+  "homeSubtitle": "Work through questions, compare with the reference and revisit the hard ones.",
+  "continueTraining": "Continue training",
+  "retry": "Retry",
+  "libraryEyebrow": "LIBRARY / 10 TRACKS",
+  "chooseTopic": "Pick a topic",
+  "statsEyebrow": "YOUR STATS",
+  "statsCompletedLabel": "questions completed",
+  "totalQuestions": "{count, plural, one{{count} question} other{{count} questions}}",
+  "@totalQuestions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "topicEyebrowDirection": "Track",
+  "topicEyebrow": "LIBRARY / TOPIC",
+  "repeatTopic": "Repeat topic",
+  "discussTopicWithAi": "Discuss with AI",
+  "questionsEyebrow": "QUESTIONS",
+  "knownXp": "Know it · 10 XP",
+  "repeatedXp": "Reviewed · 5 XP",
+  "topicProgress": "{completed} of {total, plural, one{{total} question} other{{total} questions}} done",
+  "@topicProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "practiceSaveFailed": "Failed to save the answer",
+  "stepYourAnswer": "01 / YOUR ANSWER",
+  "yourAnswerHint": "Put it in your own words. There is no automatic grading — try to recall it yourself first.",
+  "yourAnswerLabel": "Your answer",
+  "answerPlaceholder": "Start writing here...",
+  "compareWithReference": "Compare with reference",
+  "discussWithAi": "Work through it with AI",
+  "stepComparison": "02 / COMPARISON",
+  "yourAnswerEyebrow": "YOUR ANSWER",
+  "referenceAnswerEyebrow": "REFERENCE ANSWER",
+  "howCloseQuestion": "How close were you?",
+  "knewAnswerXp": "Knew it · +10 XP",
+  "needsRepeat": "Needs review",
+  "stepConsolidation": "03 / CONSOLIDATION",
+  "consolidationHint": "Recall the reference answer and write it again in your own words. We do not compare wording automatically.",
+  "whatToRemember": "What's worth remembering?",
+  "writeEssencePlaceholder": "Write down the essence...",
+  "consolidateXp": "Consolidate · +5 XP",
+  "viewReferenceAgain": "See the reference again",
+  "doneTitle": "Great. That answer counts.",
+  "doneSubtitle": "The hard parts start to click.",
+  "progressSavedNote": "Progress is saved on this device.",
+  "backToTopic": "Back to topic",
+  "nextQuestion": "Next question",
+  "questionProgress": "QUESTION {current} / {total}",
+  "@questionProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "progressLoadError": "Failed to load progress. Try again.",
+  "answerSaveError": "Failed to save the answer. Try again.",
+  "settingsTitle": "AI provider (BYOK)",
+  "settingsEyebrow": "ANY OPENAI-COMPATIBLE ENDPOINT",
+  "settingsLanguage": "App language",
+  "settingsLanguageSystem": "System default",
+  "settingsLanguageRestartNote": "The interface switches immediately; questions use the new language after restarting the app.",
+  "keyPrivacyNote": "The key is stored only on this device and is sent directly to the chosen provider.",
+  "webCorsNote": "On the web, only CORS-enabled providers work: OpenAI, OpenRouter, Groq. z.ai and DeepSeek block browser requests — use the app on iOS/Android or pick another provider.",
+  "worksInBrowserSuffix": "· works in the browser",
+  "providerLabel": "Provider",
+  "baseUrlLabel": "Base URL",
+  "baseUrlHint": "https://api.z.ai/api/paas/v4",
+  "modelLabel": "Model",
+  "modelHint": "glm-5.3-flash",
+  "apiKeyLabel": "API key",
+  "apiKeyHint": "Enter your key",
+  "saving": "Saving...",
+  "save": "Save",
+  "testing": "Testing...",
+  "testConnection": "Test connection",
+  "settingsLoadError": "Failed to read settings. Check storage availability.",
+  "settingsSaved": "Settings saved on this device.",
+  "settingsSaveError": "Failed to save settings on this device.",
+  "fillAllFields": "Fill in the URL, model and API key.",
+  "connectionOk": "Connection works ✓",
+  "chatKeyRequired": "API key required",
+  "chatKeyRequiredDescription": "The AI chat works with your key from an OpenAI-compatible provider. Add it in settings — it stays on this device.",
+  "openSettings": "Open settings",
+  "chatEyebrow": "ASK AWAY — ANSWERS STREAM IN",
+  "topicChatIntro": "I'll prep you for the interview: explaining, guiding, and checking as we go.",
+  "questionChatIntro": "Write your answer or ask a question about it.",
+  "chatInputHint": "Ask anything…",
+  "chatSettingsReadError": "Failed to read settings: {error}",
+  "@chatSettingsReadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "llmKeyRejected": "Key rejected (401). Check the API key in settings.",
+  "llmNotFound": "Address or model not found (404). Check the base URL and model name.",
+  "llmRateLimited": "Too many requests (429). Wait or check your quota.",
+  "llmNoBalance": "The provider account has no funds or plan. Top up your balance or pick another provider.",
+  "llmWebConnectionError": "Could not connect to the provider. On the web, only CORS-enabled providers work (OpenAI, OpenRouter, Groq). Check settings and internet.",
+  "llmConnectionError": "Could not connect to the provider. Check settings and internet.",
+  "llmTestEmptyResponse": "The provider replied with an empty message.",
+  "llmEmptyReply": "The provider returned an empty reply.",
+  "llmProviderDetail": "Provider reply: {detail}",
+  "@llmProviderDetail": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "topicChatTitle": "AI · {title}",
+  "@topicChatTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "questionChatTitle": "AI · Question {index}",
+  "@questionChatTitle": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "topicSystemPrompt": "You are a technical interviewer preparing the user for a job interview on the topic \"{title}\" ({description}). Answer in English, briefly and to the point: explain with examples, ask leading questions, check understanding. Don't solve for the user until they've tried it themselves.",
+  "@topicSystemPrompt": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "questionSystemPrompt": "You're working through a question with the user: \"{prompt}\". Your reference answer is: \"{reference}\". Answer in English: do not reveal the whole reference at once — use leading questions and examples to help the user formulate the answer themselves, then compare with the reference and point out what to add. If the user asks to fix, extend or record the correct answer — reply with exactly one JSON object and no explanations: the field action with the value update_answer, the field prompt with the refined question text, the field answer with the new reference answer.",
+  "@questionSystemPrompt": {
+    "placeholders": {
+      "prompt": {
+        "type": "String"
+      },
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "questionDraftPart": "The user's answer draft: \"{draft}\". ",
+  "@questionDraftPart": {
+    "placeholders": {
+      "draft": {
+        "type": "String"
+      }
+    }
+  },
+  "topicSuggestionStart": "Where should I start with this topic?",
+  "topicSuggestionQuiz": "Ask me 3 typical interview questions",
+  "topicSuggestionExplainer": "Break down one concept in plain words, with an example",
+  "editTopicButton": "Edit",
+  "editTopicTitle": "Edit topic",
+  "editTopicNameLabel": "Title",
+  "editTopicDescLabel": "Description",
+  "editSaveTopic": "Save topic",
+  "editAddQuestion": "Add question",
+  "editQuestionDialogTitleNew": "New question",
+  "editQuestionDialogTitleEdit": "Edit question",
+  "editPromptLabel": "Question",
+  "editAnswerLabel": "Reference answer",
+  "editSave": "Save",
+  "editDeleteQuestion": "Delete",
+  "editRequired": "Fill in the question and the answer.",
+  "editSaved": "Saved",
+  "answerUpdateCardTitle": "The model suggests a revised answer",
+  "answerUpdatePromptLabel": "Refined question",
+  "answerUpdateButton": "Replace answer",
+  "answerReplaced": "Answer updated in the topic",
+  "freeChatTitle": "General chat",
+  "freeChatCardSubtitle": "Any topic: career, learning, hobbies — whatever's on your mind.",
+  "freeChatIntro": "Let's chat about anything: work, study, hobbies or just thoughts out loud.",
+  "freeSystemPrompt": "You are a friendly conversation partner for free-form chat on any topics. Answer in English: lively, curious and without moralizing; keep the conversation going, ask follow-up questions, share examples. If the topic is technical — go into details; if it is light — stay light.",
+  "freeSuggestionIcebreaker": "Suggest a topic and ask the first question",
+  "freeSuggestionCareer": "Let's discuss how to deal with burnout at work",
+  "freeSuggestionFun": "Tell me a surprising fact about space",
+  "createChatTitle": "Create topic",
+  "createChatCardSubtitle": "Describe a topic and its questions — I'll put it together for you.",
+  "createChatIntro": "Describe the topic you want: name, level and number of questions. If anything is unclear — I will ask.",
+  "createSystemPrompt": "You help the user create training topics for interview preparation. Answer in English. Rules: (1) If the request is clear — reply with exactly one JSON object with no markdown wrappers or explanations. The object schema: field title — string, topic name; field description — string, one sentence about the topic; field questions — array of objects where each object has field prompt (question) and field answer (reference answer in 2-4 sentences). From 4 to 12 questions, questions and answers in English. (2) If something is missing for a good topic (level, stack, depth) — ask one short clarifying question in plain text, without JSON. (3) Any extra text next to the JSON is forbidden.",
+  "createSuggestionDocker": "Build a topic \"Docker for beginners\" — 5 questions",
+  "createSuggestionTypescript": "10 TypeScript questions for a mid-level developer",
+  "createSuggestionSql": "SQL topic: queries and indexes, 6 questions",
+  "createAddTopic": "Add topic",
+  "createSaveError": "Failed to save the topic. Try again.",
+  "createAddTopicSuccess": "Topic added — you'll find it in the library on the home screen",
+  "appendChatButton": "Add questions with AI",
+  "appendChatTitle": "Questions · {title}",
+  "@appendChatTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "appendChatIntro": "Tell me which questions to add to the topic. I will ask if anything is unclear.",
+  "appendSystemPrompt": "You add questions to the existing training topic \"{title}\". Answer in English. Existing questions in this topic: {existing}. Rules: (1) If the request is clear — reply with exactly one JSON object with no markdown wrappers or explanations: a single field questions — array of objects where each object has field prompt (new question) and field answer (reference answer in 2-4 sentences). From 3 to 10 questions, in English, they must not repeat the listed questions. (2) If the request is ambiguous — ask one short clarifying question in plain text, without JSON. (3) Any extra text next to the JSON is forbidden.",
+  "@appendSystemPrompt": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "existing": {
+        "type": "String"
+      }
+    }
+  },
+  "appendSuggestionBasics": "Add junior-level basics on \"{title}\"",
+  "@appendSuggestionBasics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "appendSuggestionPractice": "Add 3 hands-on exercises on \"{title}\"",
+  "@appendSuggestionPractice": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "appendSuggestionEdgeCases": "Add questions about typical mistakes and pitfalls",
+  "appendAddTopic": "Add to topic \"{title}\"",
+  "@appendAddTopic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "appendAddedSuccess": "Questions added to topic \"{title}\"",
+  "@appendAddedSuccess": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "createAddedQuestionsSuffix": "{count, plural, one{question} other{questions}}",
+  "@createAddedQuestionsSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "llmSubscriptionExpired": "The ChatGPT subscription session expired — sign in again in settings.",
+  "codexLogin": "Sign in with ChatGPT",
+  "codexLogout": "Sign out",
+  "codexLoginHint": "A confirmation code will appear — enter it at auth.openai.com in your browser.",
+  "codexDeviceCodeLabel": "Confirmation code",
+  "codexOpenLoginPage": "Open the sign-in page",
+  "codexCopyCode": "Copy code",
+  "codexCopied": "Copied",
+  "codexWaitingApproval": "Waiting for confirmation in the browser…",
+  "codexLoginSuccess": "Subscription connected ✓",
+  "codexLoginCancelled": "Sign-in cancelled",
+  "codexLoginError": "Sign-in failed: {error}",
+  "@codexLoginError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "codexLoggedInUntil": "Subscription connected, renews until {time}",
+  "@codexLoggedInUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "codexWebUnsupported": "ChatGPT sign-in is available only in the app (iOS/Android), not in the browser.",
+  "presetCodexLabel": "ChatGPT Codex (subscription)",
+  "presetZaiCodingLabel": "z.ai GLM Coding (subscription)",
+  "presetZaiLabel": "z.ai API (pay-as-you-go)",
+  "presetOllamaLabel": "Ollama (local)",
+  "presetCustomLabel": "Custom endpoint",
+  "codexErrorNetwork": "Network error. Check your internet connection.",
+  "codexErrorInvalidResponse": "Invalid response from the sign-in server. Try again later.",
+  "codexErrorRejected": "The code was rejected or expired. Request a new one.",
+  "codexErrorSessionExpired": "Sign-in was cancelled or timed out.",
+  "codexErrorTimeout": "Timed out waiting for confirmation. Try again."
+}

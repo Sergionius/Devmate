@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/codex_auth.dart';
+import '../data/app_preferences.dart';
 import '../data/codex_chat_provider.dart';
 import '../data/codex_token_store.dart';
 import '../data/llm_chat_provider.dart';
@@ -22,10 +23,17 @@ class SettingsScreen extends StatefulWidget {
     required this.settingsRepository,
     this.catalog,
     this.viewModel,
+    this.appLocale,
+    this.appPreferences,
   });
   final LlmSettingsRepository settingsRepository;
   final TopicCatalog? catalog;
   final TrainingViewModel? viewModel;
+
+  /// Живой выбор языка из [AppLanguage]; `null` — язык системы.
+  final ValueNotifier<Locale?>? appLocale;
+
+  final AppPreferencesRepository? appPreferences;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -41,6 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _testing = false;
   bool _working = false;
   String? _testResult;
+  AppLanguage _language = AppLanguage.system;
 
   @override
   void initState() {
@@ -51,7 +60,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _load();
   }
 
+  /// Применяет язык мгновенно и сохраняет выбор; смена языка —
+  /// приложенческая настройка, кнопка «Сохранить» ей не нужна.
+  Future<void> _changeLanguage(AppLanguage language) async {
+    if (language == _language) return;
+    setState(() => _language = language);
+    widget.appLocale?.value = language.locale;
+    final preferences = widget.appPreferences;
+    if (preferences == null) return;
+    try {
+      await preferences.saveLanguage(language);
+    } catch (error) {
+      debugPrint('SettingsScreen: сохранение языка не удалось: $error');
+    }
+  }
+
   Future<void> _load() async {
+    try {
+      final language = await widget.appPreferences?.loadLanguage();
+      if (mounted && language != null && _language != language) {
+        setState(() => _language = language);
+      }
+    } catch (error) {
+      debugPrint('SettingsScreen: чтение языка не удалось: $error');
+    }
     try {
       final settings = await widget.settingsRepository.load();
       if (!mounted) return;
@@ -127,8 +159,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _testing = true;
       _testResult = null;
     });
-    // Codex-подписка проверяется тем же стрим-запросом, что и настоящий чат
-    // (превью-поток OpenAI требует store:false + stream:true).
+
     final error = settings.authMode == LlmAuthMode.codexDeviceCode
         ? await testCodexConnection(settings)
         : await testLlmConnection(settings);
@@ -312,6 +343,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                   const SizedBox(height: 24),
+                  DropdownButtonFormField<AppLanguage>(
+                    initialValue: _language,
+                    items: [
+                      DropdownMenuItem(
+                        value: AppLanguage.system,
+                        child: Text(context.l10n.settingsLanguageSystem),
+                      ),
+                      const DropdownMenuItem(
+                        value: AppLanguage.russian,
+                        child: Text('Русский'),
+                      ),
+                      const DropdownMenuItem(
+                        value: AppLanguage.english,
+                        child: Text('English'),
+                      ),
+                    ],
+                    onChanged: (language) => _changeLanguage(language!),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.settingsLanguage,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    context.l10n.settingsLanguageRestartNote,
+                    style: TextStyle(color: DevmateColors.muted, height: 1.5),
+                  ),
+                  const SizedBox(height: 16),
                   DropdownButtonFormField<LlmPreset>(
                     initialValue: _preset,
                     items: [
@@ -320,8 +378,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           value: preset,
                           child: Text(
                             kIsWeb && preset.worksInBrowser
-                                ? '${preset.label} ${context.l10n.worksInBrowserSuffix}'
-                                : preset.label,
+                                ? '${context.presetLabel(preset)} '
+                                      '${context.l10n.worksInBrowserSuffix}'
+                                : context.presetLabel(preset),
                           ),
                         ),
                     ],
@@ -427,12 +486,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   );
 }
 
-/// Карточка входа в ChatGPT-подписку: статус токенов, вход по device-code,
-/// выход. Появляется вместо поля API-ключа для пресета Codex.
 class CodexLoginCard extends StatefulWidget {
   const CodexLoginCard({super.key, required this.onChanged});
 
-  /// Колбэк на случай, когда родителю нужно реагировать на смену входа.
   final VoidCallback onChanged;
 
   @override
@@ -459,8 +515,6 @@ class _CodexLoginCardState extends State<CodexLoginCard> {
   }
 
   Future<void> _login() async {
-    // Барьер-дисмисс запрещён: иначе фоновый опрос статуса продолжится
-    // до 15 минут; отменить можно только кнопкой.
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -520,8 +574,6 @@ class _CodexLoginCardState extends State<CodexLoginCard> {
   );
 }
 
-/// Диалог device-code входа: показывает код, ссылку на страницу входа,
-/// статус ожидания; отменяется кнопкой.
 class CodexDeviceLoginSheet extends StatefulWidget {
   const CodexDeviceLoginSheet({super.key});
 
@@ -558,11 +610,20 @@ class _CodexDeviceLoginSheetState extends State<CodexDeviceLoginSheet> {
       if (!mounted) return;
       if (error.kind == CodexAuthErrorKind.sessionExpired &&
           _cancel.isCompleted) {
-        // Отмена пользователем — тихо закрываем.
         Navigator.of(context).pop();
         return;
       }
-      setState(() => _error = error.message);
+      setState(
+        () => _error = switch (error.kind) {
+          CodexAuthErrorKind.network => context.l10n.codexErrorNetwork,
+          CodexAuthErrorKind.invalidResponse =>
+            context.l10n.codexErrorInvalidResponse,
+          CodexAuthErrorKind.rejected => context.l10n.codexErrorRejected,
+          CodexAuthErrorKind.sessionExpired =>
+            context.l10n.codexErrorSessionExpired,
+          CodexAuthErrorKind.timeout => context.l10n.codexErrorTimeout,
+        },
+      );
     } catch (error) {
       if (mounted) setState(() => _error = '$error');
     }
@@ -585,7 +646,7 @@ class _CodexDeviceLoginSheetState extends State<CodexDeviceLoginSheet> {
   }
 
   void _dismiss() {
-    if (_closed) return; // защита от двойного pop при быстрых тапах
+    if (_closed) return;
     _closed = true;
     if (!_cancel.isCompleted) _cancel.complete();
     Navigator.of(context).pop();

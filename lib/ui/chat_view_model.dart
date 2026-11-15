@@ -7,15 +7,10 @@ import '../data/llm_settings.dart';
 import '../data/topic_catalog.dart';
 import '../data/topic_draft.dart';
 
-/// Исход сохранения из чата; текст снекбара локализуется в UI.
 enum ChatSaveOutcome { contentAdded, answerReplaced, saveFailed }
 
-/// Состояние загрузки LLM-настроек чатом.
 enum ChatSettingsPhase { loading, ready, error }
 
-/// Состояние и логика одного чата: загрузка настроек, стрим ответов,
-/// карточки черновика темы и правки ответа. ChatScreen только рендерит
-/// и переводит исходы в локализованные снекбары.
 class ChatViewModel extends ChangeNotifier {
   ChatViewModel({
     required this.settingsRepository,
@@ -42,16 +37,10 @@ class ChatViewModel extends ChangeNotifier {
   final LlmSettingsRepository settingsRepository;
   final String systemPrompt;
 
-  /// Задан только в чатах работы с темами: после ответа модели логика ищет
-  /// JSON-черновик и показывает карточку с действием.
   final TopicCatalog? catalog;
 
-  /// Если задан — черновик воспринимается как вопросы для этой темы
-  /// (без поля title), а кнопка добавляет их в неё.
   final String? appendToTopic;
 
-  /// Если задан — ответы модели в этом чате могут заменять ответ этого
-  /// вопроса (JSON action=update_answer).
   final String? editQuestionId;
 
   final ChatSession Function(LlmSettings settings, String systemPrompt)
@@ -78,11 +67,9 @@ class ChatViewModel extends ChangeNotifier {
   TopicDraft? get draft => _draft;
   AnswerUpdate? get answerUpdate => _answerUpdate;
 
-  /// Сообщения диалога; единственный источник — сессия, копий нет.
   List<LlmChatMessage> get messages =>
       _session?.history ?? const <LlmChatMessage>[];
 
-  /// Название темы в append-режиме; null — создание новой темы.
   String? get appendTopicTitle => appendToTopic == null
       ? null
       : (catalog?.topicById(appendToTopic!)?.title ?? appendToTopic);
@@ -103,8 +90,6 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  /// Создаёт сессию, когда настройки готовы и сконфигурированы.
-  /// Идемпотентно; без notify — безопасно вызывать из build.
   void ensureSession() {
     final settings = _settings;
     if (_session != null || settings == null || !settings.isConfigured) {
@@ -113,9 +98,6 @@ class ChatViewModel extends ChangeNotifier {
     _attachSession(_sessionFactory(settings, systemPrompt));
   }
 
-  /// Перечитывает настройки: старая сессия закрывается, диалог сбрасывается.
-  /// Во время стрима откладывается до его завершения — сессию нельзя рвать
-  /// на полуслове, но и молча терять новые настройки нельзя.
   Future<void> reloadSettings() async {
     if (_streaming) {
       _reloadPending = true;
@@ -142,9 +124,6 @@ class ChatViewModel extends ChangeNotifier {
     _messageCount = 0;
   }
 
-  /// Сессия уведомляет на каждый чанк; список сообщений перестраивается
-  /// только когда меняется их количество. Текст последнего ответа экран
-  /// слушает напрямую у сессии (гранулярный ребилд пузыря).
   void _onSessionChanged() {
     final count = _session?.history.length ?? 0;
     if (count == _messageCount) return;
@@ -159,27 +138,21 @@ class ChatViewModel extends ChangeNotifier {
     _streaming = true;
     _notify();
     try {
-      // Текст чанков провайдер уже положил в историю; экран слушает
-      // сессию напрямую, поэтому здесь цикл только ждёт завершения.
       await for (final _ in session.sendMessageStream(text)) {}
     } catch (error) {
-      // Провайдер нормализует ошибки в errorKind; сюда попадают только
-      // сбои самого стрима до нормализации.
       debugPrint('ChatViewModel: сбой потока ответа: $error');
     } finally {
       _streaming = false;
       _parseReplyActions();
       _notify();
     }
-    // Настройки, изменённые во время стрима, подхватываем сразу после него.
+
     if (_reloadPending) {
       _reloadPending = false;
       await reloadSettings();
     }
   }
 
-  /// После ответа модели ищет в тексте JSON-команды: черновик темы
-  /// или правку ответа. Только в чатах работы с темами.
   void _parseReplyActions() {
     final catalog = this.catalog;
     final session = _session;
@@ -195,15 +168,12 @@ class ChatViewModel extends ChangeNotifier {
     }
     final draft = parseTopicDraft(reply);
     if (draft == null) {
-      // Уточняющий ответ: карточка от прошлого хода больше не актуальна.
       _draft = null;
     } else if (appendToTopic != null || draft.title != null) {
       _draft = draft;
     }
   }
 
-  /// Добавляет черновик: новую тему или вопросы в существующую.
-  /// null — применять нечего или сохранение уже идёт.
   Future<ChatSaveOutcome?> applyDraft() async {
     final draft = _draft;
     if (draft == null || _draftSaving) return null;
@@ -230,8 +200,6 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  /// Заменяет эталонный ответ вопроса на предложенный моделью.
-  /// null — применять нечего или сохранение уже идёт.
   Future<ChatSaveOutcome?> replaceAnswer() async {
     final update = _answerUpdate;
     if (update == null || editQuestionId == null || _draftSaving) return null;
@@ -260,9 +228,6 @@ class ChatViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    // Сессия в dispose() отменяет активный стрим (контракт ChatSession):
-    // HTTP-соединение рвётся, потребитель получает done — ничего
-    // не висит и не течёт.
     _detachSession();
     _disposed = true;
     super.dispose();

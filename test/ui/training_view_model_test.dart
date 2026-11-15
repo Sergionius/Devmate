@@ -172,7 +172,7 @@ void main() {
     }
   });
 
-  test('load чистит score-мусор от удалённых вопросов', () async {
+  test('load cleans up scores of removed questions', () async {
     final repo = FakeProgressRepository();
     repo.stored = {'fe-1': 10, 'deleted-junk': 5};
     final catalog = TopicCatalog();

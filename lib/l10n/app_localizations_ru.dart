@@ -262,6 +262,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsEyebrow => 'ЛЮБОЙ OPENAI-СОВМЕСТИМЫЙ ENDPOINT';
 
   @override
+  String get settingsLanguage => 'Язык приложения';
+
+  @override
+  String get settingsLanguageSystem => 'Как в системе';
+
+  @override
+  String get settingsLanguageRestartNote =>
+      'Интерфейс переключится сразу; вопросы будут на выбранном языке после перезапуска приложения.';
+
+  @override
   String get keyPrivacyNote =>
       'Ключ хранится только на этом устройстве и уходит напрямую выбранному провайдеру.';
 
@@ -642,4 +652,38 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get codexWebUnsupported =>
       'Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере.';
+
+  @override
+  String get presetCodexLabel => 'ChatGPT Codex (подписка)';
+
+  @override
+  String get presetZaiCodingLabel => 'z.ai GLM Coding (подписка)';
+
+  @override
+  String get presetZaiLabel => 'z.ai API (оплата за токены)';
+
+  @override
+  String get presetOllamaLabel => 'Ollama (локально)';
+
+  @override
+  String get presetCustomLabel => 'Свой endpoint';
+
+  @override
+  String get codexErrorNetwork =>
+      'Ошибка сети. Проверьте подключение к интернету.';
+
+  @override
+  String get codexErrorInvalidResponse =>
+      'Некорректный ответ сервера входа. Попробуйте позже.';
+
+  @override
+  String get codexErrorRejected => 'Код отклонён или истёк. Запросите новый.';
+
+  @override
+  String get codexErrorSessionExpired =>
+      'Вход отменён или время ожидания истекло.';
+
+  @override
+  String get codexErrorTimeout =>
+      'Превышено время ожидания подтверждения. Попробуйте ещё раз.';
 }

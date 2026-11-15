@@ -1,17 +1,3 @@
-/// Device-code авторизация в ChatGPT-подписке (Codex backend).
-///
-/// Намеренно чистый Dart без Flutter-зависимостей: модуль используется и из
-/// приложения, и из `tools/codex_device_login_smoke.dart` для e2e-проверки.
-///
-/// ⚠️ Статус: приватный, недокументированный API OpenAI (превью). Device-флоу
-/// работает только для приложений, включённых OpenAI на
-/// `/api/accounts/deviceauth/*`. Живая проба (февраль 2026): client_id
-/// Codex CLI отвечает `400 invalid_client` («app is unavailable»), client_id
-/// клиента pi-coding-agent — работает. Поэтому константа [codexClientId]
-/// указывает на регистрацию pi: это экспериментальная опора на чужой
-/// «паспорт» и первый шаг до получения собственного client_id (см. анализ
-/// Sign in with ChatGPT / dynamic client registration). Формат ответов и
-/// заголовков повторяет `openai-codex.js` pi-coding-agent.
 library;
 
 import 'dart:async';
@@ -19,25 +5,18 @@ import 'dart:convert';
 
 import 'package:http/http.dart';
 
-/// Публичный client_id OAuth-приложения pi-coding-agent.
 const String codexClientId = 'app_EMoamEEZ73f0CkXaXp7hrann';
 
-/// Идентификатор клиента, который сервер Codex backend видит в заголовке
-/// `originator`. Должен соответствовать приложению, выдавшему токены.
 const String codexOriginator = 'pi';
 
-/// JWT-путь к блоку auth-метаданных в access-токене.
 const String codexAccountClaimPath = 'https://api.openai.com/auth';
 
 const String _defaultAuthBaseUrl = 'https://auth.openai.com';
 
-/// Лимит жизни device-кода, как у pi-coding-agent.
 const Duration defaultDeviceCodeTimeout = Duration(seconds: 900);
 
-/// Запас до истечения access-токена, раньше которого нужно обновление.
 const Duration codexRefreshMargin = Duration(minutes: 5);
 
-/// Код подтверждения, показываемый пользователю, + параметры опроса.
 class CodexDeviceCode {
   const CodexDeviceCode({
     required this.deviceAuthId,
@@ -48,27 +27,21 @@ class CodexDeviceCode {
 
   final String deviceAuthId;
 
-  /// Код вида `XXXX-XXXX`, который пользователь вводит на [verificationUri].
   final String userCode;
 
-  /// Страница, где вводится код: `https://auth.openai.com/codex/device`.
   final String verificationUri;
 
-  /// Пауза между опросами статуса.
   final Duration interval;
 }
 
-/// Результат одного опроса статуса авторизации.
 sealed class CodexPollResult {
   const CodexPollResult();
 }
 
-/// Пользователь ещё не подтвердил вход — продолжать опрос.
 class CodexPollPending extends CodexPollResult {
   const CodexPollPending();
 }
 
-/// Пользователь подтвердил вход: получены код и верификатор для обмена.
 class CodexPollApproved extends CodexPollResult {
   const CodexPollApproved({
     required this.authorizationCode,
@@ -79,7 +52,6 @@ class CodexPollApproved extends CodexPollResult {
   final String codeVerifier;
 }
 
-/// Опрос завершился ошибкой — вход нужно прервать.
 class CodexPollFailed extends CodexPollResult {
   const CodexPollFailed(this.message);
 
@@ -87,19 +59,14 @@ class CodexPollFailed extends CodexPollResult {
 }
 
 enum CodexAuthErrorKind {
-  /// Транспорт/сеть: повторная попытка возможна.
   network,
 
-  /// Ответ сервера не соответствует ожидаемой схеме.
   invalidResponse,
 
-  /// Сервер отклонил запрос (включённость приложения, отозванный код).
   rejected,
 
-  /// Пользователь отменил вход или токен-сессия больше не действует.
   sessionExpired,
 
-  /// Код не был подтверждён за отведённое время.
   timeout,
 }
 
@@ -113,7 +80,6 @@ class CodexAuthException implements Exception {
   String toString() => message;
 }
 
-/// Пара токенов подписки; хранится как JSON в secure storage.
 class CodexTokens {
   const CodexTokens({
     required this.access,
@@ -126,8 +92,6 @@ class CodexTokens {
   final String refresh;
   final DateTime expiresAt;
 
-  /// `chatgpt_account_id` из access-токена; нужен для заголовка
-  /// `chatgpt-account-id` в запросах к Codex backend.
   final String accountId;
 
   bool isExpiringWithin(Duration margin) =>
@@ -148,7 +112,6 @@ class CodexTokens {
   );
 }
 
-/// HTTP-клиент device-флоу: код → опрос → обмен → обновление.
 class CodexDeviceAuthApi {
   CodexDeviceAuthApi({Client? client, String? authBaseUrl})
     : _client = client ?? Client(),
@@ -165,9 +128,6 @@ class CodexDeviceAuthApi {
   Uri get _tokenUrl => Uri.parse('$_base/oauth/token');
   String get _deviceRedirectUri => '$_base/deviceauth/callback';
 
-  /// Запрашивает код подтверждения. Бросает [CodexAuthException]:
-  /// [CodexAuthErrorKind.rejected] при отказе сервера (например, приложение
-  /// не включено для device-флоу).
   Future<CodexDeviceCode> startDeviceLogin() async {
     final Response response;
     try {
@@ -211,9 +171,6 @@ class CodexDeviceAuthApi {
     );
   }
 
-  /// Один опрос статуса. 403/404 = «ещё не подтверждено», как трактует
-  /// pi-coding-agent; сетевой сбой — тоже повод продолжить опрос (одна
-  /// потерянная пачка не должна убивать вход — решает дедлайн/отмена).
   Future<CodexPollResult> pollOnce({
     required String deviceAuthId,
     required String userCode,
@@ -254,8 +211,6 @@ class CodexDeviceAuthApi {
     return CodexPollApproved(authorizationCode: code, codeVerifier: verifier);
   }
 
-  /// Обмен authorization_code из device-флоу на токены. Верификатор
-  /// выдается сервером в ответе опроса (PKCE без нашей стороны).
   Future<CodexTokens> exchangeDeviceCode({
     required String authorizationCode,
     required String codeVerifier,
@@ -267,7 +222,6 @@ class CodexDeviceAuthApi {
     'redirect_uri': _deviceRedirectUri,
   });
 
-  /// Обновление access-токена; сервер ротирует refresh-токен.
   Future<CodexTokens> refreshTokens(String refreshToken) =>
       _postToken(<String, String>{
         'grant_type': 'refresh_token',
@@ -291,8 +245,7 @@ class CodexDeviceAuthApi {
     }
     if (response.statusCode != 200) {
       final body = _short(response.body);
-      // Отозванный/просроченный refresh-токен: сессия мертва, нужен
-      // повторный вход; остальные отказы — разовые ошибки сервера.
+
       final expired =
           response.statusCode == 400 ||
           response.statusCode == 401 ||
@@ -361,12 +314,6 @@ class CodexDeviceAuthApi {
   }
 }
 
-/// Полный вход: код → пользователь подтверждает в браузере → опрос → обмен.
-///
-/// [onCode] вызывается один раз, сразу после получения кода, — из него UI
-/// показывает [CodexDeviceCode.userCode] и ссылку. [cancel] — отмена
-/// пользователем. Бросает [CodexAuthException] с [CodexAuthErrorKind.timeout]
-/// ([timeout]), [CodexAuthErrorKind.sessionExpired] при отмене.
 Future<CodexTokens> runCodexDeviceLogin({
   required CodexDeviceAuthApi api,
   required void Function(CodexDeviceCode code) onCode,
@@ -407,7 +354,6 @@ Future<CodexTokens> runCodexDeviceLogin({
   }
 }
 
-/// Достаёт `chatgpt_account_id` из payload access-JWT.
 String? codexAccountIdFromAccessToken(String accessToken) {
   final parts = accessToken.split('.');
   if (parts.length != 3) return null;

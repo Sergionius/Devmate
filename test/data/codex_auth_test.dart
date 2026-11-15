@@ -22,7 +22,7 @@ void main() {
 
     test('returns null for garbage or missing claim', () {
       expect(codexAccountIdFromAccessToken('not-a-jwt'), isNull);
-      // payload '{}' — без claim-пути.
+
       expect(codexAccountIdFromAccessToken('e30.e30.c2ln'), isNull);
     });
   });
@@ -277,7 +277,6 @@ void main() {
     test('unconfirmed code times out', () async {
       final api = CodexDeviceAuthApi(
         client: MockClient((request) async {
-          // usercode отдаёт код, любые опросы — «ещё не подтверждено».
           if (request.url.path.endsWith('/usercode')) {
             return _json(<String, dynamic>{
               'device_auth_id': 'dev-1',

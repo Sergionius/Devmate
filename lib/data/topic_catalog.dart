@@ -7,27 +7,20 @@ import 'package:uuid/uuid.dart';
 import '../domain/question.dart';
 import 'question_catalog.dart';
 
-/// Хранилище пользовательского контента поверх компилируемого каталога.
 abstract class UserTopicsRepository {
-  /// Новые темы, созданные пользователем/моделью.
   Future<List<Map<String, dynamic>>> load();
 
   Future<void> save(List<Map<String, dynamic>> topics);
 
-  /// Вопросы, добавленные пользователем в существующие темы:
-  /// topicId → список вопросов (raw JSON).
   Future<Map<String, List<Map<String, dynamic>>>> loadExtra();
 
   Future<void> saveExtra(Map<String, List<Map<String, dynamic>>> extra);
 
-  /// Оверлеи правок над компилируемым контентом: правки вопросов
-  /// (qId → {prompt, answer}), удалённые вопросы, правки метаданных тем.
   Future<Map<String, dynamic>> loadOverrides();
 
   Future<void> saveOverrides(Map<String, dynamic> overrides);
 }
 
-/// Реализация поверх SharedPreferences: по одному JSON-ключу на сущность.
 class LocalUserTopicsRepository implements UserTopicsRepository {
   LocalUserTopicsRepository(this._preferences);
 
@@ -101,7 +94,6 @@ class LocalUserTopicsRepository implements UserTopicsRepository {
   }
 }
 
-/// Оверлеи правок над встроенным контентом.
 class CatalogOverrides {
   CatalogOverrides({
     Map<String, (String, String)>? questionEdits,
@@ -111,12 +103,9 @@ class CatalogOverrides {
        deletedQuestionIds = deletedQuestionIds ?? {},
        topicEdits = topicEdits ?? {};
 
-  /// questionId → (prompt, answer): правки существующих вопросов,
-  /// включая встроенные.
   final Map<String, (String, String)> questionEdits;
   final Set<String> deletedQuestionIds;
 
-  /// topicId → (title, description): правки названия/описания темы.
   final Map<String, (String, String)> topicEdits;
 
   bool get isEmpty =>
@@ -175,7 +164,6 @@ class CatalogOverrides {
   }
 }
 
-/// Применяет оверлеи к теме: правки/удаления вопросов и метаданных.
 InterviewTopic applyOverrides(
   InterviewTopic topic,
   CatalogOverrides overrides,
@@ -253,21 +241,21 @@ Map<String, dynamic> userQuestionToJson(InterviewQuestion question) => {
 
 const _uuid = Uuid();
 
-/// Объединённый каталог: компилируемая база + оверлеи правок +
-/// пользовательские темы и доп. вопросы. Всё изменяемо.
-/// Слушатели уведомляются при изменениях.
 class TopicCatalog extends ChangeNotifier {
-  TopicCatalog({UserTopicsRepository? userTopicsRepository})
-    : _userTopics = userTopicsRepository;
+  TopicCatalog({
+    UserTopicsRepository? userTopicsRepository,
+    List<InterviewTopic>? baseTopics,
+  }) : _userTopics = userTopicsRepository,
+       _baseTopics = baseTopics ?? questionCatalog;
 
   final UserTopicsRepository? _userTopics;
+  final List<InterviewTopic> _baseTopics;
   List<InterviewTopic> _userList = [];
   final Map<String, List<InterviewQuestion>> _extraQuestions = {};
   CatalogOverrides _overrides = CatalogOverrides();
 
-  /// Компилируемая база + пользовательские темы, с применёнными оверлеями.
   List<InterviewTopic> get topics => [
-    for (final topic in questionCatalog)
+    for (final topic in _baseTopics)
       if (topic.questions.any(
             (q) => !_overrides.deletedQuestionIds.contains(q.id),
           ) ||
@@ -290,14 +278,12 @@ class TopicCatalog extends ChangeNotifier {
     (topic) => topic.title.toLowerCase() == title.trim().toLowerCase(),
   );
 
-  /// Все существующие id вопросов (для чистки прогресса от мусора).
   Set<String> get knownQuestionIds => {
     for (final topic in topics) ...[
       for (final question in topic.questions) question.id,
     ],
   };
 
-  /// Новая пользовательская тема. Все id — UUID v4.
   Future<InterviewTopic> addUserTopic(
     String title,
     String description,
@@ -320,7 +306,6 @@ class TopicCatalog extends ChangeNotifier {
     return added;
   }
 
-  /// Вопросы в существующую тему (встроенную или пользовательскую).
   Future<void> addQuestionsToTopic(
     String topicId,
     List<(String prompt, String answer)> questions,
@@ -335,9 +320,6 @@ class TopicCatalog extends ChangeNotifier {
     ];
     final index = _userList.indexWhere((t) => t.id == topicId);
     if (index >= 0) {
-      // Пользовательская тема хранится целиком: дописываем к текущим
-      // вопросам (topic уже включает прежние extra) и НЕ трогаем extras map,
-      // иначе _withExtra задублирует вопросы.
       _userList[index] = InterviewTopic(
         topic.id,
         topic.title,
@@ -346,15 +328,12 @@ class TopicCatalog extends ChangeNotifier {
       );
       await _persistUserTopics();
     } else {
-      // Встроенная тема неизменяемая — доп. вопросы хранятся отдельно.
       _extraQuestions[topicId] = [...?_extraQuestions[topicId], ...appended];
       await _persistExtraQuestions();
     }
     notifyListeners();
   }
 
-  /// Правка вопроса (prompt и/или answer) — работает и для встроенных
-  /// вопросов (через оверлей), и для пользовательских (прямая правка).
   Future<void> updateQuestion(
     String questionId,
     String prompt,
@@ -372,8 +351,6 @@ class TopicCatalog extends ChangeNotifier {
       (topic) => topic.questions.every((q) => q.id != questionId),
     );
     if (isBuiltin) {
-      // Встроенный вопрос: правим оверлеем. Возврат к компилируемому тексту
-      // снимает оверлей.
       if (_matchesBuiltin(questionId, trimmedPrompt, trimmedAnswer)) {
         _overrides.questionEdits.remove(questionId);
       } else {
@@ -381,7 +358,6 @@ class TopicCatalog extends ChangeNotifier {
       }
       await _persistOverrides();
     } else {
-      // Пользовательский вопрос: правим прямо в хранимой теме.
       final index = _userList.indexWhere(
         (topic) => topic.questions.any((q) => q.id == questionId),
       );
@@ -402,9 +378,8 @@ class TopicCatalog extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Совпадает ли текст вопроса с компилируемой базой.
   bool _matchesBuiltin(String questionId, String prompt, String answer) {
-    for (final topic in questionCatalog) {
+    for (final topic in _baseTopics) {
       for (final question in topic.questions) {
         if (question.id == questionId) {
           return question.prompt == prompt && question.answer == answer;
@@ -414,8 +389,6 @@ class TopicCatalog extends ChangeNotifier {
     return false;
   }
 
-  /// Удаление вопроса (оверей-удаление для встроенных, прямое для
-  /// пользовательских).
   Future<void> deleteQuestion(String questionId) async {
     final isBuiltin = _userList.every(
       (topic) => topic.questions.every((q) => q.id != questionId),
@@ -442,8 +415,6 @@ class TopicCatalog extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Правка названия/описания темы (оверей для встроенных, прямая для
-  /// пользовательских).
   Future<void> updateTopicMeta(
     String topicId,
     String title,
@@ -517,14 +488,11 @@ class TopicCatalog extends ChangeNotifier {
     await repository.saveOverrides(_overrides.toJson());
   }
 
-  /// Полный снимок видимого каталога для переноса вопросов между устройствами.
   String exportJson() => const JsonEncoder.withIndent('  ').convert({
     'version': 1,
     'topics': [for (final topic in topics) userTopicToJson(topic)],
   });
 
-  /// Заменяет каталог импортированными темами. Проверяет весь документ до записи.
-  /// Встроенные вопросы скрываются оверлеем, пока пользователь не выполнит сброс.
   Future<void> importJson(String source) async {
     final dynamic decoded;
     try {
@@ -581,7 +549,7 @@ class TopicCatalog extends ChangeNotifier {
     final repository = _userTopics;
     final overrides = CatalogOverrides(
       deletedQuestionIds: {
-        for (final topic in questionCatalog)
+        for (final topic in _baseTopics)
           for (final question in topic.questions) question.id,
       },
     );
@@ -598,12 +566,9 @@ class TopicCatalog extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Возвращает исходные темы и вопросы, удаляя пользовательские изменения.
   Future<void> reset() async {
     final repository = _userTopics;
     if (repository != null) {
-      // Сначала возвращаем встроенные вопросы: сбой на последующей записи
-      // не оставит приложение с полностью пустым каталогом после перезапуска.
       await repository.saveOverrides({});
       await repository.saveExtra({});
       await repository.save([]);
@@ -614,8 +579,6 @@ class TopicCatalog extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Загружает пользовательский контент; ошибки хранения не роняют
-  /// приложение.
   Future<void> load() async {
     final repository = _userTopics;
     if (repository == null) return;

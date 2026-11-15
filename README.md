@@ -1,62 +1,62 @@
 # Devmate
 
-Офлайн-тренажёр для подготовки к техническому собеседованию. Flutter-приложение для iOS, Android и Web.
+An offline trainer for technical interview prep. A Flutter app for iOS, Android, and Web.
 
-## Возможности
+## Features
 
-- 120 вопросов по 10 темам: Frontend, Flutter, iOS, AI-first, архитектура, сложность O(n), JavaScript / TypeScript, алгоритмы и структуры данных, тестирование, системный дизайн.
-- Ответ своими словами → эталон → самооценка. Если ответ требует повторения, нужно ещё раз сформулировать его перед завершением.
-- Прогресс по темам и XP (5 или 10 за вопрос), сохранение локально на устройстве. Повторение не накручивает очки; улучшение оценки обновляет результат.
-- Вопросы встроены в приложение, аккаунт и API для офлайн-тренировки не требуются. Для первой загрузки Web-версии нужен доступ к размещённому приложению.
-- AI-чат по теме и по конкретному вопросу (необязательный BYOK): OpenAI-совместимые API, потоковые ответы, пресеты z.ai / OpenAI / OpenRouter / DeepSeek / Groq / Ollama и свой endpoint. Чат использует Flutter AI Toolkit и `openai_dart`; переписка остаётся в памяти только на время открытого экрана.
+- 120 questions across 10 topics: Frontend, Flutter, iOS, AI-first, architecture, O(n) complexity, JavaScript / TypeScript, algorithms and data structures, testing, system design.
+- Answer in your own words → compare with the reference answer → self-assess. If an answer needs another pass, you restate it before moving on.
+- Per-topic progress and XP (5 or 10 per question), stored locally on the device. Repeating a question doesn't farm points; a better self-assessment updates the result.
+- Questions are bundled with the app — no account or API required for offline practice. First-time loading of the Web build requires access to the hosted app.
+- AI chat per topic and per question (optional BYOK): OpenAI-compatible APIs, streaming replies, presets for z.ai / OpenAI / OpenRouter / DeepSeek / Groq / Ollama, plus a custom endpoint. The chat is built on Flutter AI Toolkit and `openai_dart`; the conversation stays in memory only while its screen is open.
 
-## Запуск
+## Getting started
 
-Установите Flutter SDK и запустите:
+Install the Flutter SDK and run:
 
 ```sh
 flutter pub get
 flutter run -d chrome    # Web
-flutter run -d ios       # iOS: нужен macOS и Xcode
-flutter run -d android   # Android: нужен SDK и эмулятор/устройство
+flutter run -d ios       # iOS: requires macOS and Xcode
+flutter run -d android   # Android: requires the SDK and an emulator or device
 ```
 
-Проверка: `flutter analyze` и `flutter test`. Сборка Web: `flutter build web`.
+Checks: `flutter analyze` and `flutter test`. Web build: `flutter build web`.
 
-## AI-чат и ключи
+## AI chat and keys
 
-На главной откройте **Настройки AI**, выберите провайдера или укажите свой OpenAI-совместимый **Base URL**, имя модели и ключ. Кнопка «Проверить соединение» отправляет короткий платный/тарифицируемый запрос провайдеру. Затем откройте AI-чат с экрана темы или вопроса. Запросы идут **напрямую** выбранному провайдеру; собственного сервера Devmate нет. Настройки сохраняются в `flutter_secure_storage` (iOS Keychain, Android шифрованное хранилище, Web WebCrypto/LocalStorage в текущем браузере).
+On the home screen, open **AI settings**, pick a provider or enter your own OpenAI-compatible **Base URL**, model name, and API key. The "Test connection" button sends a short paid/metered request to the provider. Then open the AI chat from a topic or question screen. Requests go **directly** to the selected provider — Devmate has no server of its own. Settings are stored in `flutter_secure_storage` (iOS Keychain, Android encrypted storage, WebCrypto/LocalStorage in the current browser on web).
 
-Необязательные начальные значения можно задать так (важно: именно `assets/config/.env`, файл в корне проекта приложение не читает):
+Optional initial values can be supplied like this (note: it must be `assets/config/.env` — the app does not read a file placed in the project root):
 
 ```sh
 cp .env.example assets/config/.env
-# Отредактируйте assets/config/.env
+# Edit assets/config/.env
 flutter run
 ```
 
-Если файла нет или он пустой, приложение запускается с пустыми настройками. Сохранённые настройки перекрывают `.env`, в том числе намеренно очищенный ключ. **Не коммитьте `assets/config/.env`: он исключён из Git. Не кладите настоящий API-ключ в `.env` для распространяемой сборки, особенно Web: Flutter включает asset в пакет, и его сможет прочитать любой пользователь.** Предпочтительно вводить личный ключ в приложении на устройстве. Web требует HTTPS (или localhost) для WebCrypto и разрешения CORS со стороны API (см. таблицу выше); сервер без CORS не будет работать в браузере без собственного прокси. Для локального HTTP API на Android может требоваться отдельная настройка cleartext traffic — в этой сборке она не включена.
+If the file is missing or empty, the app starts with empty settings. Saved settings take precedence over `.env`, including a deliberately cleared key. **Never commit `assets/config/.env`: it is excluded from Git. Do not put a real API key into `.env` for a distributable build — especially web: Flutter bundles the asset into the package where any user can read it.** The preferred flow is entering your personal key in the app on the device. Web requires HTTPS (or localhost) for WebCrypto and CORS headers from the API (see the table below); a server without CORS won't work in the browser without your own proxy. For a local HTTP API on Android, cleartext traffic may need to be enabled separately — this build does not enable it.
 
-### CORS на web
+### CORS on web
 
-Браузер может обращаться только к API, который отвечает CORS-заголовками. Проверено в ноябре 2026:
+A browser can only call APIs that respond with CORS headers. Verified in November 2026:
 
-| Провайдер | Работает на web |
+| Provider | Works on web |
 |---|---|
 | OpenAI | ✅ |
 | OpenRouter | ✅ |
 | Groq | ✅ |
-| z.ai GLM Coding (подписка) | ✅ iOS/Android, endpoint `api.z.ai/api/coding/paas/v4` |
-| z.ai API (оплата за токены) | ❌ на web; iOS/Android требуют баланс на аккаунте |
-| DeepSeek | ❌ — только iOS/Android |
-| Ollama | только с `OLLAMA_ORIGINS=*` |
+| z.ai GLM Coding (subscription) | ✅ iOS/Android, endpoint `api.z.ai/api/coding/paas/v4` |
+| z.ai API (pay per token) | ❌ on web; iOS/Android require account balance |
+| DeepSeek | ❌ — iOS/Android only |
+| Ollama | only with `OLLAMA_ORIGINS=*` |
 
-Подписка GLM Coding Plan работает через отдельный endpoint `https://api.z.ai/api/coding/paas/v4` — у пресета «z.ai GLM Coding (подписка)». Обычный `https://api.z.ai/api/paas/v4` списывает токены с баланса и при нуле возвращает ошибку 1113 «Insufficient balance»; приложение показывает это как понятное сообщение о балансе.
+The GLM Coding Plan subscription works through a separate endpoint, `https://api.z.ai/api/coding/paas/v4`, exposed as the "z.ai GLM Coding (subscription)" preset. The regular `https://api.z.ai/api/paas/v4` charges tokens against your balance and returns error 1113 "Insufficient balance" once it runs out; the app surfaces this as a clear balance message.
 
-В нативных приложениях iOS и Android работают все провайдеры: ограничение касается только web. Для z.ai/DeepSeek в браузере нужен собственный прокси-сервер.
+On native iOS and Android, all providers work — the limitation is web-only. To use z.ai/DeepSeek in a browser, you need your own proxy server.
 
-Вопросы хранятся в `assets/data/questions.json` — это источник данных. После правки JSON запустите `python3 tools/generate_catalog.py`, и он пересоберёт `lib/data/question_catalog.dart` (править сгенерированный файл руками не нужно). Модели — в `lib/domain/`, хранение прогресса — в `lib/data/progress_repository.dart`, состояние и экраны — в `lib/ui/`. Автоматической оценки свободного текста пока нет: пользователь сравнивает ответ с эталоном самостоятельно.
+Questions live in `assets/data/questions.json` — the single source of truth. After editing the JSON, run `python3 tools/generate_catalog.py` and it will rebuild `lib/data/question_catalog.dart` (the generated file is not meant to be edited by hand). Models are in `lib/domain/`, progress storage in `lib/data/progress_repository.dart`, state and screens in `lib/ui/`. There is no automatic scoring of free-form answers yet: the user compares their answer against the reference on their own.
 
-## Иконки
+## Icons
 
-Исходник — `assets/branding/devmate_source.png`. После изменения изображения установите Pillow (`python3 -m pip install Pillow`) и запустите `python3 tools/generate_icons.py`: скрипт пересоздаст иконки iOS, Android (обычную, адаптивную и монохромную), Web, favicon и монохромный Android-значок уведомлений `@drawable/ic_stat_devmate`. Для локальных уведомлений используйте этот ресурс как small icon; метаданные для Firebase Messaging уже прописаны в AndroidManifest. Доставка push-уведомлений пока не настроена.
+The source image is `assets/branding/devmate_source.png`. After changing it, install Pillow (`python3 -m pip install Pillow`) and run `python3 tools/generate_icons.py`: the script regenerates the iOS icon and the Android icons (regular, adaptive, and monochrome), plus the Web icon, favicon, and the monochrome Android notification icon `@drawable/ic_stat_devmate`. Use this asset as the small icon for local notifications; the Firebase Messaging metadata is already wired up in AndroidManifest. Push delivery is not set up yet.
