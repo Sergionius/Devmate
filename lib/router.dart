@@ -140,7 +140,11 @@ GoRouter createRouter(
         builder: (context, state) {
           final topic = catalog.topicById(state.pathParameters['topicId']!);
           if (topic == null) return const NotFoundScreen();
-          return TopicScreen(topic: topic, viewModel: viewModel);
+          return TopicScreen(
+            topic: topic,
+            viewModel: viewModel,
+            catalog: catalog,
+          );
         },
         routes: [
           GoRoute(
