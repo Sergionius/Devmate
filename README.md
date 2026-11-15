@@ -4,11 +4,13 @@ An offline trainer for technical interview prep. A Flutter app for iOS, Android,
 
 ## Features
 
-- 120 questions across 10 topics: Frontend, Flutter, iOS, AI-first, architecture, O(n) complexity, JavaScript / TypeScript, algorithms and data structures, testing, system design.
+- 120 questions across 10 topics: Frontend, Flutter, iOS, AI-first, architecture, O(n) complexity, JavaScript / TypeScript, algorithms and data structures, testing, system design. Full content ships in English and Russian.
 - Answer in your own words → compare with the reference answer → self-assess. If an answer needs another pass, you restate it before moving on.
 - Per-topic progress and XP (5 or 10 per question), stored locally on the device. Repeating a question doesn't farm points; a better self-assessment updates the result.
 - Questions are bundled with the app — no account or API required for offline practice. First-time loading of the Web build requires access to the hosted app.
-- AI chat per topic and per question (optional BYOK): OpenAI-compatible APIs, streaming replies, presets for z.ai / OpenAI / OpenRouter / DeepSeek / Groq / Ollama, plus a custom endpoint. The chat is built on Flutter AI Toolkit and `openai_dart`; the conversation stays in memory only while its screen is open.
+- Your own topics: create and edit topics by hand, save a topic the AI drafted in chat, or import topics as JSON (add or replace). Export copies the catalog to JSON; **Share instruction** gives your AI agent the exact JSON format to fill.
+- Interface language: system default, English, or Russian — switched in settings. The UI applies immediately; question content reloads on the next app start.
+- AI chat per topic and per question (optional): OpenAI-compatible APIs with streaming replies — presets for ChatGPT Codex (sign in with your ChatGPT subscription via a device code in the browser; iOS/Android only), z.ai GLM Coding (subscription), z.ai API, OpenAI, OpenRouter, DeepSeek, Groq, Ollama — plus a custom endpoint (BYOK). When the model returns a topic as JSON, the app detects it and offers to save it as your own. The chat is built on `openai_dart`; the conversation stays in memory only while its screen is open.
 
 ## Getting started
 
@@ -59,4 +61,16 @@ Questions live in `assets/data/questions.json` — the single source of truth. A
 
 ## Icons
 
-The source image is `assets/branding/devmate_source.png`. After changing it, install Pillow (`python3 -m pip install Pillow`) and run `python3 tools/generate_icons.py`: the script regenerates the iOS icon and the Android icons (regular, adaptive, and monochrome), plus the Web icon, favicon, and the monochrome Android notification icon `@drawable/ic_stat_devmate`. Use this asset as the small icon for local notifications; the Firebase Messaging metadata is already wired up in AndroidManifest. Push delivery is not set up yet.
+The source image is `assets/branding/devmate_source.png`. After changing it, install Pillow (`python3 -m pip install Pillow`) and run `python3 tools/generate_icons.py`: the script regenerates the iOS icon and the Android icons (regular, adaptive, and monochrome), plus the Web icon, favicon, and the monochrome Android notification icon `@drawable/ic_stat_devmate`. Use this asset as the small icon for local notifications. Push notifications are not set up yet; the Android manifest only carries reserved metadata for a possible future integration.
+
+## Content provenance
+
+All question content — 120 questions in both Russian and English — and the branding artwork (`assets/branding/devmate_source.png`) were created for this project by the author with the help of AI assistants. No third-party copyrighted content is bundled, and everything in `assets/` is covered by the repository license.
+
+## License and contributions
+
+The code and content in this repository are available under the [PolyForm Noncommercial License 1.0.0](LICENSE): you can use, study, modify, and redistribute Devmate for any noncommercial purpose. Bug reports and pull requests are welcome — contributing does not require a commercial license. See [CONTRIBUTING.md](CONTRIBUTING.md) for the developer workflow and [SECURITY.md](SECURITY.md) for private vulnerability reporting.
+
+Commercial use of the code or content (for example, releasing paid or ad-supported apps based on it) is not covered by this license and requires a separate agreement with the author — open an issue to ask.
+
+By opening a pull request, you agree that your contribution may be included in Devmate and used, licensed, and relicensed by the maintainer without restriction, including in commercial releases of the app.
