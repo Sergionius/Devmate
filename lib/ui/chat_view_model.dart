@@ -250,14 +250,10 @@ class ChatViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    final session = _session;
-    if (session != null) {
-      session.removeListener(_onSessionChanged);
-      // Стрим в полёте писать в закрытый нотифаер нельзя: отсоединяемся,
-      // сессию доигрывает и освобождает сборщик мусора.
-      if (!_streaming) session.dispose();
-      _session = null;
-    }
+    // Сессия в dispose() отменяет активный стрим (контракт ChatSession):
+    // HTTP-соединение рвётся, потребитель получает done — ничего
+    // не висит и не течёт.
+    _detachSession();
     _disposed = true;
     super.dispose();
   }

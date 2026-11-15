@@ -46,12 +46,14 @@ class _MemoryTopicsRepository implements UserTopicsRepository {
 /// Фейк сессии: история как у провайдера, ответы — по очереди из списка.
 /// Элемент списка: String (чанки через |), Exception (сбой стрима)
 /// или готовый `Stream<String>` (например, незавершаемый).
+/// Контракт как у продакшн-провайдера: dispose() закрывает активный стрим.
 class _FakeSession extends ChangeNotifier implements ChatSession {
   _FakeSession(this._replies);
 
   final List<Object> _replies;
   final List<LlmChatMessage> _history = [];
   var _replyIndex = 0;
+  StreamController<String>? _pending;
 
   @override
   List<LlmChatMessage> get history => List.unmodifiable(_history);
@@ -65,7 +67,21 @@ class _FakeSession extends ChangeNotifier implements ChatSession {
     final reply = _replyIndex < _replies.length
         ? _replies[_replyIndex++]
         : '';
-    if (reply is Stream<String>) return reply;
+    if (reply is Stream<String>) {
+      // Мост через контроллер, чтобы dispose() мог закрыть поток немедленно.
+      final controller = StreamController<String>();
+      _pending = controller;
+      reply.listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: () {
+          _pending = null;
+          unawaited(controller.close());
+        },
+        cancelOnError: true,
+      );
+      return controller.stream;
+    }
     return _streamReply(reply);
   }
 
@@ -76,6 +92,14 @@ class _FakeSession extends ChangeNotifier implements ChatSession {
       notifyListeners();
       yield chunk;
     }
+  }
+
+  @override
+  void dispose() {
+    final pending = _pending;
+    _pending = null;
+    unawaited(pending?.close());
+    super.dispose();
   }
 }
 
@@ -342,7 +366,7 @@ void main() {
     expect(viewModel.streaming, isFalse);
   });
 
-  test('dispose во время стрима не пишет в закрытый нотифаер', () async {
+  test('dispose во время стрима отменяет стрим и завершает send', () async {
     final repo = await _configuredRepo();
     final controller = StreamController<String>();
     final session = _FakeSession([controller.stream]);
@@ -353,9 +377,11 @@ void main() {
     final sending = viewModel.send('вопрос');
     viewModel.dispose();
 
-    await controller.close();
-    await sending; // не должно бросить: notify после dispose запрещён
+    // Dispose сессии закрывает мост (контракт ChatSession) — send
+    // завершается сам, без внешнего закрытия и без notify-after-dispose.
+    await sending.timeout(const Duration(seconds: 2));
     expect(viewModel.streaming, isFalse);
+    await controller.close();
   });
 
   test('сбой чтения настроек даёт error-фазу', () async {
