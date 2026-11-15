@@ -26,6 +26,43 @@ class TopicScreen extends StatefulWidget {
 
 class _TopicScreenState extends State<TopicScreen> {
   final _scrollController = ScrollController();
+  bool _resettingProgress = false;
+
+  Future<void> _resetTopicProgress(InterviewTopic topic) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(context.l10n.resetTopicProgress),
+        content: Text(context.l10n.resetTopicProgressWarning(topic.title)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(context.l10n.cancelAction),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(context.l10n.resetTopicProgress),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _resettingProgress = true);
+    try {
+      await widget.viewModel.resetTopicProgress(topic);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.resetTopicProgressDone)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.resetProgressFailed)));
+    } finally {
+      if (mounted) setState(() => _resettingProgress = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -125,6 +162,16 @@ class _TopicScreenState extends State<TopicScreen> {
                     onPressed: () => context.push('/topic/${topic.id}/edit'),
                     icon: const Icon(Icons.edit_outlined, size: 20),
                     label: Text(context.l10n.editTopicButton),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed:
+                        _resettingProgress ||
+                            widget.viewModel.completedIn(topic) == 0
+                        ? null
+                        : () => _resetTopicProgress(topic),
+                    icon: const Icon(Icons.restart_alt_rounded, size: 20),
+                    label: Text(context.l10n.resetTopicProgress),
                   ),
                   const SizedBox(height: 36),
                   Eyebrow(

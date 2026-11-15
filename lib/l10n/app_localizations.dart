@@ -94,6 +94,132 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('ru')];
 
+  /// No description provided for @questionsManagement.
+  ///
+  /// In ru, this message translates to:
+  /// **'Управление вопросами'**
+  String get questionsManagement;
+
+  /// No description provided for @questionsJsonHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экспорт копирует JSON в буфер обмена. Импорт заменяет все темы и вопросы из вставленного JSON и очищает прогресс.'**
+  String get questionsJsonHint;
+
+  /// No description provided for @exportQuestions.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скопировать вопросы в JSON'**
+  String get exportQuestions;
+
+  /// No description provided for @importQuestions.
+  ///
+  /// In ru, this message translates to:
+  /// **'Импортировать JSON'**
+  String get importQuestions;
+
+  /// No description provided for @pasteQuestionsJson.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вставьте JSON с темами и вопросами'**
+  String get pasteQuestionsJson;
+
+  /// No description provided for @questionsCopied.
+  ///
+  /// In ru, this message translates to:
+  /// **'JSON вопросов скопирован в буфер обмена'**
+  String get questionsCopied;
+
+  /// No description provided for @questionsImported.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопросы импортированы'**
+  String get questionsImported;
+
+  /// No description provided for @importFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось импортировать вопросы'**
+  String get importFailed;
+
+  /// No description provided for @resetTopicProgress.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сбросить прогресс раздела'**
+  String get resetTopicProgress;
+
+  /// No description provided for @resetTopicProgressWarning.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить результаты тренировок только в разделе «{title}»? Прогресс других разделов, вопросы и настройки сохранятся.'**
+  String resetTopicProgressWarning(String title);
+
+  /// No description provided for @resetTopicProgressDone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Прогресс раздела сброшен'**
+  String get resetTopicProgressDone;
+
+  /// No description provided for @resetProgress.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сбросить только прогресс'**
+  String get resetProgress;
+
+  /// No description provided for @resetProgressWarning.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить все результаты тренировок и очки? Вопросы, темы и настройки AI сохранятся. Это действие нельзя отменить.'**
+  String get resetProgressWarning;
+
+  /// No description provided for @resetProgressDone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Прогресс сброшен'**
+  String get resetProgressDone;
+
+  /// No description provided for @resetProgressFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сбросить прогресс'**
+  String get resetProgressFailed;
+
+  /// No description provided for @resetAll.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сбросить всё'**
+  String get resetAll;
+
+  /// No description provided for @resetWarning.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить пользовательские темы, вопросы, изменения, прогресс и настройки AI? Встроенные вопросы вернутся к исходному состоянию. Это действие нельзя отменить.'**
+  String get resetWarning;
+
+  /// No description provided for @resetDone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Исходное состояние восстановлено'**
+  String get resetDone;
+
+  /// No description provided for @resetFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось завершить сброс'**
+  String get resetFailed;
+
+  /// No description provided for @cancelAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отмена'**
+  String get cancelAction;
+
+  /// No description provided for @agentJsonInstruction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Инструкция для агента: создай валидный JSON без Markdown. Корневой объект содержит version со значением 1 и topics — непустой массив тем. Каждая тема содержит непустой title, строковое description (можно пустое) и непустой массив questions. Каждый вопрос содержит непустые prompt и answer. Для каждой темы подготовь 4–12 неповторяющихся вопросов на русском; ответы — точные, по 2–4 предложения. ID не нужны — приложение создаст их при импорте.'**
+  String get agentJsonInstruction;
+
   /// No description provided for @pageNotFound.
   ///
   /// In ru, this message translates to:
@@ -939,6 +1065,90 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'{count, plural, few{вопроса} many{вопросов} one{вопрос} other{вопроса}}'**
   String createAddedQuestionsSuffix(int count);
+
+  /// No description provided for @llmSubscriptionExpired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сессия подписки ChatGPT истекла — войдите заново в настройках.'**
+  String get llmSubscriptionExpired;
+
+  /// No description provided for @codexLogin.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войти через ChatGPT'**
+  String get codexLogin;
+
+  /// No description provided for @codexLogout.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти'**
+  String get codexLogout;
+
+  /// No description provided for @codexLoginHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откроется код подтверждения: введите его на странице auth.openai.com в браузере.'**
+  String get codexLoginHint;
+
+  /// No description provided for @codexDeviceCodeLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код подтверждения'**
+  String get codexDeviceCodeLabel;
+
+  /// No description provided for @codexOpenLoginPage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть страницу входа'**
+  String get codexOpenLoginPage;
+
+  /// No description provided for @codexCopyCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скопировать код'**
+  String get codexCopyCode;
+
+  /// No description provided for @codexCopied.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скопировано'**
+  String get codexCopied;
+
+  /// No description provided for @codexWaitingApproval.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидаем подтверждение в браузере…'**
+  String get codexWaitingApproval;
+
+  /// No description provided for @codexLoginSuccess.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка подключена ✓'**
+  String get codexLoginSuccess;
+
+  /// No description provided for @codexLoginCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход отменён'**
+  String get codexLoginCancelled;
+
+  /// No description provided for @codexLoginError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось выполнить вход: {error}'**
+  String codexLoginError(String error);
+
+  /// No description provided for @codexLoggedInUntil.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка подключена, обновится до {time}'**
+  String codexLoggedInUntil(String time);
+
+  /// No description provided for @codexWebUnsupported.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере.'**
+  String get codexWebUnsupported;
 }
 
 class _AppLocalizationsDelegate

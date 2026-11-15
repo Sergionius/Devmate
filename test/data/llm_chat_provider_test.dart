@@ -95,10 +95,7 @@ void main() {
 
     test('длинное сообщение обрезается до 300 символов', () {
       final detail = llmErrorDetail(
-        oai.ApiException(
-          message: 'x' * 400,
-          statusCode: 500,
-        ),
+        oai.ApiException(message: 'x' * 400, statusCode: 500),
       );
       expect(detail!.length, 301); // 300 + многоточие
       expect(detail.endsWith('…'), isTrue);
@@ -149,4 +146,3 @@ void main() {
     // провалились, значит запрос собирался только из system + prompt.
   });
 }
-

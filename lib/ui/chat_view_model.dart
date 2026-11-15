@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../data/codex_chat_provider.dart';
+import '../data/codex_token_store.dart';
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
 import '../data/topic_catalog.dart';
@@ -25,8 +27,17 @@ class ChatViewModel extends ChangeNotifier {
     sessionFactory,
   }) : _sessionFactory =
            sessionFactory ??
-           ((settings, prompt) =>
-               OpenAiCompatibleProvider(settings: settings, systemPrompt: prompt));
+           ((settings, prompt) => switch (settings.authMode) {
+             LlmAuthMode.apiKey => OpenAiCompatibleProvider(
+               settings: settings,
+               systemPrompt: prompt,
+             ),
+             LlmAuthMode.codexDeviceCode => CodexChatProvider(
+               settings: settings,
+               codexAuth: CodexAuth.shared,
+               systemPrompt: prompt,
+             ),
+           });
 
   final LlmSettingsRepository settingsRepository;
   final String systemPrompt;
@@ -72,10 +83,9 @@ class ChatViewModel extends ChangeNotifier {
       _session?.history ?? const <LlmChatMessage>[];
 
   /// Название темы в append-режиме; null — создание новой темы.
-  String? get appendTopicTitle =>
-      appendToTopic == null
-          ? null
-          : (catalog?.topicById(appendToTopic!)?.title ?? appendToTopic);
+  String? get appendTopicTitle => appendToTopic == null
+      ? null
+      : (catalog?.topicById(appendToTopic!)?.title ?? appendToTopic);
 
   Future<void> loadSettings() async {
     _settingsPhase = ChatSettingsPhase.loading;

@@ -76,9 +76,7 @@ class _ChatScreenState extends State<ChatScreen> {
   /// (пустой текст, стрим или отсутствие сессии — не трогают поле).
   void _sendFromInput(String text) {
     final trimmed = text.trim();
-    if (trimmed.isEmpty ||
-        _viewModel.streaming ||
-        _viewModel.session == null) {
+    if (trimmed.isEmpty || _viewModel.streaming || _viewModel.session == null) {
       return;
     }
     _input.clear();
@@ -130,9 +128,8 @@ class _ChatScreenState extends State<ChatScreen> {
       ChatSaveOutcome.answerReplaced => context.l10n.answerReplaced,
       ChatSaveOutcome.saveFailed => context.l10n.createSaveError,
     };
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -158,9 +155,7 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              context.l10n.chatSettingsReadError(
-                '${_viewModel.settingsError}',
-              ),
+              context.l10n.chatSettingsReadError('${_viewModel.settingsError}'),
               textAlign: TextAlign.center,
             ),
           ),
@@ -430,10 +425,9 @@ class _Bubble extends StatelessWidget {
         ? null
         : context.llmErrorText(errorKind);
     final detail = message.errorDetail?.trim();
-    final detailSuffix =
-        detail == null || detail.isEmpty
-            ? ''
-            : '\n\n${context.l10n.llmProviderDetail(detail)}';
+    final detailSuffix = detail == null || detail.isEmpty
+        ? ''
+        : '\n\n${context.l10n.llmProviderDetail(detail)}';
     final text = errorText == null
         ? message.text
         : message.text.isEmpty

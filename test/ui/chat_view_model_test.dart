@@ -34,9 +34,8 @@ class _MemoryTopicsRepository implements UserTopicsRepository {
       savedTopics.add(topics);
 
   @override
-  Future<void> saveExtra(
-    Map<String, List<Map<String, dynamic>>> extra,
-  ) async => savedExtra.add(extra);
+  Future<void> saveExtra(Map<String, List<Map<String, dynamic>>> extra) async =>
+      savedExtra.add(extra);
 
   @override
   Future<void> saveOverrides(Map<String, dynamic> overrides) async =>
@@ -64,9 +63,7 @@ class _FakeSession extends ChangeNotifier implements ChatSession {
       ..add(LlmChatMessage(LlmRole.user, prompt))
       ..add(LlmChatMessage(LlmRole.assistant, ''));
     notifyListeners();
-    final reply = _replyIndex < _replies.length
-        ? _replies[_replyIndex++]
-        : '';
+    final reply = _replyIndex < _replies.length ? _replies[_replyIndex++] : '';
     if (reply is Stream<String>) {
       // Мост через контроллер, чтобы dispose() мог закрыть поток немедленно.
       final controller = StreamController<String>();
@@ -251,39 +248,41 @@ void main() {
     expect(topics.savedExtra, hasLength(1));
   });
 
-  test('update_answer показывает правку и replaceAnswer применяет её',
-        () async {
-    final repo = await _configuredRepo();
-    final topics = _MemoryTopicsRepository();
-    final catalog = TopicCatalog(userTopicsRepository: topics);
-    final question = catalog.topics.first.questions.first;
-    final reply =
-        '{"action":"update_answer","prompt":"Уточнённый вопрос",'
-        '"answer":"Новый ответ"}';
-    final session = _FakeSession([reply]);
-    final viewModel = _viewModel(
-      settingsRepository: repo,
-      catalog: catalog,
-      editQuestionId: question.id,
-      session: session,
-    );
-    await viewModel.loadSettings();
-    viewModel.ensureSession();
+  test(
+    'update_answer показывает правку и replaceAnswer применяет её',
+    () async {
+      final repo = await _configuredRepo();
+      final topics = _MemoryTopicsRepository();
+      final catalog = TopicCatalog(userTopicsRepository: topics);
+      final question = catalog.topics.first.questions.first;
+      final reply =
+          '{"action":"update_answer","prompt":"Уточнённый вопрос",'
+          '"answer":"Новый ответ"}';
+      final session = _FakeSession([reply]);
+      final viewModel = _viewModel(
+        settingsRepository: repo,
+        catalog: catalog,
+        editQuestionId: question.id,
+        session: session,
+      );
+      await viewModel.loadSettings();
+      viewModel.ensureSession();
 
-    await viewModel.send('перепиши ответ');
-    expect(viewModel.answerUpdate?.prompt, 'Уточнённый вопрос');
-    expect(viewModel.draft, isNull);
+      await viewModel.send('перепиши ответ');
+      expect(viewModel.answerUpdate?.prompt, 'Уточнённый вопрос');
+      expect(viewModel.draft, isNull);
 
-    final outcome = await viewModel.replaceAnswer();
-    expect(outcome, ChatSaveOutcome.answerReplaced);
-    expect(viewModel.answerUpdate, isNull);
-    expect(topics.savedOverrides, hasLength(1));
-    final updated = catalog
-        .topicById(catalog.topics.first.id)!
-        .questions
-        .firstWhere((q) => q.id == question.id);
-    expect(updated.answer, 'Новый ответ');
-  });
+      final outcome = await viewModel.replaceAnswer();
+      expect(outcome, ChatSaveOutcome.answerReplaced);
+      expect(viewModel.answerUpdate, isNull);
+      expect(topics.savedOverrides, hasLength(1));
+      final updated = catalog
+          .topicById(catalog.topics.first.id)!
+          .questions
+          .firstWhere((q) => q.id == question.id);
+      expect(updated.answer, 'Новый ответ');
+    },
+  );
 
   test('applyDraft без черновика и replaceAnswer без правки — null', () async {
     final repo = await _configuredRepo();

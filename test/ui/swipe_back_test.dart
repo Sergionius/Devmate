@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/memory_secure_storage.dart';
+
 import 'dart:async';
 
 /// Регрессионный тест iOS edge-swipe back.

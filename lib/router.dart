@@ -85,8 +85,11 @@ GoRouter createRouter(
       ),
       _route(
         path: '/settings',
-        builder: (context, state) =>
-            SettingsScreen(settingsRepository: llmSettings),
+        builder: (context, state) => SettingsScreen(
+          settingsRepository: llmSettings,
+          catalog: catalog,
+          viewModel: viewModel,
+        ),
       ),
       _route(
         path: '/chat/free',

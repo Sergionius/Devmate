@@ -64,6 +64,9 @@ enum LlmErrorKind {
   connection,
   emptyTestResponse,
   emptyReply,
+
+  /// OAuth-сессия подписки (Codex) истекла/отсутствует — нужен повторный вход.
+  subscriptionExpired,
 }
 
 /// Речевые маркеры лимитов подписки/квоты у OpenAI-совместимых провайдеров
@@ -110,19 +113,20 @@ LlmErrorKind classifyLlmError(Object error) {
   // Типизированные ошибки openai_dart классифицируем по HTTP-коду и
   // содержимому ответа — toString() содержит requestId/код и ненадёжен.
   if (error is oai.ApiException) {
-    final fromText = _kindFromText('${error.message} ${error.code} ${error.type}');
+    final fromText = _kindFromText(
+      '${error.message} ${error.code} ${error.type}',
+    );
     return switch (error.statusCode) {
       401 => LlmErrorKind.keyRejected,
       404 => LlmErrorKind.notFound,
       _ =>
         fromText ??
-        switch (error.statusCode) {
-          403 => LlmErrorKind.keyRejected,
-          429 => LlmErrorKind.rateLimited,
-          _ => kIsWeb
-              ? LlmErrorKind.webConnection
-              : LlmErrorKind.connection,
-        },
+            switch (error.statusCode) {
+              403 => LlmErrorKind.keyRejected,
+              429 => LlmErrorKind.rateLimited,
+              _ =>
+                kIsWeb ? LlmErrorKind.webConnection : LlmErrorKind.connection,
+            },
     };
   }
   final text = error.toString();
@@ -142,9 +146,8 @@ String? llmErrorDetail(Object error) {
   return _truncate(text);
 }
 
-String _truncate(String text) => text.length > 300
-    ? '${text.substring(0, 300)}…'
-    : text;
+String _truncate(String text) =>
+    text.length > 300 ? '${text.substring(0, 300)}…' : text;
 
 /// Тестовая инструкция модели — не UI-текст, локализуется на уровне модели.
 const String llmTestPrompt = 'Ответь одним словом: ок';
@@ -260,7 +263,9 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
               temperature: 0.6,
               messages: _requestMessages(
                 _systemPrompt,
-                _history.sublist(0, _history.length - 1),
+                // Исключаем только что добавленную пару (user, assistant):
+                // новый prompt _requestMessages добавит сам, иначе — дубль.
+                _history.sublist(0, _history.length - 2),
                 prompt,
               ),
             ),

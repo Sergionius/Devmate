@@ -1,11 +1,32 @@
 {
   "@@locale": "ru",
+  "questionsManagement": "Управление вопросами",
+  "questionsJsonHint": "Экспорт копирует JSON в буфер обмена. Импорт заменяет все темы и вопросы из вставленного JSON и очищает прогресс.",
+  "exportQuestions": "Скопировать вопросы в JSON",
+  "importQuestions": "Импортировать JSON",
+  "pasteQuestionsJson": "Вставьте JSON с темами и вопросами",
+  "questionsCopied": "JSON вопросов скопирован в буфер обмена",
+  "questionsImported": "Вопросы импортированы",
+  "importFailed": "Не удалось импортировать вопросы",
+  "resetTopicProgress": "Сбросить прогресс раздела",
+  "resetTopicProgressWarning": "Удалить результаты тренировок только в разделе «{title}»? Прогресс других разделов, вопросы и настройки сохранятся.",
+  "@resetTopicProgressWarning": {"placeholders": {"title": {"type": "String"}}},
+  "resetTopicProgressDone": "Прогресс раздела сброшен",
+  "resetProgress": "Сбросить только прогресс",
+  "resetProgressWarning": "Удалить все результаты тренировок и очки? Вопросы, темы и настройки AI сохранятся. Это действие нельзя отменить.",
+  "resetProgressDone": "Прогресс сброшен",
+  "resetProgressFailed": "Не удалось сбросить прогресс",
+  "resetAll": "Сбросить всё",
+  "resetWarning": "Удалить пользовательские темы, вопросы, изменения, прогресс и настройки AI? Встроенные вопросы вернутся к исходному состоянию. Это действие нельзя отменить.",
+  "resetDone": "Исходное состояние восстановлено",
+  "resetFailed": "Не удалось завершить сброс",
+  "cancelAction": "Отмена",
+  "agentJsonInstruction": "Инструкция для агента: создай валидный JSON без Markdown. Корневой объект содержит version со значением 1 и topics — непустой массив тем. Каждая тема содержит непустой title, строковое description (можно пустое) и непустой массив questions. Каждый вопрос содержит непустые prompt и answer. Для каждой темы подготовь 4–12 неповторяющихся вопросов на русском; ответы — точные, по 2–4 предложения. ID не нужны — приложение создаст их при импорте.",
   "pageNotFound": "Такой страницы нет.",
   "goHome": "На главную",
   "aiSettings": "Настройки AI",
   "offlineBadge": "ОФЛАЙН",
   "logoSemantics": "Логотип Devmate",
-
   "homeEyebrow": "ПОДГОТОВКА К ТЕХНИЧЕСКОМУ ИНТЕРВЬЮ",
   "homeTitle": "Прокачай ответ.\nНе угадывай.",
   "homeSubtitle": "Разбирай вопросы, сверяйся с эталоном и возвращайся к сложному.",
@@ -16,8 +37,13 @@
   "statsEyebrow": "ТВОЯ СТАТИСТИКА",
   "statsCompletedLabel": "вопросов пройдено",
   "totalQuestions": "{count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопроса}}",
-  "@totalQuestions": { "placeholders": { "count": { "type": "int" } } },
-
+  "@totalQuestions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "topicEyebrowDirection": "Направление",
   "topicEyebrow": "БИБЛИОТЕКА / ТЕМА",
   "repeatTopic": "Повторить тему",
@@ -28,11 +54,14 @@
   "topicProgress": "{completed} из {total, plural, one{{total} вопроса} few{{total} вопросов} many{{total} вопросов} other{{total} вопроса}} пройдено",
   "@topicProgress": {
     "placeholders": {
-      "completed": { "type": "int" },
-      "total": { "type": "int" }
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
-
   "practiceSaveFailed": "Не удалось сохранить ответ",
   "stepYourAnswer": "01 / ТВОЙ ОТВЕТ",
   "yourAnswerHint": "Сформулируй своими словами. Здесь нет автоматической проверки — сначала попробуй вспомнить сам.",
@@ -60,14 +89,16 @@
   "questionProgress": "ВОПРОС {current} / {total}",
   "@questionProgress": {
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
-
   "progressLoadError": "Не удалось загрузить прогресс. Попробуйте ещё раз.",
   "answerSaveError": "Не удалось сохранить ответ. Попробуйте ещё раз.",
-
   "settingsTitle": "AI-провайдер (BYOK)",
   "settingsEyebrow": "ЛЮБОЙ OPENAI-СОВМЕСТИМЫЙ ENDPOINT",
   "keyPrivacyNote": "Ключ хранится только на этом устройстве и уходит напрямую выбранному провайдеру.",
@@ -89,7 +120,6 @@
   "settingsSaveError": "Не удалось сохранить настройки на этом устройстве.",
   "fillAllFields": "Заполните URL, модель и API-ключ.",
   "connectionOk": "Соединение работает ✓",
-
   "chatKeyRequired": "Нужен API-ключ",
   "chatKeyRequiredDescription": "AI-чат работает с вашим ключом OpenAI-совместимого провайдера. Добавьте его в настройках — он останется на этом устройстве.",
   "openSettings": "Открыть настройки",
@@ -98,8 +128,13 @@
   "questionChatIntro": "Напишите свой ответ или задайте вопрос по нему.",
   "chatInputHint": "Спросите что угодно…",
   "chatSettingsReadError": "Не удалось прочитать настройки: {error}",
-  "@chatSettingsReadError": { "placeholders": { "error": { "type": "String" } } },
-
+  "@chatSettingsReadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "llmKeyRejected": "Ключ отклонён (401). Проверьте API-ключ в настройках.",
   "llmNotFound": "Адрес или модель не найдены (404). Проверьте base URL и название модели.",
   "llmRateLimited": "Слишком много запросов (429). Подождите или проверьте квоту.",
@@ -109,34 +144,62 @@
   "llmTestEmptyResponse": "Провайдер ответил пустым сообщением.",
   "llmEmptyReply": "Провайдер вернул пустой ответ.",
   "llmProviderDetail": "Ответ провайдера: {detail}",
-  "@llmProviderDetail": { "placeholders": { "detail": { "type": "String" } } },
-
+  "@llmProviderDetail": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
   "topicChatTitle": "AI · {title}",
-  "@topicChatTitle": { "placeholders": { "title": { "type": "String" } } },
+  "@topicChatTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "questionChatTitle": "AI · Вопрос {index}",
-  "@questionChatTitle": { "placeholders": { "index": { "type": "int" } } },
-
+  "@questionChatTitle": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
   "topicSystemPrompt": "Ты — технический интервьюер, готовишь пользователя к собеседованию по теме \"{title}\" ({description}). Отвечай по-русски, кратко и по делу: объясняй примерами, задавай наводящие вопросы, проверяй понимание. Не решай за пользователя, пока он не попробовал сам.",
   "@topicSystemPrompt": {
     "placeholders": {
-      "title": { "type": "String" },
-      "description": { "type": "String" }
+      "title": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
     }
   },
   "questionSystemPrompt": "Ты — технический интервьюер. Разбираешь с пользователем вопрос: \"{prompt}\". Эталонный ответ для тебя: \"{reference}\". Отвечай по-русски: не выдавай сразу весь эталон — наводящими вопросами и примерами помоги пользователю сформулировать ответ самому, затем сверь с эталоном и укажи, что стоит добавить. Если пользователь просит исправить, дописать или записать правильный ответ — ответь ровно одним JSON-объектом без пояснений: поле action со значением update_answer, поле prompt — уточнённый текст вопроса, поле answer — новый эталонный ответ.",
   "@questionSystemPrompt": {
     "placeholders": {
-      "prompt": { "type": "String" },
-      "reference": { "type": "String" }
+      "prompt": {
+        "type": "String"
+      },
+      "reference": {
+        "type": "String"
+      }
     }
   },
   "questionDraftPart": "Черновик ответа пользователя: \"{draft}\". ",
-  "@questionDraftPart": { "placeholders": { "draft": { "type": "String" } } },
-
+  "@questionDraftPart": {
+    "placeholders": {
+      "draft": {
+        "type": "String"
+      }
+    }
+  },
   "topicSuggestionStart": "С чего начать подготовку по этой теме?",
   "topicSuggestionQuiz": "Задай мне 3 типичных вопроса с собеседования",
   "topicSuggestionExplainer": "Разбери одну тему простыми словами с примером",
-
   "editTopicButton": "Редактировать",
   "editTopicTitle": "Редактирование темы",
   "editTopicNameLabel": "Название",
@@ -155,7 +218,6 @@
   "answerUpdatePromptLabel": "Уточнённый вопрос",
   "answerUpdateButton": "Заменить ответ",
   "answerReplaced": "Ответ обновлён в теме",
-
   "freeChatTitle": "Общий чат",
   "freeChatCardSubtitle": "Любые темы: карьера, учёба, хобби — о чём угодно.",
   "freeChatIntro": "Поболтаем о чём угодно: работа, учёба, хобби или просто мысли вслух.",
@@ -163,7 +225,6 @@
   "freeSuggestionIcebreaker": "Предложи тему для разговора и задай первый вопрос",
   "freeSuggestionCareer": "Обсудим, как справляться с выгоранием на работе",
   "freeSuggestionFun": "Расскажи удивительный факт о космосе",
-
   "createChatTitle": "Создать тему",
   "createChatCardSubtitle": "Опиши тему и вопросы — соберу её за тебя.",
   "createChatIntro": "Опиши, что за тему хочешь: название, уровень и сколько вопросов. Если что-то неясно — уточню.",
@@ -176,24 +237,92 @@
   "createAddTopicSuccess": "Тема добавлена — она в библиотеке на главной",
   "appendChatButton": "Добавить вопросы с AI",
   "appendChatTitle": "Вопросы · {title}",
-  "@appendChatTitle": { "placeholders": { "title": { "type": "String" } } },
+  "@appendChatTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "appendChatIntro": "Напиши, какие вопросы добавить в тему. Уточню, если что-то неясно.",
   "appendSystemPrompt": "Ты добавляешь вопросы в существующую тренировочную тему \"{title}\". Отвечай по-русски. Существующие вопросы темы: {existing}. Правила: (1) Если запрос ясен — ответь ровно одним JSON-объектом без markdown-обёрток и пояснений: одно поле questions — массив объектов, где каждый объект имеет поле prompt (новый вопрос) и поле answer (эталонный ответ в 2-4 предложения). Вопросов от 3 до 10, на русском, они не должны повторять перечисленные вопросы. (2) Если запрос неоднозначный — задай один короткий уточняющий вопрос обычным текстом, без JSON. (3) Дополнительный текст рядом с JSON запрещён.",
   "@appendSystemPrompt": {
     "placeholders": {
-      "title": { "type": "String" },
-      "existing": { "type": "String" }
+      "title": {
+        "type": "String"
+      },
+      "existing": {
+        "type": "String"
+      }
     }
   },
   "appendSuggestionBasics": "Добавь базовые вопросы по теме «{title}» для джуна",
-  "@appendSuggestionBasics": { "placeholders": { "title": { "type": "String" } } },
+  "@appendSuggestionBasics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "appendSuggestionPractice": "Добавь 3 практических кейса по теме «{title}»",
-  "@appendSuggestionPractice": { "placeholders": { "title": { "type": "String" } } },
+  "@appendSuggestionPractice": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "appendSuggestionEdgeCases": "Добавь вопросы про типичные ошибки и подводные камни",
   "appendAddTopic": "Добавить в тему “{title}”",
-  "@appendAddTopic": { "placeholders": { "title": { "type": "String" } } },
+  "@appendAddTopic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "appendAddedSuccess": "Вопросы добавлены в тему “{title}”",
-  "@appendAddedSuccess": { "placeholders": { "title": { "type": "String" } } },
+  "@appendAddedSuccess": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "createAddedQuestionsSuffix": "{count, plural, few{вопроса} many{вопросов} one{вопрос} other{вопроса}}",
-  "@createAddedQuestionsSuffix": { "placeholders": { "count": { "type": "int" } } }
+  "@createAddedQuestionsSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "llmSubscriptionExpired": "Сессия подписки ChatGPT истекла — войдите заново в настройках.",
+  "codexLogin": "Войти через ChatGPT",
+  "codexLogout": "Выйти",
+  "codexLoginHint": "Откроется код подтверждения: введите его на странице auth.openai.com в браузере.",
+  "codexDeviceCodeLabel": "Код подтверждения",
+  "codexOpenLoginPage": "Открыть страницу входа",
+  "codexCopyCode": "Скопировать код",
+  "codexCopied": "Скопировано",
+  "codexWaitingApproval": "Ожидаем подтверждение в браузере…",
+  "codexLoginSuccess": "Подписка подключена ✓",
+  "codexLoginCancelled": "Вход отменён",
+  "codexLoginError": "Не удалось выполнить вход: {error}",
+  "@codexLoginError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "codexLoggedInUntil": "Подписка подключена, обновится до {time}",
+  "@codexLoggedInUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "codexWebUnsupported": "Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере."
 }

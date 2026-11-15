@@ -10,12 +10,9 @@ import 'package:go_router/go_router.dart';
 /// Кнопка «Разобрать с AI» должна быть доступна на сравнении с эталоном
 /// и на стадии «нужно повторить» (до сохранения результата).
 void main() {
-  const topic = InterviewTopic(
-    't1',
-    'Тема',
-    'Описание',
-    [InterviewQuestion('q1', 'Вопрос?', 'Эталон.')],
-  );
+  const topic = InterviewTopic('t1', 'Тема', 'Описание', [
+    InterviewQuestion('q1', 'Вопрос?', 'Эталон.'),
+  ]);
 
   Future<GoRouter> pumpPractice(WidgetTester tester) async {
     final router = GoRouter(
