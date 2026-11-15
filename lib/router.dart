@@ -61,6 +61,8 @@ GoRouter createRouter(
   LlmSettingsRepository llmSettings,
   TopicCatalog catalog, {
   ValueNotifier<Locale?>? appLocale,
+  ValueNotifier<bool>? aiDisabled,
+  ValueNotifier<ThemeMode>? themeMode,
   AppPreferencesRepository? appPreferences,
 }) {
   GoRouter.optionURLReflectsImperativeAPIs = true;
@@ -74,17 +76,32 @@ GoRouter createRouter(
           viewModel: viewModel,
           catalog: catalog,
           settingsRepository: llmSettings,
+          aiDisabled: aiDisabled,
         ),
       ),
       _route(
         path: '/settings',
         builder: (context, state) => SettingsScreen(
-          settingsRepository: llmSettings,
-          catalog: catalog,
-          viewModel: viewModel,
           appLocale: appLocale,
+          aiDisabled: aiDisabled,
+          themeMode: themeMode,
           appPreferences: appPreferences,
         ),
+        routes: [
+          _route(
+            path: 'ai',
+            builder: (context, state) =>
+                AiSettingsScreen(settingsRepository: llmSettings),
+          ),
+          _route(
+            path: 'data',
+            builder: (context, state) => DataSettingsScreen(
+              settingsRepository: llmSettings,
+              catalog: catalog,
+              viewModel: viewModel,
+            ),
+          ),
+        ],
       ),
       _route(
         path: '/chat/free',
@@ -194,6 +211,7 @@ GoRouter createRouter(
             topic: topic,
             viewModel: viewModel,
             catalog: catalog,
+            aiDisabled: aiDisabled,
           );
         },
         routes: [
@@ -240,6 +258,7 @@ GoRouter createRouter(
                 topic: topic,
                 initialIndex: index.clamp(0, topic.questions.length - 1),
                 viewModel: viewModel,
+                aiDisabled: aiDisabled,
               );
             },
           ),

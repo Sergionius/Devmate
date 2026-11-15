@@ -13,7 +13,10 @@ void main() {
     InterviewQuestion('q1', 'Question?', 'Reference.'),
   ]);
 
-  Future<GoRouter> pumpPractice(WidgetTester tester) async {
+  Future<GoRouter> pumpPractice(
+    WidgetTester tester, {
+    ValueNotifier<bool>? aiDisabled,
+  }) async {
     final router = GoRouter(
       initialLocation: '/topic/t1/practice/0',
       routes: [
@@ -23,6 +26,7 @@ void main() {
             topic: topic,
             initialIndex: 0,
             viewModel: TrainingViewModel(_MemoryProgressRepository())..load(),
+            aiDisabled: aiDisabled,
           ),
         ),
         GoRoute(
@@ -84,6 +88,23 @@ void main() {
 
     await tapVisible(tester, find.text('Work through it with AI'));
     expect(find.text('question-chat-marker'), findsOneWidget);
+  });
+
+  testWidgets('the AI walkthrough button is hidden when AI is disabled', (
+    tester,
+  ) async {
+    await pumpPractice(tester, aiDisabled: ValueNotifier<bool>(true));
+
+    // Этап ответа: кнопки нет, и переход в чат недоступен даже после
+    // сравнения с эталоном.
+    expect(find.text('Work through it with AI'), findsNothing);
+
+    await tester.enterText(find.byKey(const Key('answer-field')), 'My answer');
+    await tapVisible(tester, find.text('Compare with reference'));
+    await tapVisible(tester, find.text('Needs review'));
+
+    expect(find.text('Work through it with AI'), findsNothing);
+    expect(find.text('question-chat-marker'), findsNothing);
   });
 }
 

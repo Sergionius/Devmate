@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/topic_catalog.dart';
 import '../domain/question.dart';
 import '../l10n/l10n.dart';
 import 'design_system.dart';
+import 'platform_ui.dart';
 
 class EditTopicScreen extends StatefulWidget {
   const EditTopicScreen({
@@ -65,21 +67,21 @@ class _EditTopicScreenState extends State<EditTopicScreen> {
             children: [
               TextField(
                 controller: _title,
-                style: const TextStyle(
-                  color: DevmateColors.primary,
-                  fontSize: 17,
+                style: TextStyle(color: context.colors.primary, fontSize: 17),
+                decoration: devmateFieldDecoration(
+                  context,
+                  label: l10n.editTopicNameLabel,
                 ),
-                decoration: InputDecoration(labelText: l10n.editTopicNameLabel),
               ),
               const SizedBox(height: 14),
               TextField(
                 controller: _description,
                 maxLines: 2,
-                style: const TextStyle(
-                  color: DevmateColors.primary,
-                  fontSize: 15,
+                style: TextStyle(color: context.colors.primary, fontSize: 15),
+                decoration: devmateFieldDecoration(
+                  context,
+                  label: l10n.editTopicDescLabel,
                 ),
-                decoration: InputDecoration(labelText: l10n.editTopicDescLabel),
               ),
               const SizedBox(height: 12),
               FilledButton.icon(
@@ -88,7 +90,7 @@ class _EditTopicScreenState extends State<EditTopicScreen> {
                 label: Text(l10n.editSaveTopic),
               ),
               const SizedBox(height: 26),
-              Eyebrow(l10n.questionsEyebrow, color: DevmateColors.muted),
+              Eyebrow(l10n.questionsEyebrow, color: context.colors.muted),
               const SizedBox(height: 10),
               for (final question in topic.questions)
                 _EditableQuestionTile(
@@ -114,130 +116,248 @@ class _EditTopicScreenState extends State<EditTopicScreen> {
     if (_title.text.trim().isEmpty) return;
     setState(() => _saving = true);
     final l10n = context.l10n;
-    final messenger = ScaffoldMessenger.of(context);
     try {
       await widget.catalog.updateTopicMeta(
         widget.topicId,
         _title.text,
         _description.text,
       );
-      messenger.showSnackBar(SnackBar(content: Text(l10n.editSaved)));
+      if (!mounted) return;
+      showDevmateNotice(
+        context,
+        l10n.editSaved,
+        kind: DevmateNoticeKind.success,
+      );
     } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.createSaveError)));
+      if (!mounted) return;
+      showDevmateNotice(
+        context,
+        l10n.createSaveError,
+        kind: DevmateNoticeKind.error,
+      );
     }
     if (mounted) setState(() => _saving = false);
   }
 
   Future<void> _deleteQuestion(String questionId) async {
     final l10n = context.l10n;
-    final messenger = ScaffoldMessenger.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: DevmateColors.surface,
-        title: Text(l10n.editDeleteQuestion),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              MaterialLocalizations.of(dialogContext).cancelButtonLabel,
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.editDeleteQuestion),
-          ),
-        ],
-      ),
+    final confirmed = await showDevmateConfirm(
+      context,
+      title: l10n.editDeleteQuestion,
+      confirmLabel: l10n.editDeleteQuestion,
+      cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
+      destructive: true,
     );
-    if (confirmed != true) return;
+    if (!confirmed || !mounted) return;
     try {
       await widget.catalog.deleteQuestion(questionId);
     } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.createSaveError)));
+      if (!mounted) return;
+      showDevmateNotice(
+        context,
+        l10n.createSaveError,
+        kind: DevmateNoticeKind.error,
+      );
       return;
     }
-    messenger.showSnackBar(SnackBar(content: Text(l10n.editSaved)));
+    if (!mounted) return;
+    DevmateHaptics.destructiveActionCompleted(context);
+    showDevmateNotice(
+      context,
+      context.l10n.editSaved,
+      kind: DevmateNoticeKind.success,
+    );
   }
 
   Future<void> _showQuestionDialog([InterviewQuestion? existing]) async {
     final l10n = context.l10n;
-    final messenger = ScaffoldMessenger.of(context);
-    final prompt = TextEditingController(text: existing?.prompt ?? '');
-    final answer = TextEditingController(text: existing?.answer ?? '');
-
-    final saved = await showDialog<bool>(
+    final saved = await showDevmateForm<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: DevmateColors.surface,
-        title: Text(
-          existing == null
-              ? l10n.editQuestionDialogTitleNew
-              : l10n.editQuestionDialogTitleEdit,
-        ),
-        content: SizedBox(
-          width: 420,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: prompt,
-                maxLines: 3,
-                minLines: 1,
-                autofocus: existing == null,
-                style: const TextStyle(color: DevmateColors.primary),
-                decoration: InputDecoration(labelText: l10n.editPromptLabel),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: answer,
-                maxLines: 5,
-                minLines: 2,
-                style: const TextStyle(color: DevmateColors.primary),
-                decoration: InputDecoration(labelText: l10n.editAnswerLabel),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              MaterialLocalizations.of(dialogContext).cancelButtonLabel,
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.editSave),
-          ),
-        ],
+      title: existing == null
+          ? l10n.editQuestionDialogTitleNew
+          : l10n.editQuestionDialogTitleEdit,
+      builder: (_) => _QuestionForm(
+        initialPrompt: existing?.prompt ?? '',
+        initialAnswer: existing?.answer ?? '',
+        autofocusPrompt: existing == null,
+        onSave: (prompt, answer) => _saveQuestion(existing, prompt, answer),
       ),
     );
-    final promptText = prompt.text.trim();
-    final answerText = answer.text.trim();
-    prompt.dispose();
-    answer.dispose();
-    if (saved != true) return;
-    if (promptText.isEmpty || answerText.isEmpty) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.editRequired)));
-      return;
-    }
+    if (saved != true || !mounted) return;
+    showDevmateNotice(
+      context,
+      context.l10n.editSaved,
+      kind: DevmateNoticeKind.success,
+    );
+  }
+
+  /// Сохраняет вопрос; возвращает текст ошибки для показа внутри формы
+  /// или null при успехе, чтобы введённый текст не терялся при ошибке.
+  Future<String?> _saveQuestion(
+    InterviewQuestion? existing,
+    String prompt,
+    String answer,
+  ) async {
     try {
       if (existing == null) {
         await widget.catalog.addQuestionsToTopic(widget.topicId, [
-          (promptText, answerText),
+          (prompt, answer),
         ]);
       } else {
-        await widget.catalog.updateQuestion(
-          existing.id,
-          promptText,
-          answerText,
-        );
+        await widget.catalog.updateQuestion(existing.id, prompt, answer);
       }
-      messenger.showSnackBar(SnackBar(content: Text(l10n.editSaved)));
+      return null;
     } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.createSaveError)));
+      if (!mounted) return null;
+      return context.l10n.createSaveError;
     }
+  }
+}
+
+/// Форма создания и редактирования вопроса внутри адаптивной модальной
+/// формы. Владеет своими контроллерами, поэтому валидация и ошибка
+/// сохранения не теряют введённый текст и не закрывают форму.
+class _QuestionForm extends StatefulWidget {
+  const _QuestionForm({
+    required this.initialPrompt,
+    required this.initialAnswer,
+    required this.autofocusPrompt,
+    required this.onSave,
+  });
+
+  final String initialPrompt;
+  final String initialAnswer;
+
+  /// Автофокус в поле вопроса при создании; при редактировании не
+  /// выдергиваем клавиатуру.
+  final bool autofocusPrompt;
+
+  /// Сохраняет вопрос; возвращает текст ошибки или null при успехе.
+  final Future<String?> Function(String prompt, String answer) onSave;
+
+  @override
+  State<_QuestionForm> createState() => _QuestionFormState();
+}
+
+class _QuestionFormState extends State<_QuestionForm> {
+  late final TextEditingController _prompt = TextEditingController(
+    text: widget.initialPrompt,
+  );
+  late final TextEditingController _answer = TextEditingController(
+    text: widget.initialAnswer,
+  );
+  String? _error;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _prompt.dispose();
+    _answer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    final promptText = _prompt.text.trim();
+    final answerText = _answer.text.trim();
+    if (promptText.isEmpty || answerText.isEmpty) {
+      setState(() => _error = context.l10n.editRequired);
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    final error = await widget.onSave(promptText, answerText);
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.pop(context, true);
+    } else {
+      setState(() {
+        _saving = false;
+        _error = error;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _prompt,
+          autofocus: widget.autofocusPrompt,
+          maxLines: 3,
+          minLines: 1,
+          enabled: !_saving,
+          style: TextStyle(color: context.colors.primary),
+          decoration: devmateFieldDecoration(
+            context,
+            label: l10n.editPromptLabel,
+          ),
+        ),
+        const SizedBox(height: DevmateSpacing.md),
+        TextField(
+          controller: _answer,
+          maxLines: 5,
+          minLines: 2,
+          enabled: !_saving,
+          style: TextStyle(color: context.colors.primary),
+          decoration: devmateFieldDecoration(
+            context,
+            label: l10n.editAnswerLabel,
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: DevmateSpacing.sm),
+          Text(
+            _error!,
+            style: TextStyle(
+              color: context.colors.error,
+              fontSize: 14,
+              height: 1.45,
+            ),
+          ),
+        ],
+        const SizedBox(height: DevmateSpacing.lg),
+        if (!kIsWeb && Theme.of(context).platform == TargetPlatform.iOS)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Text(l10n.editSave),
+              ),
+              const SizedBox(height: DevmateSpacing.sm),
+              TextButton(
+                onPressed: _saving ? null : () => Navigator.pop(context),
+                child: Text(l10n.cancelAction),
+              ),
+            ],
+          )
+        else
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: DevmateSpacing.sm,
+            runSpacing: DevmateSpacing.sm,
+            children: [
+              TextButton(
+                onPressed: _saving ? null : () => Navigator.pop(context),
+                child: Text(
+                  MaterialLocalizations.of(context).cancelButtonLabel,
+                ),
+              ),
+              FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Text(l10n.editSave),
+              ),
+            ],
+          ),
+      ],
+    );
   }
 }
 
@@ -256,31 +376,39 @@ class _EditableQuestionTile extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 10),
     decoration: BoxDecoration(
-      color: DevmateColors.surface,
-      border: Border.all(color: DevmateColors.border),
+      color: context.colors.surface,
+      border: Border.all(color: context.colors.border),
       borderRadius: BorderRadius.circular(14),
     ),
-    child: ListTile(
-      contentPadding: const EdgeInsets.fromLTRB(16, 8, 6, 8),
-      title: Text(
-        question.prompt,
-        style: const TextStyle(
-          color: DevmateColors.primary,
-          fontSize: 15,
-          height: 1.35,
+    // Материал-предок нужен ListTile'у; нажатие обрабатывает общий
+    // DevmatePressable (ripple на Android, мягкое выделение на iOS).
+    child: Material(
+      color: Colors.transparent,
+      child: DevmatePressable(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onEdit,
+        child: ListTile(
+          contentPadding: const EdgeInsets.fromLTRB(16, 8, 6, 8),
+          title: Text(
+            question.prompt,
+            style: TextStyle(
+              color: context.colors.primary,
+              fontSize: 15,
+              height: 1.35,
+            ),
+          ),
+          subtitle: Text(
+            question.answer,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: context.colors.muted, fontSize: 13),
+          ),
+          trailing: IconButton(
+            tooltip: context.l10n.editDeleteQuestion,
+            icon: const Icon(Icons.delete_outline_rounded, size: 22),
+            onPressed: onDelete,
+          ),
         ),
-      ),
-      subtitle: Text(
-        question.answer,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: DevmateColors.muted, fontSize: 13),
-      ),
-      onTap: onEdit,
-      trailing: IconButton(
-        tooltip: context.l10n.editDeleteQuestion,
-        icon: const Icon(Icons.delete_outline_rounded, size: 22),
-        onPressed: onDelete,
       ),
     ),
   );

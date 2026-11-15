@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +13,7 @@ import '../data/topic_draft.dart';
 import '../l10n/l10n.dart';
 import 'chat_view_model.dart';
 import 'design_system.dart';
+import 'platform_ui.dart';
 import 'reply_preview.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -67,7 +70,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _openSettings() async {
-    await context.push('/settings');
+    await context.push('/settings/ai');
     if (!mounted) return;
     await _viewModel.reloadSettings();
   }
@@ -103,16 +106,16 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _applyDraft() async {
     final outcome = await _viewModel.applyDraft();
     if (outcome == null || !mounted) return;
-    _showOutcomeSnackBar(outcome);
+    _showOutcomeNotice(outcome);
   }
 
   Future<void> _replaceAnswer() async {
     final outcome = await _viewModel.replaceAnswer();
     if (outcome == null || !mounted) return;
-    _showOutcomeSnackBar(outcome);
+    _showOutcomeNotice(outcome);
   }
 
-  void _showOutcomeSnackBar(ChatSaveOutcome outcome) {
+  void _showOutcomeNotice(ChatSaveOutcome outcome) {
     final message = switch (outcome) {
       ChatSaveOutcome.contentAdded =>
         widget.appendToTopic == null
@@ -121,8 +124,13 @@ class _ChatScreenState extends State<ChatScreen> {
       ChatSaveOutcome.answerReplaced => context.l10n.answerReplaced,
       ChatSaveOutcome.saveFailed => context.l10n.createSaveError,
     };
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    showDevmateNotice(
+      context,
+      message,
+      kind: outcome == ChatSaveOutcome.saveFailed
+          ? DevmateNoticeKind.error
+          : DevmateNoticeKind.success,
+    );
   }
 
   @override
@@ -142,7 +150,7 @@ class _ChatScreenState extends State<ChatScreen> {
       listenable: _viewModel,
       builder: (context, _) => switch (_viewModel.settingsPhase) {
         ChatSettingsPhase.loading => const Center(
-          child: CircularProgressIndicator(),
+          child: DevmateSpinner(size: 28, strokeWidth: 2.5),
         ),
         ChatSettingsPhase.error => Center(
           child: Padding(
@@ -162,31 +170,39 @@ class _ChatScreenState extends State<ChatScreen> {
     final settings = _viewModel.settings!;
     if (!settings.isConfigured) return _buildNotConfigured();
     _viewModel.ensureSession();
+    // Единая с чат-потоком ширина контента: на широких экранах (web,
+    // десктоп) колонка центрируется и не растягивается на весь экран.
     return SafeArea(
       top: false,
-      child: Column(
-        children: [
-          Expanded(
-            child: _viewModel.messages.isEmpty
-                ? _buildEmpty()
-                : _buildMessages(),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: Column(
+            children: [
+              Expanded(
+                child: _viewModel.messages.isEmpty
+                    ? _buildEmpty()
+                    : _buildMessages(),
+              ),
+              if (_viewModel.answerUpdate != null &&
+                  widget.editQuestionId != null)
+                _AnswerUpdateCard(
+                  update: _viewModel.answerUpdate!,
+                  onApply: _replaceAnswer,
+                ),
+              if (_viewModel.draft != null && widget.catalog != null)
+                _TopicDraftCard(
+                  draft: _viewModel.draft!,
+                  saving: _viewModel.draftSaving,
+                  appendTitle: widget.appendToTopic == null
+                      ? null
+                      : _viewModel.appendTopicTitle,
+                  onAdd: _applyDraft,
+                ),
+              _buildInput(),
+            ],
           ),
-          if (_viewModel.answerUpdate != null && widget.editQuestionId != null)
-            _AnswerUpdateCard(
-              update: _viewModel.answerUpdate!,
-              onApply: _replaceAnswer,
-            ),
-          if (_viewModel.draft != null && widget.catalog != null)
-            _TopicDraftCard(
-              draft: _viewModel.draft!,
-              saving: _viewModel.draftSaving,
-              appendTitle: widget.appendToTopic == null
-                  ? null
-                  : _viewModel.appendTopicTitle,
-              onAdd: _applyDraft,
-            ),
-          _buildInput(),
-        ],
+        ),
       ),
     );
   }
@@ -197,11 +213,7 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.key_rounded,
-            size: 44,
-            color: DevmateColors.lavender,
-          ),
+          Icon(Icons.key_rounded, size: 44, color: context.colors.lavender),
           const SizedBox(height: 16),
           Text(
             context.l10n.chatKeyRequired,
@@ -211,7 +223,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Text(
             context.l10n.chatKeyRequiredDescription,
             textAlign: TextAlign.center,
-            style: TextStyle(color: DevmateColors.muted, height: 1.5),
+            style: TextStyle(color: context.colors.muted, height: 1.5),
           ),
           const SizedBox(height: 20),
           FilledButton.icon(
@@ -227,7 +239,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildEmpty() => ListView(
     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
     children: [
-      Eyebrow(context.l10n.chatEyebrow, color: DevmateColors.muted),
+      Eyebrow(context.l10n.chatEyebrow, color: context.colors.muted),
       const SizedBox(height: 12),
       Text(widget.intro, style: const TextStyle(fontSize: 18, height: 1.45)),
       if (widget.suggestions.isNotEmpty) ...[
@@ -277,8 +289,8 @@ class _ChatScreenState extends State<ChatScreen> {
             // Обводка рисуется самим контейнером: клип по тому же радиусу
             // срезает внешнюю половину штриха, и рамка «пропадает» по краям.
             decoration: BoxDecoration(
-              color: DevmateColors.surface,
-              border: Border.all(color: DevmateColors.border),
+              color: context.colors.surface,
+              border: Border.all(color: context.colors.border),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Focus(
@@ -294,8 +306,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   _sendFromInput(text);
                 },
                 enabled: !_viewModel.streaming,
-                style: const TextStyle(
-                  color: DevmateColors.primary,
+                style: TextStyle(
+                  color: context.colors.primary,
                   fontSize: 16,
                   height: 1.4,
                 ),
@@ -304,7 +316,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   // квадратом поверх скруглённого контейнера.
                   filled: false,
                   hintText: context.l10n.chatInputHint,
-                  hintStyle: const TextStyle(color: DevmateColors.muted),
+                  hintStyle: TextStyle(color: context.colors.muted),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 18,
                     vertical: 14,
@@ -349,17 +361,21 @@ class _SuggestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: DevmateColors.surface,
-    borderRadius: BorderRadius.circular(14),
-    child: InkWell(
-      onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(14),
+    color: context.colors.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: DevmateRadii.controlBorder,
+      side: BorderSide(color: context.colors.border),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: DevmatePressable(
+      borderRadius: DevmateRadii.controlBorder,
+      enabled: enabled,
+      onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          border: Border.all(color: DevmateColors.border),
-          borderRadius: BorderRadius.circular(14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DevmateSpacing.lg,
+          vertical: 14,
         ),
         child: Text(text, style: const TextStyle(fontSize: 15, height: 1.4)),
       ),
@@ -382,11 +398,16 @@ class _Bubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * (isUser ? 0.82 : 0.94),
+          // Ограничение по ширине экрана, но не шире читаемой колонки на
+          // широких экранах.
+          maxWidth: math.min(
+            MediaQuery.of(context).size.width * (isUser ? 0.82 : 0.94),
+            620,
+          ),
         ),
         decoration: BoxDecoration(
-          color: isUser ? DevmateColors.accent : DevmateColors.surface,
-          border: isUser ? null : Border.all(color: DevmateColors.border),
+          color: isUser ? context.colors.accent : context.colors.surface,
+          border: isUser ? null : Border.all(color: context.colors.border),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
@@ -397,8 +418,8 @@ class _Bubble extends StatelessWidget {
         child: isUser
             ? Text(
                 message.text,
-                style: const TextStyle(
-                  color: DevmateColors.accentInk,
+                style: TextStyle(
+                  color: context.colors.accentInk,
                   fontSize: 15.5,
                   height: 1.45,
                 ),
@@ -423,13 +444,11 @@ class _Bubble extends StatelessWidget {
         ? '$errorText$detailSuffix'
         : '${message.text}\n\n$errorText$detailSuffix';
     if (text.isEmpty && streaming) {
+      // Ожидание первого фрагмента ответа: индикатор UI kit вместо
+      // Material-спиннера.
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 4),
-        child: SizedBox(
-          width: 22,
-          height: 22,
-          child: CircularProgressIndicator(strokeWidth: 2.5),
-        ),
+        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: DevmateDotsLoader(dotSize: 7),
       );
     }
     if (!streaming) {
@@ -454,57 +473,57 @@ class _Bubble extends StatelessWidget {
 
   MarkdownStyleSheet _assistantMarkdownStyle(BuildContext context) =>
       MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-        p: const TextStyle(
-          color: DevmateColors.primary,
+        p: TextStyle(
+          color: context.colors.primary,
           fontSize: 15.5,
           height: 1.5,
         ),
-        strong: const TextStyle(
-          color: DevmateColors.primary,
+        strong: TextStyle(
+          color: context.colors.primary,
           fontSize: 15.5,
           fontWeight: FontWeight.bold,
         ),
-        em: const TextStyle(
-          color: DevmateColors.primary,
+        em: TextStyle(
+          color: context.colors.primary,
           fontSize: 15.5,
           fontStyle: FontStyle.italic,
         ),
-        h1: const TextStyle(
-          color: DevmateColors.primary,
+        h1: TextStyle(
+          color: context.colors.primary,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
-        h2: const TextStyle(
-          color: DevmateColors.primary,
+        h2: TextStyle(
+          color: context.colors.primary,
           fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
-        h3: const TextStyle(
-          color: DevmateColors.primary,
+        h3: TextStyle(
+          color: context.colors.primary,
           fontSize: 16.5,
           fontWeight: FontWeight.bold,
         ),
-        listBullet: const TextStyle(
-          color: DevmateColors.primary,
+        listBullet: TextStyle(
+          color: context.colors.primary,
           fontSize: 15.5,
           height: 1.5,
         ),
-        code: const TextStyle(
-          color: DevmateColors.accent,
-          backgroundColor: DevmateColors.canvas,
+        code: TextStyle(
+          color: context.colors.accent,
+          backgroundColor: context.colors.canvas,
           fontSize: 14,
         ),
         codeblockDecoration: BoxDecoration(
-          color: DevmateColors.canvas,
-          border: Border.all(color: DevmateColors.border),
+          color: context.colors.canvas,
+          border: Border.all(color: context.colors.border),
           borderRadius: BorderRadius.circular(10),
         ),
         blockquoteDecoration: BoxDecoration(
           border: Border(
-            left: BorderSide(color: DevmateColors.lavender, width: 3),
+            left: BorderSide(color: context.colors.lavender, width: 3),
           ),
         ),
-        a: const TextStyle(color: DevmateColors.lavender),
+        a: TextStyle(color: context.colors.lavender),
         blockSpacing: 10,
       );
 }
@@ -531,8 +550,8 @@ class _TopicDraftCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: DevmateColors.surface,
-          border: Border.all(color: DevmateColors.accent),
+          color: context.colors.surface,
+          border: Border.all(color: context.colors.accent),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -540,8 +559,8 @@ class _TopicDraftCard extends StatelessWidget {
           children: [
             Text(
               appendTitle ?? (draft.title ?? ''),
-              style: const TextStyle(
-                color: DevmateColors.primary,
+              style: TextStyle(
+                color: context.colors.primary,
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
               ),
@@ -551,8 +570,8 @@ class _TopicDraftCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 draft.description!,
-                style: const TextStyle(
-                  color: DevmateColors.muted,
+                style: TextStyle(
+                  color: context.colors.muted,
                   fontSize: 14,
                   height: 1.4,
                 ),
@@ -561,10 +580,7 @@ class _TopicDraftCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               '${draft.questions.length} ${context.l10n.createAddedQuestionsSuffix(draft.questions.length)}',
-              style: const TextStyle(
-                color: DevmateColors.lavender,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: context.colors.lavender, fontSize: 14),
             ),
             const SizedBox(height: 14),
             SizedBox(
@@ -598,8 +614,8 @@ class _AnswerUpdateCard extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DevmateColors.surface,
-        border: Border.all(color: DevmateColors.accent),
+        color: context.colors.surface,
+        border: Border.all(color: context.colors.accent),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -607,8 +623,8 @@ class _AnswerUpdateCard extends StatelessWidget {
         children: [
           Text(
             context.l10n.answerUpdateCardTitle,
-            style: const TextStyle(
-              color: DevmateColors.primary,
+            style: TextStyle(
+              color: context.colors.primary,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -617,13 +633,13 @@ class _AnswerUpdateCard extends StatelessWidget {
           if (update.prompt.isNotEmpty) ...[
             Text(
               context.l10n.answerUpdatePromptLabel,
-              style: const TextStyle(color: DevmateColors.muted, fontSize: 13),
+              style: TextStyle(color: context.colors.muted, fontSize: 13),
             ),
             const SizedBox(height: 2),
             Text(
               update.prompt,
-              style: const TextStyle(
-                color: DevmateColors.primary,
+              style: TextStyle(
+                color: context.colors.primary,
                 fontSize: 15,
                 height: 1.4,
               ),
@@ -632,13 +648,13 @@ class _AnswerUpdateCard extends StatelessWidget {
           ],
           Text(
             context.l10n.editAnswerLabel,
-            style: const TextStyle(color: DevmateColors.muted, fontSize: 13),
+            style: TextStyle(color: context.colors.muted, fontSize: 13),
           ),
           const SizedBox(height: 2),
           Text(
             update.answer,
-            style: const TextStyle(
-              color: DevmateColors.primary,
+            style: TextStyle(
+              color: context.colors.primary,
               fontSize: 15,
               height: 1.4,
             ),
@@ -669,19 +685,26 @@ class _SendButton extends StatelessWidget {
     width: 48,
     height: 48,
     child: Material(
-      color: enabled ? DevmateColors.accent : DevmateColors.surface,
+      color: enabled ? context.colors.accent : context.colors.surface,
       shape: CircleBorder(
         side: BorderSide(
-          color: enabled ? DevmateColors.accent : DevmateColors.border,
+          color: enabled ? context.colors.accent : context.colors.border,
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: enabled ? onPressed : null,
-        child: Icon(
-          Icons.arrow_upward_rounded,
-          size: 24,
-          color: enabled ? DevmateColors.accentInk : DevmateColors.muted,
+      child: DevmatePressable(
+        // Отправка сообщения — подтверждённое действие; лёгкий haptic,
+        // disabled-кнопка не вибрирует.
+        haptic: DevmateHapticImpact.light,
+        borderRadius: BorderRadius.circular(24),
+        enabled: enabled,
+        onTap: onPressed,
+        child: Center(
+          child: Icon(
+            Icons.arrow_upward_rounded,
+            size: 24,
+            color: enabled ? context.colors.accentInk : context.colors.muted,
+          ),
         ),
       ),
     ),
