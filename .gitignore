@@ -6,6 +6,7 @@
 *.keystore
 *.p12
 *.mobileprovision
+android/key.properties
 .pi/
 .agents/
 
