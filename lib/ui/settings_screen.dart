@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/codex_auth.dart';
@@ -16,6 +17,59 @@ import '../data/topic_catalog.dart';
 import '../l10n/l10n.dart';
 import 'design_system.dart';
 import 'training_view_model.dart';
+
+/// Режим импорта вставленного JSON: полная замена каталога или добавление.
+enum _ImportMode { replace, append }
+
+/// Диалог вставки JSON: возвращает режим импорта и введённый текст.
+/// Владеет своим контроллером, чтобы dispose не происходил во время
+/// анимации закрытия диалога.
+class _ImportDialog extends StatefulWidget {
+  const _ImportDialog();
+
+  @override
+  State<_ImportDialog> createState() => _ImportDialogState();
+}
+
+class _ImportDialogState extends State<_ImportDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit(_ImportMode mode) =>
+      Navigator.pop(context, (mode, _controller.text));
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(context.l10n.importQuestions),
+    content: SizedBox(
+      width: 560,
+      child: TextField(
+        controller: _controller,
+        maxLines: 10,
+        decoration: InputDecoration(hintText: context.l10n.pasteQuestionsJson),
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text(context.l10n.cancelAction),
+      ),
+      OutlinedButton(
+        onPressed: () => _submit(_ImportMode.append),
+        child: Text(context.l10n.importAppendAction),
+      ),
+      FilledButton(
+        onPressed: () => _submit(_ImportMode.replace),
+        child: Text(context.l10n.importReplaceAction),
+      ),
+    ],
+  );
+}
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -181,59 +235,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _importQuestions() async {
-    final controller = TextEditingController();
+    final result = await showDialog<(_ImportMode, String)>(
+      context: context,
+      builder: (_) => const _ImportDialog(),
+    );
+    if (result == null || !mounted) return;
+    final (mode, source) = result;
+    setState(() => _working = true);
     try {
-      final source = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(context.l10n.importQuestions),
-          content: SizedBox(
-            width: 560,
-            child: TextField(
-              controller: controller,
-              maxLines: 10,
-              decoration: InputDecoration(
-                hintText: context.l10n.pasteQuestionsJson,
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(context.l10n.cancelAction),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, controller.text),
-              child: Text(context.l10n.importQuestions),
-            ),
-          ],
-        ),
-      );
-      if (source == null || !mounted) return;
-      setState(() => _working = true);
-      try {
+      if (mode == _ImportMode.replace) {
         await widget.catalog!.importJson(source);
         await widget.viewModel!.resetProgress();
         if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(context.l10n.questionsImported)));
-      } on FormatException catch (error) {
+      } else {
+        await widget.catalog!.addJson(source);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${context.l10n.importFailed}: ${error.message}'),
-          ),
-        );
-      } catch (_) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.l10n.importFailed)));
-      } finally {
-        if (mounted) setState(() => _working = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.questionsAppended)));
       }
+    } on FormatException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${context.l10n.importFailed}: ${error.message}'),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.l10n.importFailed)));
     } finally {
-      controller.dispose();
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
+  /// Открывает системное меню «Поделиться» с точным текстом инструкции
+  /// для агента на текущем языке; отмена и ошибки не ломают экран.
+  Future<void> _shareInstruction() async {
+    try {
+      await SharePlus.instance.share(
+        ShareParams(text: context.l10n.agentJsonInstruction),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.l10n.shareFailed)));
     }
   }
 
@@ -456,7 +506,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Text(context.l10n.importQuestions),
                     ),
                     const SizedBox(height: 8),
-                    SelectableText(context.l10n.agentJsonInstruction),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: SelectableText(
+                            context.l10n.agentJsonInstruction,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          tooltip: context.l10n.shareInstruction,
+                          onPressed: _shareInstruction,
+                          icon: const Icon(Icons.share),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 24),
                     OutlinedButton(
                       onPressed: _working ? null : _resetProgress,
