@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @questionsJsonHint.
   ///
   /// In ru, this message translates to:
-  /// **'Экспорт копирует JSON в буфер обмена. Импорт заменяет все темы и вопросы из вставленного JSON и очищает прогресс.'**
+  /// **'Экспорт копирует JSON в буфер обмена. Импорт предлагает два режима: «Заменить всё» заменяет все темы и вопросы из вставленного JSON и сбрасывает прогресс; «Добавить» дописывает вопросы в темы с совпадающими названиями, создаёт отсутствующие темы и сохраняет существующий каталог и прогресс.'**
   String get questionsJsonHint;
 
   /// No description provided for @exportQuestions.
@@ -134,11 +134,29 @@ abstract class AppLocalizations {
   /// **'JSON вопросов скопирован в буфер обмена'**
   String get questionsCopied;
 
+  /// No description provided for @importAppendAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить'**
+  String get importAppendAction;
+
+  /// No description provided for @importReplaceAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заменить всё'**
+  String get importReplaceAction;
+
   /// No description provided for @questionsImported.
   ///
   /// In ru, this message translates to:
-  /// **'Вопросы импортированы'**
+  /// **'Каталог заменён из JSON, прогресс сброшен'**
   String get questionsImported;
+
+  /// No description provided for @questionsAppended.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопросы добавлены, существующие темы и прогресс сохранены'**
+  String get questionsAppended;
 
   /// No description provided for @importFailed.
   ///
@@ -223,6 +241,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Инструкция для агента: создай валидный JSON без Markdown. Корневой объект содержит version со значением 1 и topics — непустой массив тем. Каждая тема содержит непустой title, строковое description (можно пустое) и непустой массив questions. Каждый вопрос содержит непустые prompt и answer. Для каждой темы подготовь 4–12 неповторяющихся вопросов на русском; ответы — точные, по 2–4 предложения. ID не нужны — приложение создаст их при импорте.'**
   String get agentJsonInstruction;
+
+  /// No description provided for @shareInstruction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поделиться инструкцией'**
+  String get shareInstruction;
+
+  /// No description provided for @shareFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть меню «Поделиться»'**
+  String get shareFailed;
 
   /// No description provided for @pageNotFound.
   ///

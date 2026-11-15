@@ -239,6 +239,66 @@ Map<String, dynamic> userQuestionToJson(InterviewQuestion question) => {
   'answer': question.answer,
 };
 
+typedef _ParsedQuestion = (String prompt, String answer);
+typedef _ParsedTopic = ({
+  String title,
+  String description,
+  List<_ParsedQuestion> questions,
+});
+
+/// Parses and fully validates an import payload before any catalog change.
+/// Accepts the current `version: 1` schema with a non-empty `topics` list;
+/// IDs from the input JSON are ignored, callers generate fresh ones.
+List<_ParsedTopic> _parseImportTopics(String source) {
+  final dynamic decoded;
+  try {
+    decoded = jsonDecode(source);
+  } on FormatException {
+    throw const FormatException('Некорректный JSON');
+  }
+  if (decoded is! Map<String, dynamic> ||
+      decoded['version'] != 1 ||
+      decoded['topics'] is! List ||
+      (decoded['topics'] as List).isEmpty) {
+    throw const FormatException(
+      'Ожидается объект version: 1 с непустым topics',
+    );
+  }
+  final parsed = <_ParsedTopic>[];
+  for (final raw in decoded['topics'] as List) {
+    if (raw is! Map<String, dynamic> ||
+        raw['title'] is! String ||
+        (raw['title'] as String).trim().isEmpty ||
+        raw['description'] is! String ||
+        raw['questions'] is! List ||
+        (raw['questions'] as List).isEmpty) {
+      throw const FormatException('Некорректная тема');
+    }
+    final questions = <_ParsedQuestion>[];
+    for (final q in raw['questions'] as List) {
+      if (q is! Map<String, dynamic> ||
+          q['prompt'] is! String ||
+          (q['prompt'] as String).trim().isEmpty ||
+          q['answer'] is! String ||
+          (q['answer'] as String).trim().isEmpty) {
+        throw const FormatException(
+          'Каждый вопрос должен иметь prompt и answer',
+        );
+      }
+      questions.add((
+        (q['prompt'] as String).trim(),
+        (q['answer'] as String).trim(),
+      ));
+    }
+    parsed.add((
+      title: (raw['title'] as String).trim(),
+      description: raw['description'] as String,
+      questions: questions,
+    ));
+  }
+  return parsed;
+}
+
 const _uuid = Uuid();
 
 class TopicCatalog extends ChangeNotifier {
@@ -274,9 +334,15 @@ class TopicCatalog extends ChangeNotifier {
     return null;
   }
 
-  bool hasTitle(String title) => topics.any(
-    (topic) => topic.title.toLowerCase() == title.trim().toLowerCase(),
-  );
+  bool hasTitle(String title) => _visibleTopicByTitle(title) != null;
+
+  InterviewTopic? _visibleTopicByTitle(String title) {
+    final clean = title.trim().toLowerCase();
+    for (final topic in topics) {
+      if (topic.title.toLowerCase() == clean) return topic;
+    }
+    return null;
+  }
 
   Set<String> get knownQuestionIds => {
     for (final topic in topics) ...[
@@ -494,58 +560,14 @@ class TopicCatalog extends ChangeNotifier {
   });
 
   Future<void> importJson(String source) async {
-    final dynamic decoded;
-    try {
-      decoded = jsonDecode(source);
-    } on FormatException {
-      throw const FormatException('Некорректный JSON');
-    }
-    if (decoded is! Map<String, dynamic> ||
-        decoded['version'] != 1 ||
-        decoded['topics'] is! List ||
-        (decoded['topics'] as List).isEmpty) {
-      throw const FormatException(
-        'Ожидается объект version: 1 с непустым topics',
-      );
-    }
-    final imported = <InterviewTopic>[];
-    for (final raw in decoded['topics'] as List) {
-      if (raw is! Map<String, dynamic> ||
-          raw['title'] is! String ||
-          (raw['title'] as String).trim().isEmpty ||
-          raw['description'] is! String ||
-          raw['questions'] is! List ||
-          (raw['questions'] as List).isEmpty) {
-        throw const FormatException('Некорректная тема');
-      }
-      final questions = <InterviewQuestion>[];
-      for (final q in raw['questions'] as List) {
-        if (q is! Map<String, dynamic> ||
-            q['prompt'] is! String ||
-            (q['prompt'] as String).trim().isEmpty ||
-            q['answer'] is! String ||
-            (q['answer'] as String).trim().isEmpty) {
-          throw const FormatException(
-            'Каждый вопрос должен иметь prompt и answer',
-          );
-        }
-        questions.add(
-          InterviewQuestion(
-            _uuid.v4(),
-            (q['prompt'] as String).trim(),
-            (q['answer'] as String).trim(),
-          ),
-        );
-      }
-      imported.add(
-        InterviewTopic(
-          _uuid.v4(),
-          (raw['title'] as String).trim(),
-          raw['description'] as String,
-          questions,
-        ),
-      );
-    }
+    final parsedTopics = _parseImportTopics(source);
+    final imported = [
+      for (final parsed in parsedTopics)
+        InterviewTopic(_uuid.v4(), parsed.title, parsed.description, [
+          for (final (prompt, answer) in parsed.questions)
+            InterviewQuestion(_uuid.v4(), prompt, answer),
+        ]),
+    ];
     final repository = _userTopics;
     final overrides = CatalogOverrides(
       deletedQuestionIds: {
@@ -564,6 +586,23 @@ class TopicCatalog extends ChangeNotifier {
     _extraQuestions.clear();
     _overrides = overrides;
     notifyListeners();
+  }
+
+  /// Adds topics from an import payload without replacing existing data:
+  /// topics matching a visible topic by title (trimmed, case-insensitive)
+  /// get their questions appended; other topics are created as user topics.
+  /// Extras, overrides, built-in topics and existing IDs stay untouched.
+  /// The whole payload is validated before any change is applied.
+  Future<void> addJson(String source) async {
+    final parsedTopics = _parseImportTopics(source);
+    for (final parsed in parsedTopics) {
+      final existing = _visibleTopicByTitle(parsed.title);
+      if (existing == null) {
+        await addUserTopic(parsed.title, parsed.description, parsed.questions);
+      } else {
+        await addQuestionsToTopic(existing.id, parsed.questions);
+      }
+    }
   }
 
   Future<void> reset() async {
