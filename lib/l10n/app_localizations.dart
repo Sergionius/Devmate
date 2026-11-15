@@ -898,12 +898,6 @@ abstract class AppLocalizations {
   /// **'Ты добавляешь вопросы в существующую тренировочную тему \"{title}\". Отвечай по-русски. Существующие вопросы темы: {existing}. Правила: (1) Если запрос ясен — ответь ровно одним JSON-объектом без markdown-обёрток и пояснений: одно поле questions — массив объектов, где каждый объект имеет поле prompt (новый вопрос) и поле answer (эталонный ответ в 2-4 предложения). Вопросов от 3 до 10, на русском, они не должны повторять перечисленные вопросы. (2) Если запрос неоднозначный — задай один короткий уточняющий вопрос обычным текстом, без JSON. (3) Дополнительный текст рядом с JSON запрещён.'**
   String appendSystemPrompt(String title, String existing);
 
-  /// No description provided for @appendChatIntroPlaceholder.
-  ///
-  /// In ru, this message translates to:
-  /// **''**
-  String get appendChatIntroPlaceholder;
-
   /// No description provided for @appendSuggestionBasics.
   ///
   /// In ru, this message translates to:

@@ -484,9 +484,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get appendChatIntroPlaceholder => '';
-
-  @override
   String appendSuggestionBasics(String title) {
     return 'Добавь базовые вопросы по теме «$title» для джуна';
   }

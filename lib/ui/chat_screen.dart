@@ -8,6 +8,7 @@ import '../data/llm_settings.dart';
 import '../data/topic_catalog.dart';
 import '../data/topic_draft.dart';
 import '../l10n/l10n.dart';
+import 'chat_view_model.dart';
 import 'design_system.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -25,7 +26,6 @@ class ChatScreen extends StatefulWidget {
 
   final String title;
   final String systemPrompt;
-  final String intro;
   final LlmSettingsRepository settingsRepository;
 
   /// Задан только в чатах работы с темами: после ответа модели код ищет
@@ -40,162 +40,74 @@ class ChatScreen extends StatefulWidget {
   /// вопроса (JSON action=update_answer).
   final String? editQuestionId;
   final List<String> suggestions;
+  final String intro;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  late Future<LlmSettings> _settingsFuture;
-  OpenAiCompatibleProvider? _provider;
-  final List<LlmChatMessage> _messages = [];
   final TextEditingController _input = TextEditingController();
   final FocusNode _inputFocus = FocusNode();
-  bool _streaming = false;
-  TopicDraft? _draft;
-  AnswerUpdate? _answerUpdate;
-  bool _draftSaving = false;
+  late final ChatViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _settingsFuture = widget.settingsRepository.load();
+    // Логика чата живёт во ViewModel — как раньше тут жил провайдер.
+    _viewModel = ChatViewModel(
+      settingsRepository: widget.settingsRepository,
+      systemPrompt: widget.systemPrompt,
+      catalog: widget.catalog,
+      appendToTopic: widget.appendToTopic,
+      editQuestionId: widget.editQuestionId,
+    )..loadSettings();
   }
 
   Future<void> _openSettings() async {
     await context.push('/settings');
     if (!mounted) return;
-    setState(() {
-      _provider = null;
-      _messages.clear();
-      _settingsFuture = widget.settingsRepository.load();
-    });
+    await _viewModel.reloadSettings();
   }
 
-  Future<void> _send(String text) async {
-    text = text.trim();
-    if (text.isEmpty || _streaming || _provider == null) return;
-    setState(() {
-      _messages
-        ..add(LlmChatMessage(LlmRole.user, text))
-        ..add(LlmChatMessage(LlmRole.assistant, ''));
-      _input.clear();
-      _streaming = true;
-    });
-    try {
-      await for (final chunk in _provider!.sendMessageStream(text)) {
-        if (!mounted) return;
-        setState(() => _messages.last.text += chunk);
-      }
-      // Провайдер не отдаёт ошибку чанком: локализуем её по errorKind.
-      final failureKind = _provider!.history.last.errorKind;
-      if (failureKind != null && mounted) {
-        setState(() {
-          final last = _messages.last;
-          last.text = last.text.isEmpty
-              ? context.llmErrorText(failureKind)
-              : '${last.text}\n\n${context.llmErrorText(failureKind)}';
-        });
-      }
-      // В чатах работы с темами ищем JSON в ответе модели.
-      final catalog = widget.catalog;
-      final isQuestionEdit = widget.editQuestionId != null;
-      if (catalog == null || !mounted) return;
-
-      final update = isQuestionEdit
-          ? parseAnswerUpdate(_provider!.history.last.text)
-          : null;
-      if (update != null) {
-        setState(() {
-          _answerUpdate = update;
-          _draft = null;
-        });
-        return;
-      }
-      if (isQuestionEdit) return;
-
-      final draft = parseTopicDraft(_provider!.history.last.text);
-      if (draft == null) {
-        // Уточняющий ответ: убираем карточку от прошлого хода, если была.
-        if (_draft != null) setState(() => _draft = null);
-        return;
-      }
-      final isAppend = widget.appendToTopic != null;
-      if (isAppend || draft.title != null) {
-        setState(() => _draft = draft);
-      }
-    } finally {
-      if (mounted) setState(() => _streaming = false);
-    }
-  }
-
-  Future<void> _applyDraft(TopicCatalog catalog) async {
-    final draft = _draft;
-    final appendTo = widget.appendToTopic;
-    if (draft == null || _draftSaving) return;
-    setState(() => _draftSaving = true);
-    final l10n = context.l10n;
-    final String success;
-    try {
-      if (appendTo != null) {
-        final title = _topicTitle(context);
-        await catalog.addQuestionsToTopic(appendTo, draft.questions);
-        success = l10n.appendAddedSuccess(title);
-      } else {
-        await catalog.addUserTopic(
-          draft.title!,
-          draft.description ?? '',
-          draft.questions,
-        );
-        success = l10n.createAddTopicSuccess;
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _draftSaving = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l10n.createSaveError)));
-      }
+  /// Точка входа для отправки из поля, кнопки и suggestions. Прежняя
+  /// семантика: поле очищается только когда сообщение реально ушло
+  /// (пустой текст, стрим или отсутствие сессии — не трогают поле).
+  void _sendFromInput(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty ||
+        _viewModel.streaming ||
+        _viewModel.session == null) {
       return;
     }
-    _draftSaving = false;
-    if (!mounted) return;
-    setState(() {
-      _draft = null;
-    });
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(success)));
+    _input.clear();
+    _viewModel.send(trimmed);
   }
 
-  Future<void> _replaceAnswer(String questionId) async {
-    final update = _answerUpdate;
-    if (update == null) return;
-    final catalog = widget.catalog!;
-    final l10n = context.l10n;
-    try {
-      await catalog.updateQuestion(questionId, update.prompt, update.answer);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l10n.createSaveError)));
-      }
-      return;
-    }
-    if (!mounted) return;
-    setState(() => _answerUpdate = null);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(l10n.answerReplaced)));
+  Future<void> _applyDraft() async {
+    final outcome = await _viewModel.applyDraft();
+    if (outcome == null || !mounted) return;
+    _showOutcomeSnackBar(outcome);
   }
 
-  String _topicTitle(BuildContext context) =>
-      widget.catalog?.topicById(widget.appendToTopic!)?.title ??
-      widget.appendToTopic!;
+  Future<void> _replaceAnswer() async {
+    final outcome = await _viewModel.replaceAnswer();
+    if (outcome == null || !mounted) return;
+    _showOutcomeSnackBar(outcome);
+  }
 
-  @override
-  void dispose() {
-    _input.dispose();
-    _inputFocus.dispose();
-    _provider?.dispose();
-    super.dispose();
+  void _showOutcomeSnackBar(ChatSaveOutcome outcome) {
+    final message = switch (outcome) {
+      ChatSaveOutcome.contentAdded =>
+        widget.appendToTopic == null
+            ? context.l10n.createAddTopicSuccess
+            : context.l10n.appendAddedSuccess(_viewModel.appendTopicTitle!),
+      ChatSaveOutcome.answerReplaced => context.l10n.answerReplaced,
+      ChatSaveOutcome.saveFailed => context.l10n.createSaveError,
+    };
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -211,55 +123,60 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ],
     ),
-    body: FutureBuilder<LlmSettings>(
-      future: _settingsFuture,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                context.l10n.chatSettingsReadError('${snapshot.error}'),
-                textAlign: TextAlign.center,
+    body: ListenableBuilder(
+      listenable: _viewModel,
+      builder: (context, _) => switch (_viewModel.settingsPhase) {
+        ChatSettingsPhase.loading => const Center(
+          child: CircularProgressIndicator(),
+        ),
+        ChatSettingsPhase.error => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              context.l10n.chatSettingsReadError(
+                '${_viewModel.settingsError}',
               ),
+              textAlign: TextAlign.center,
             ),
-          );
-        }
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final settings = snapshot.data!;
-        if (!settings.isConfigured) return _buildNotConfigured();
-        _provider ??= OpenAiCompatibleProvider(
-          settings: settings,
-          systemPrompt: widget.systemPrompt,
-        );
-        return SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              Expanded(child: _messages.isEmpty ? _buildEmpty() : _buildList()),
-              if (_answerUpdate != null && widget.editQuestionId != null)
-                _AnswerUpdateCard(
-                  update: _answerUpdate!,
-                  onApply: () => _replaceAnswer(widget.editQuestionId!),
-                ),
-              if (_draft != null && widget.catalog != null)
-                _TopicDraftCard(
-                  draft: _draft!,
-                  saving: _draftSaving,
-                  appendTitle: widget.appendToTopic == null
-                      ? null
-                      : _topicTitle(context),
-                  onAdd: () => _applyDraft(widget.catalog!),
-                ),
-              _buildInput(),
-            ],
           ),
-        );
+        ),
+        ChatSettingsPhase.ready => _buildChat(),
       },
     ),
   );
+
+  Widget _buildChat() {
+    final settings = _viewModel.settings!;
+    if (!settings.isConfigured) return _buildNotConfigured();
+    _viewModel.ensureSession();
+    return SafeArea(
+      top: false,
+      child: Column(
+        children: [
+          Expanded(
+            child: _viewModel.messages.isEmpty
+                ? _buildEmpty()
+                : _buildMessages(),
+          ),
+          if (_viewModel.answerUpdate != null && widget.editQuestionId != null)
+            _AnswerUpdateCard(
+              update: _viewModel.answerUpdate!,
+              onApply: _replaceAnswer,
+            ),
+          if (_viewModel.draft != null && widget.catalog != null)
+            _TopicDraftCard(
+              draft: _viewModel.draft!,
+              saving: _viewModel.draftSaving,
+              appendTitle: widget.appendToTopic == null
+                  ? null
+                  : _viewModel.appendTopicTitle,
+              onAdd: _applyDraft,
+            ),
+          _buildInput(),
+        ],
+      ),
+    );
+  }
 
   Widget _buildNotConfigured() => Center(
     child: Padding(
@@ -305,8 +222,8 @@ class _ChatScreenState extends State<ChatScreen> {
         for (final suggestion in widget.suggestions) ...[
           _SuggestionCard(
             text: suggestion,
-            onTap: () => _send(suggestion),
-            enabled: !_streaming,
+            onTap: () => _sendFromInput(suggestion),
+            enabled: !_viewModel.streaming,
           ),
           const SizedBox(height: 12),
         ],
@@ -314,16 +231,29 @@ class _ChatScreenState extends State<ChatScreen> {
     ],
   );
 
-  Widget _buildList() => ListView.builder(
-    reverse: true,
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-    itemCount: _messages.length,
-    itemBuilder: (context, index) {
-      final message = _messages[_messages.length - 1 - index];
-      final isLast = index == 0;
-      return _Bubble(message: message, streaming: isLast && _streaming);
-    },
-  );
+  Widget _buildMessages() {
+    final messages = _viewModel.messages;
+    return ListView.builder(
+      reverse: true,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        final message = messages[messages.length - 1 - index];
+        final isLast = index == 0;
+        final session = _viewModel.session;
+        if (!isLast || session == null) {
+          return _Bubble(message: message, streaming: false);
+        }
+        // Последний ответ слушает сессию напрямую: на каждый чанк
+        // перестраивается только этот пузырь, не весь список.
+        return AnimatedBuilder(
+          animation: session,
+          builder: (context, _) =>
+              _Bubble(message: message, streaming: _viewModel.streaming),
+        );
+      },
+    );
+  }
 
   Widget _buildInput() => Padding(
     padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
@@ -345,8 +275,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 minLines: 1,
                 maxLines: 5,
                 textInputAction: TextInputAction.send,
-                onSubmitted: _send,
-                enabled: !_streaming,
+                onSubmitted: _sendFromInput,
+                enabled: !_viewModel.streaming,
                 style: const TextStyle(
                   color: DevmateColors.primary,
                   fontSize: 16,
@@ -369,10 +299,21 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
         const SizedBox(width: 10),
-        _SendButton(onPressed: () => _send(_input.text), enabled: !_streaming),
+        _SendButton(
+          onPressed: () => _sendFromInput(_input.text),
+          enabled: !_viewModel.streaming,
+        ),
       ],
     ),
   );
+
+  @override
+  void dispose() {
+    _input.dispose();
+    _inputFocus.dispose();
+    _viewModel.dispose();
+    super.dispose();
+  }
 }
 
 class _SuggestionCard extends StatelessWidget {
@@ -448,7 +389,17 @@ class _Bubble extends StatelessWidget {
   }
 
   Widget _assistantBody(BuildContext context) {
-    final text = message.text;
+    // Текст ошибки не вшивается в сообщение, а вычисляется при рендере:
+    // история сессии остаётся чистой для повторных запросов.
+    final errorKind = message.errorKind;
+    final errorText = errorKind == null
+        ? null
+        : context.llmErrorText(errorKind);
+    final text = errorText == null
+        ? message.text
+        : message.text.isEmpty
+        ? errorText
+        : '${message.text}\n\n$errorText';
     if (text.isEmpty && streaming) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 4),
