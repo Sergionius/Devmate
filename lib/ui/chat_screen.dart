@@ -42,7 +42,6 @@ class ChatScreen extends StatefulWidget {
   final List<String> suggestions;
   final String intro;
 
-  /// Подменяет фабрику сессии чата; используется в тестах.
   final ChatSession Function(LlmSettings settings, String systemPrompt)?
   sessionFactory;
 
@@ -170,8 +169,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final settings = _viewModel.settings!;
     if (!settings.isConfigured) return _buildNotConfigured();
     _viewModel.ensureSession();
-    // Единая с чат-потоком ширина контента: на широких экранах (web,
-    // десктоп) колонка центрируется и не растягивается на весь экран.
     return SafeArea(
       top: false,
       child: Center(
@@ -286,8 +283,6 @@ class _ChatScreenState extends State<ChatScreen> {
       children: [
         Expanded(
           child: Container(
-            // Обводка рисуется самим контейнером: клип по тому же радиусу
-            // срезает внешнюю половину штриха, и рамка «пропадает» по краям.
             decoration: BoxDecoration(
               color: context.colors.surface,
               border: Border.all(color: context.colors.border),
@@ -312,8 +307,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   height: 1.4,
                 ),
                 decoration: InputDecoration(
-                  // Заливка из глобальной темы закрасила бы углы поля
-                  // квадратом поверх скруглённого контейнера.
                   filled: false,
                   hintText: context.l10n.chatInputHint,
                   hintStyle: TextStyle(color: context.colors.muted),
@@ -398,8 +391,6 @@ class _Bubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         constraints: BoxConstraints(
-          // Ограничение по ширине экрана, но не шире читаемой колонки на
-          // широких экранах.
           maxWidth: math.min(
             MediaQuery.of(context).size.width * (isUser ? 0.82 : 0.94),
             620,
@@ -444,8 +435,6 @@ class _Bubble extends StatelessWidget {
         ? '$errorText$detailSuffix'
         : '${message.text}\n\n$errorText$detailSuffix';
     if (text.isEmpty && streaming) {
-      // Ожидание первого фрагмента ответа: индикатор UI kit вместо
-      // Material-спиннера.
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: DevmateDotsLoader(dotSize: 7),
@@ -693,8 +682,6 @@ class _SendButton extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: DevmatePressable(
-        // Отправка сообщения — подтверждённое действие; лёгкий haptic,
-        // disabled-кнопка не вибрирует.
         haptic: DevmateHapticImpact.light,
         borderRadius: BorderRadius.circular(24),
         enabled: enabled,

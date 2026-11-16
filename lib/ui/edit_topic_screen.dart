@@ -191,8 +191,6 @@ class _EditTopicScreenState extends State<EditTopicScreen> {
     );
   }
 
-  /// Сохраняет вопрос; возвращает текст ошибки для показа внутри формы
-  /// или null при успехе, чтобы введённый текст не терялся при ошибке.
   Future<String?> _saveQuestion(
     InterviewQuestion? existing,
     String prompt,
@@ -214,9 +212,6 @@ class _EditTopicScreenState extends State<EditTopicScreen> {
   }
 }
 
-/// Форма создания и редактирования вопроса внутри адаптивной модальной
-/// формы. Владеет своими контроллерами, поэтому валидация и ошибка
-/// сохранения не теряют введённый текст и не закрывают форму.
 class _QuestionForm extends StatefulWidget {
   const _QuestionForm({
     required this.initialPrompt,
@@ -228,11 +223,8 @@ class _QuestionForm extends StatefulWidget {
   final String initialPrompt;
   final String initialAnswer;
 
-  /// Автофокус в поле вопроса при создании; при редактировании не
-  /// выдергиваем клавиатуру.
   final bool autofocusPrompt;
 
-  /// Сохраняет вопрос; возвращает текст ошибки или null при успехе.
   final Future<String?> Function(String prompt, String answer) onSave;
 
   @override
@@ -380,8 +372,6 @@ class _EditableQuestionTile extends StatelessWidget {
       border: Border.all(color: context.colors.border),
       borderRadius: BorderRadius.circular(14),
     ),
-    // Материал-предок нужен ListTile'у; нажатие обрабатывает общий
-    // DevmatePressable (ripple на Android, мягкое выделение на iOS).
     child: Material(
       color: Colors.transparent,
       child: DevmatePressable(

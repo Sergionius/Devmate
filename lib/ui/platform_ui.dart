@@ -79,16 +79,6 @@ abstract final class DevmateHaptics {
 /// Haptic strength a [DevmatePressable] may request per user tap.
 enum DevmateHapticImpact { none, selection, light, medium }
 
-/// Подпись и placeholder поля ввода с учётом платформы.
-///
-/// На iOS/macOS плавающий Material label разрывает обводку outlined-поля
-/// (`OutlineInputBorder` вырезает в рамке зазор под label), поэтому там
-/// текст [label] показывается как hint внутри поля. Hint-виджет остаётся
-/// в дереве и у заполненного поля (скрывается только при отрисовке), так
-/// что текст подписи продолжает служить доступным именем поля для screen
-/// reader на всех состояниях — проверяется тестами `settings_screen_test`.
-/// Пример-подсказка [hint] и [alignLabelWithHint] применяются только
-/// вне Apple-платформ, где подпись остаётся плавающим label.
 InputDecoration devmateFieldDecoration(
   BuildContext context, {
   required String label,
@@ -601,7 +591,6 @@ Future<bool> showDevmateConfirm(
     context: context,
     barrierDismissible: true,
     builder: (dialogContext) => AlertDialog(
-      // Разумная ширина на web/планшетах; на телефонах не ощущается.
       constraints: const BoxConstraints(maxWidth: 600),
       title: Text(title),
       content: message == null ? null : Text(message),
@@ -628,12 +617,6 @@ Future<bool> showDevmateConfirm(
   return result ?? false;
 }
 
-/// Скрывает потомка, когда AI отключён в настройках ([aiDisabled] — общий
-/// нотифаер приложения); включённые AI-элементы реагируют
-/// на переключение мгновенно, без пересоздания экрана. Отступ сверху
-/// отделяет элемент от предыдущего и исчезает вместе с ним, чтобы на месте
-/// скрытых кнопок не оставались двойные зазоры. Без нотифаера (тесты)
-/// элемент всегда виден.
 class DevmateAiVisibility extends StatelessWidget {
   const DevmateAiVisibility({
     super.key,
@@ -644,7 +627,6 @@ class DevmateAiVisibility extends StatelessWidget {
 
   final ValueListenable<bool>? aiDisabled;
 
-  /// Отступ сверху, скрываемый вместе с элементом.
   final EdgeInsetsGeometry topGap;
 
   final Widget child;

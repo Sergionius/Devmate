@@ -134,55 +134,33 @@ void main() {
     expect(saved.toMap(), aiConfig.toMap());
   });
 
-  testWidgets(
-    'choosing codex preset persists codexDeviceCode auth mode on save',
-    (tester) async {
-      final storage = MemorySecureStorage();
-      final repo = LlmSettingsRepository(storage: storage);
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: AiSettingsScreen(settingsRepository: repo),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Android/web: у Base URL остаётся плавающий label.
-      expect(
-        tester
-            .widget<TextField>(find.byType(TextField).first)
-            .decoration!
-            .labelText,
-        'Base URL',
-      );
-
-      await tester.tap(find.byType(DropdownButtonFormField<LlmPreset>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('ChatGPT Codex (subscription)').last);
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // The Codex login card animates forever, so pumpAndSettle is not an
-      // option: drag until the Save button is visible.
-      await tester.scrollUntilVisible(
-        find.text('Save'),
-        120,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Save'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      final loaded = await repo.load();
-      expect(loaded.authMode, LlmAuthMode.codexDeviceCode);
-      expect(loaded.baseUrl, 'https://chatgpt.com/backend-api/codex');
-      expect(loaded.model, 'gpt-6-luna');
-    },
-  );
+  testWidgets('provider selection saves API-key settings', (tester) async {
+    final repo = LlmSettingsRepository(storage: MemorySecureStorage());
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AiSettingsScreen(settingsRepository: repo),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<LlmPreset>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OpenAI').last);
+    await tester.enterText(find.byType(TextField).last, 'test-key');
+    await tester.scrollUntilVisible(
+      find.text('Save'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final loaded = await repo.load();
+    expect(loaded.baseUrl, 'https://api.openai.com/v1');
+    expect(loaded.apiKey, 'test-key');
+    expect(find.text('ChatGPT Codex (subscription)'), findsNothing);
+  });
 
   testWidgets('iOS provider uses an action sheet and applies the preset', (
     tester,
@@ -207,7 +185,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(CupertinoActionSheet), findsNothing);
       final baseUrlField = tester.widget<TextField>(
-        // Порядок полей на этом экране фиксирован: Base URL — первое поле.
         find.byType(TextField).first,
       );
       expect(baseUrlField.controller!.text, 'https://api.openai.com/v1');
@@ -812,7 +789,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // По умолчанию AI включён: чекбокс снят, раздел провайдера виден.
     expect(find.text('Disable AI'), findsOneWidget);
     expect(find.text('AI provider'), findsOneWidget);
     expect(aiDisabled.value, isFalse);
@@ -820,13 +796,11 @@ void main() {
     await tester.tap(find.text('Disable AI'));
     await tester.pumpAndSettle();
 
-    // Раздел провайдера скрыт, выбор применён в нотифаер и сохранён.
     expect(aiDisabled.value, isTrue);
     expect(await appPreferences.loadAiDisabled(), isTrue);
     expect(find.text('AI provider'), findsNothing);
     expect(find.text('Questions and data'), findsOneWidget);
 
-    // Возврат к включённому состоянию возвращает раздел.
     await tester.tap(find.text('Disable AI'));
     await tester.pumpAndSettle();
     expect(aiDisabled.value, isFalse);

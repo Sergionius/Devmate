@@ -1,11 +1,5 @@
 import '../data/topic_draft.dart';
 
-/// Возвращает читаемое markdown-представление ответа модели вместо сырого JSON.
-///
-/// Markdown появляется, только если весь [text] — это один JSON-объект
-/// (черновик темы или обновление ответа), возможно обёрнутый в fenced-блок.
-/// Обычные текстовые ответы, а также проза с фрагментами JSON, возвращают
-/// `null`: их показывают как есть.
 String? replyPreviewMarkdown(String text) {
   var candidate = text.trim();
   final fenced = RegExp(
@@ -22,8 +16,6 @@ String? replyPreviewMarkdown(String text) {
   return null;
 }
 
-/// Форматирует [TopicDraft] в markdown: заголовок темы, описание и нумерованный
-/// список вопросов с эталонными ответами.
 String topicDraftPreviewMarkdown(TopicDraft draft) {
   final buffer = StringBuffer();
   final title = draft.title;
@@ -45,6 +37,5 @@ String topicDraftPreviewMarkdown(TopicDraft draft) {
   return buffer.toString().trim();
 }
 
-/// Форматирует [AnswerUpdate] в markdown: вопрос и предложенный новый ответ.
 String answerUpdatePreviewMarkdown(AnswerUpdate update) =>
     '**${update.prompt}**\n\n${update.answer}';

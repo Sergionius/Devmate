@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-import '../data/codex_chat_provider.dart';
-import '../data/codex_token_store.dart';
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
 import '../data/topic_catalog.dart';
@@ -22,17 +20,10 @@ class ChatViewModel extends ChangeNotifier {
     sessionFactory,
   }) : _sessionFactory =
            sessionFactory ??
-           ((settings, prompt) => switch (settings.authMode) {
-             LlmAuthMode.apiKey => OpenAiCompatibleProvider(
-               settings: settings,
-               systemPrompt: prompt,
-             ),
-             LlmAuthMode.codexDeviceCode => CodexChatProvider(
-               settings: settings,
-               codexAuth: CodexAuth.shared,
-               systemPrompt: prompt,
-             ),
-           });
+           ((settings, prompt) => OpenAiCompatibleProvider(
+             settings: settings,
+             systemPrompt: prompt,
+           ));
 
   final LlmSettingsRepository settingsRepository;
   final String systemPrompt;
@@ -84,7 +75,7 @@ class ChatViewModel extends ChangeNotifier {
     } catch (error) {
       _settingsError = error;
       _settingsPhase = ChatSettingsPhase.error;
-      debugPrint('ChatViewModel: загрузка настроек не удалась: $error');
+      debugPrint('ChatViewModel: failed to load settings: $error');
     } finally {
       _notify();
     }
@@ -140,7 +131,7 @@ class ChatViewModel extends ChangeNotifier {
     try {
       await for (final _ in session.sendMessageStream(text)) {}
     } catch (error) {
-      debugPrint('ChatViewModel: сбой потока ответа: $error');
+      debugPrint('ChatViewModel: response stream failed: $error');
     } finally {
       _streaming = false;
       _parseReplyActions();
@@ -192,7 +183,7 @@ class ChatViewModel extends ChangeNotifier {
       _draft = null;
       return ChatSaveOutcome.contentAdded;
     } catch (error) {
-      debugPrint('ChatViewModel: сохранение черновика не удалось: $error');
+      debugPrint('ChatViewModel: failed to save draft: $error');
       return ChatSaveOutcome.saveFailed;
     } finally {
       _draftSaving = false;
@@ -214,7 +205,7 @@ class ChatViewModel extends ChangeNotifier {
       _answerUpdate = null;
       return ChatSaveOutcome.answerReplaced;
     } catch (error) {
-      debugPrint('ChatViewModel: замена ответа не удалась: $error');
+      debugPrint('ChatViewModel: failed to replace answer: $error');
       return ChatSaveOutcome.saveFailed;
     } finally {
       _draftSaving = false;

@@ -488,6 +488,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get editTopicNameLabel => 'Название';
 
   @override
+  String get addTopicTitleRequired => 'Введите название темы.';
+
+  @override
   String get editTopicDescLabel => 'Описание';
 
   @override
@@ -651,58 +654,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get llmSubscriptionExpired =>
-      'Сессия подписки ChatGPT истекла — войдите заново в настройках.';
-
-  @override
-  String get codexLogin => 'Войти через ChatGPT';
-
-  @override
-  String get codexLogout => 'Выйти';
-
-  @override
-  String get codexLoginHint =>
-      'Откроется код подтверждения: введите его на странице auth.openai.com в браузере.';
-
-  @override
-  String get codexDeviceCodeLabel => 'Код подтверждения';
-
-  @override
-  String get codexOpenLoginPage => 'Открыть страницу входа';
-
-  @override
-  String get codexCopyCode => 'Скопировать код';
-
-  @override
-  String get codexCopied => 'Скопировано';
-
-  @override
-  String get codexWaitingApproval => 'Ожидаем подтверждение в браузере…';
-
-  @override
-  String get codexLoginSuccess => 'Подписка подключена ✓';
-
-  @override
-  String get codexLoginCancelled => 'Вход отменён';
-
-  @override
-  String codexLoginError(String error) {
-    return 'Не удалось выполнить вход: $error';
-  }
-
-  @override
-  String codexLoggedInUntil(String time) {
-    return 'Подписка подключена, обновится до $time';
-  }
-
-  @override
-  String get codexWebUnsupported =>
-      'Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере.';
-
-  @override
-  String get presetCodexLabel => 'ChatGPT Codex (подписка)';
-
-  @override
   String get presetZaiCodingLabel => 'z.ai GLM Coding (подписка)';
 
   @override
@@ -713,23 +664,4 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get presetCustomLabel => 'Свой endpoint';
-
-  @override
-  String get codexErrorNetwork =>
-      'Ошибка сети. Проверьте подключение к интернету.';
-
-  @override
-  String get codexErrorInvalidResponse =>
-      'Некорректный ответ сервера входа. Попробуйте позже.';
-
-  @override
-  String get codexErrorRejected => 'Код отклонён или истёк. Запросите новый.';
-
-  @override
-  String get codexErrorSessionExpired =>
-      'Вход отменён или время ожидания истекло.';
-
-  @override
-  String get codexErrorTimeout =>
-      'Превышено время ожидания подтверждения. Попробуйте ещё раз.';
 }

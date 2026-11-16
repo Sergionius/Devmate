@@ -95,8 +95,6 @@ void main() {
   ) async {
     await pumpPractice(tester, aiDisabled: ValueNotifier<bool>(true));
 
-    // Этап ответа: кнопки нет, и переход в чат недоступен даже после
-    // сравнения с эталоном.
     expect(find.text('Work through it with AI'), findsNothing);
 
     await tester.enterText(find.byKey(const Key('answer-field')), 'My answer');

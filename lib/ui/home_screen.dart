@@ -35,7 +35,6 @@ class HomeScreen extends StatefulWidget {
   final TopicCatalog catalog;
   final LlmSettingsRepository settingsRepository;
 
-  /// Глобальное отключение AI: скрывает карточки чатов на главной.
   final ValueListenable<bool>? aiDisabled;
 
   @override
@@ -60,8 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListenableBuilder(
-          // AI-нотифаер в merge: переключение в настройках мгновенно
-          // убирает или возвращает карточки чатов на открытой главной.
           listenable: Listenable.merge([
             widget.viewModel,
             widget.catalog,
@@ -93,7 +90,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             LayoutBuilder(
                               builder: (context, constraints) {
                                 final intro = _Intro(
-                                  onStart: () => _continue(context),
+                                  onStart: total == 0
+                                      ? null
+                                      : () => _continue(context),
                                 );
                                 final progress = _ProgressPanel(
                                   completed: widget.viewModel.completed,
@@ -199,14 +198,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ? 2
                                 : 1;
                             return SliverGrid.builder(
-                              itemCount: widget.catalog.topics.length,
+                              itemCount: widget.catalog.topics.length + 1,
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: columns,
                                     mainAxisSpacing: DevmateSpacing.md,
                                     crossAxisSpacing: DevmateSpacing.md,
-                                    // Высота плитки масштабируется вместе с
-                                    // текстом, чтобы контент не переполнялся.
                                     mainAxisExtent:
                                         146 *
                                         MediaQuery.textScalerOf(context)
@@ -214,6 +211,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                             .clamp(1, 2),
                                   ),
                               itemBuilder: (context, index) {
+                                if (index == widget.catalog.topics.length) {
+                                  return _AddTopicTile(onTap: _addTopic);
+                                }
                                 final topic = widget.catalog.topics[index];
                                 return _TopicTile(
                                   topic: topic,
@@ -240,6 +240,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _addTopic() async {
+    final topic = await showDevmateForm<InterviewTopic>(
+      context: context,
+      title: context.l10n.createAddTopic,
+      builder: (_) => _NewTopicForm(catalog: widget.catalog),
+    );
+    if (!mounted || topic == null) return;
+    context.push('/topic/${topic.id}/edit');
+  }
+
   void _continue(BuildContext context) {
     for (final topic in widget.catalog.topics) {
       final next = topic.questions.indexWhere(
@@ -250,8 +260,12 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
     }
-    final topic = widget.catalog.topics.first;
-    context.push('/topic/${topic.id}/practice/0');
+    for (final topic in widget.catalog.topics) {
+      if (topic.questions.isNotEmpty) {
+        context.push('/topic/${topic.id}/practice/0');
+        return;
+      }
+    }
   }
 }
 
@@ -283,8 +297,6 @@ class _BrandHeader extends StatelessWidget {
       const Spacer(),
       Icon(Icons.wifi_off_rounded, size: 15, color: context.colors.muted),
       const SizedBox(width: 6),
-      // Бейдж сжимается и многоточится при крупных шрифтах, чтобы шапка
-      // не переполнялась на узких экранах.
       Flexible(
         child: Text(
           context.l10n.offlineBadge,
@@ -314,7 +326,7 @@ class _BrandHeader extends StatelessWidget {
 
 class _Intro extends StatelessWidget {
   const _Intro({required this.onStart});
-  final VoidCallback onStart;
+  final VoidCallback? onStart;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -371,8 +383,6 @@ class _ProgressPanel extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Крупное число сжимается (FittedBox) при увеличенном тексте,
-            // чтобы строка статистики не переполнялась.
             Flexible(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -417,7 +427,7 @@ class _ProgressPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        ProgressTrack(value: completed / total),
+        ProgressTrack(value: total == 0 ? 0 : completed / total),
         const SizedBox(height: 10),
         Text(
           context.l10n.statsCompletedLabel,
@@ -548,6 +558,170 @@ class _CreateTopicCard extends StatelessWidget {
   );
 }
 
+class _AddTopicTile extends StatelessWidget {
+  const _AddTopicTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: context.colors.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: DevmateRadii.cardBorder,
+      side: BorderSide(color: context.colors.border),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: DevmatePressable(
+      borderRadius: DevmateRadii.cardBorder,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(DevmateSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.add_circle_outline_rounded,
+              color: context.colors.accent,
+            ),
+            const Spacer(),
+            Text(
+              context.l10n.createAddTopic,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const Spacer(),
+            Icon(Icons.arrow_outward_rounded, color: context.colors.muted),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _NewTopicForm extends StatefulWidget {
+  const _NewTopicForm({required this.catalog});
+
+  final TopicCatalog catalog;
+
+  @override
+  State<_NewTopicForm> createState() => _NewTopicFormState();
+}
+
+class _NewTopicFormState extends State<_NewTopicForm> {
+  final _title = TextEditingController();
+  final _description = TextEditingController();
+  String? _error;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _description.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    if (_title.text.trim().isEmpty) {
+      setState(() => _error = context.l10n.addTopicTitleRequired);
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final topic = await widget.catalog.addUserTopic(
+        _title.text,
+        _description.text,
+        [],
+      );
+      if (mounted) Navigator.pop(context, topic);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = context.l10n.createSaveError;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _title,
+          autofocus: true,
+          enabled: !_saving,
+          textInputAction: TextInputAction.next,
+          style: TextStyle(color: context.colors.primary),
+          decoration: devmateFieldDecoration(
+            context,
+            label: l10n.editTopicNameLabel,
+          ),
+        ),
+        const SizedBox(height: DevmateSpacing.md),
+        TextField(
+          controller: _description,
+          enabled: !_saving,
+          maxLines: 2,
+          style: TextStyle(color: context.colors.primary),
+          decoration: devmateFieldDecoration(
+            context,
+            label: l10n.editTopicDescLabel,
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: DevmateSpacing.sm),
+          Text(
+            _error!,
+            style: TextStyle(
+              color: context.colors.error,
+              fontSize: 14,
+              height: 1.45,
+            ),
+          ),
+        ],
+        const SizedBox(height: DevmateSpacing.lg),
+        if (!kIsWeb && Theme.of(context).platform == TargetPlatform.iOS)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Text(l10n.createAddTopic),
+              ),
+              const SizedBox(height: DevmateSpacing.sm),
+              TextButton(
+                onPressed: _saving ? null : () => Navigator.pop(context),
+                child: Text(l10n.cancelAction),
+              ),
+            ],
+          )
+        else
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: DevmateSpacing.sm,
+            children: [
+              TextButton(
+                onPressed: _saving ? null : () => Navigator.pop(context),
+                child: Text(l10n.cancelAction),
+              ),
+              FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Text(l10n.createAddTopic),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
 class _TopicTile extends StatelessWidget {
   const _TopicTile({
     required this.topic,
@@ -616,7 +790,9 @@ class _TopicTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: ProgressTrack(
-                    value: completed / topic.questions.length,
+                    value: topic.questions.isEmpty
+                        ? 0
+                        : completed / topic.questions.length,
                   ),
                 ),
                 const SizedBox(width: DevmateSpacing.lg),

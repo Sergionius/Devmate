@@ -6,6 +6,7 @@ assets/data/questions_en.json (en); after editing run:
 """
 
 import json
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -96,6 +97,7 @@ def main() -> None:
         "}\n"
     )
     TARGET.write_text(content, encoding="utf-8")
+    subprocess.run(["dart", "format", str(TARGET)], check=True)
     print(
         f"Wrote {TARGET.relative_to(ROOT)}:"
         f" {len(data_by_locale['ru']['topics'])} topics,"

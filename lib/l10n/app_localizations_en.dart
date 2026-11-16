@@ -481,6 +481,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editTopicNameLabel => 'Title';
 
   @override
+  String get addTopicTitleRequired => 'Enter a topic title.';
+
+  @override
   String get editTopicDescLabel => 'Description';
 
   @override
@@ -641,58 +644,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get llmSubscriptionExpired =>
-      'The ChatGPT subscription session expired — sign in again in settings.';
-
-  @override
-  String get codexLogin => 'Sign in with ChatGPT';
-
-  @override
-  String get codexLogout => 'Sign out';
-
-  @override
-  String get codexLoginHint =>
-      'A confirmation code will appear — enter it at auth.openai.com in your browser.';
-
-  @override
-  String get codexDeviceCodeLabel => 'Confirmation code';
-
-  @override
-  String get codexOpenLoginPage => 'Open the sign-in page';
-
-  @override
-  String get codexCopyCode => 'Copy code';
-
-  @override
-  String get codexCopied => 'Copied';
-
-  @override
-  String get codexWaitingApproval => 'Waiting for confirmation in the browser…';
-
-  @override
-  String get codexLoginSuccess => 'Subscription connected ✓';
-
-  @override
-  String get codexLoginCancelled => 'Sign-in cancelled';
-
-  @override
-  String codexLoginError(String error) {
-    return 'Sign-in failed: $error';
-  }
-
-  @override
-  String codexLoggedInUntil(String time) {
-    return 'Subscription connected, renews until $time';
-  }
-
-  @override
-  String get codexWebUnsupported =>
-      'ChatGPT sign-in is available only in the app (iOS/Android), not in the browser.';
-
-  @override
-  String get presetCodexLabel => 'ChatGPT Codex (subscription)';
-
-  @override
   String get presetZaiCodingLabel => 'z.ai GLM Coding (subscription)';
 
   @override
@@ -703,23 +654,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get presetCustomLabel => 'Custom endpoint';
-
-  @override
-  String get codexErrorNetwork =>
-      'Network error. Check your internet connection.';
-
-  @override
-  String get codexErrorInvalidResponse =>
-      'Invalid response from the sign-in server. Try again later.';
-
-  @override
-  String get codexErrorRejected =>
-      'The code was rejected or expired. Request a new one.';
-
-  @override
-  String get codexErrorSessionExpired => 'Sign-in was cancelled or timed out.';
-
-  @override
-  String get codexErrorTimeout =>
-      'Timed out waiting for confirmation. Try again.';
 }

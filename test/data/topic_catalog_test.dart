@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:devmate/data/question_catalog.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,8 +36,157 @@ class MemoryUserTopics implements UserTopicsRepository {
   }
 }
 
+class FailingUserTopics extends MemoryUserTopics {
+  bool fail = true;
+
+  void _check() {
+    if (fail) throw StateError('Storage unavailable');
+  }
+
+  @override
+  Future<void> save(List<Map<String, dynamic>> topics) async {
+    _check();
+    await super.save(topics);
+  }
+
+  @override
+  Future<void> saveExtra(Map<String, List<Map<String, dynamic>>> extra) async {
+    _check();
+    await super.saveExtra(extra);
+  }
+
+  @override
+  Future<void> saveOverrides(Map<String, dynamic> overrides) async {
+    _check();
+    await super.saveOverrides(overrides);
+  }
+}
+
+class PausedUserTopics extends MemoryUserTopics {
+  final gate = Completer<void>();
+  final started = Completer<void>();
+
+  @override
+  Future<void> save(List<Map<String, dynamic>> topics) async {
+    if (topics.isNotEmpty && !gate.isCompleted) {
+      if (!started.isCompleted) started.complete();
+      await gate.future;
+    }
+    await super.save(topics);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('reset waits for an in-flight topic save', () async {
+    final repo = PausedUserTopics();
+    final catalog = TopicCatalog(userTopicsRepository: repo, baseTopics: []);
+    final adding = catalog.addUserTopic('Temporary', '', []);
+    await repo.started.future;
+    final resetting = catalog.reset();
+    repo.gate.complete();
+    await Future.wait([adding, resetting]);
+    expect(catalog.topics, isEmpty);
+    expect(repo.stored, isEmpty);
+  });
+
+  test('empty manual topic survives reload and JSON export/import', () async {
+    final repo = MemoryUserTopics();
+    final catalog = TopicCatalog(userTopicsRepository: repo);
+    final added = await catalog.addUserTopic(
+      'Empty',
+      'Add questions later',
+      [],
+    );
+    final reloaded = TopicCatalog(userTopicsRepository: repo);
+    await reloaded.load();
+    expect(reloaded.topicById(added.id)?.questions, isEmpty);
+    final imported = TopicCatalog();
+    await imported.importJson(reloaded.exportJson());
+    expect(imported.topics.last.title, 'Empty');
+    expect(imported.topics.last.questions, isEmpty);
+  });
+
+  test('parallel topic creations retain both saved topics', () async {
+    final repo = MemoryUserTopics();
+    final catalog = TopicCatalog(userTopicsRepository: repo);
+    await Future.wait([
+      catalog.addUserTopic('First', '', []),
+      catalog.addUserTopic('Second', '', []),
+    ]);
+    expect(repo.stored.map((topic) => topic['title']), ['First', 'Second']);
+    final reloaded = TopicCatalog(userTopicsRepository: repo);
+    await reloaded.load();
+    expect(reloaded.hasTitle('First'), isTrue);
+    expect(reloaded.hasTitle('Second'), isTrue);
+  });
+
+  test('failed writes do not change the visible catalog', () async {
+    final repo = FailingUserTopics();
+    final catalog = TopicCatalog(userTopicsRepository: repo);
+    final original = catalog.topics.first;
+    await expectLater(catalog.addUserTopic('New', '', []), throwsStateError);
+    expect(catalog.hasTitle('New'), isFalse);
+    await expectLater(
+      catalog.addQuestionsToTopic(original.id, [('New?', 'Answer')]),
+      throwsStateError,
+    );
+    expect(
+      catalog.topicById(original.id)!.questions.length,
+      original.questions.length,
+    );
+    await expectLater(
+      catalog.updateTopicMeta(original.id, 'Changed', ''),
+      throwsStateError,
+    );
+    expect(catalog.topicById(original.id)!.title, original.title);
+    await expectLater(
+      catalog.updateQuestion(original.questions.first.id, 'Changed?', 'Answer'),
+      throwsStateError,
+    );
+    expect(
+      catalog.topicById(original.id)!.questions.first.prompt,
+      original.questions.first.prompt,
+    );
+    await expectLater(
+      catalog.deleteQuestion(original.questions.first.id),
+      throwsStateError,
+    );
+    expect(
+      catalog.topicById(original.id)!.questions.length,
+      original.questions.length,
+    );
+
+    repo.fail = false;
+    final userTopic = await catalog.addUserTopic('Own', '', [
+      ('Own?', 'Answer'),
+    ]);
+    repo.fail = true;
+    await expectLater(
+      catalog.addQuestionsToTopic(userTopic.id, [('Extra?', 'Answer')]),
+      throwsStateError,
+    );
+    await expectLater(
+      catalog.updateQuestion(
+        userTopic.questions.first.id,
+        'Changed?',
+        'Answer',
+      ),
+      throwsStateError,
+    );
+    await expectLater(
+      catalog.deleteQuestion(userTopic.questions.first.id),
+      throwsStateError,
+    );
+    await expectLater(
+      catalog.updateTopicMeta(userTopic.id, 'Renamed', ''),
+      throwsStateError,
+    );
+    expect(catalog.topicById(userTopic.id)!.title, 'Own');
+    expect(catalog.topicById(userTopic.id)!.questions.single.prompt, 'Own?');
+    expect(repo.stored.single['title'], 'Own');
+  });
 
   test(
     'English catalog mirrors Russian ids for stable progress and overrides',

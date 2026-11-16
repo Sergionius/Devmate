@@ -21,9 +21,8 @@ You will get a response within a few business days. Once a fix is released, cred
 
 Devmate is a client-only Flutter app: it has no backend of its own, and AI requests go directly from the device to the provider the user configured. Areas that are in scope for security reports:
 
-- storage of API keys and ChatGPT tokens (`flutter_secure_storage` integration, `lib/data/llm_settings.dart`, `lib/data/codex_token_store.dart`),
-- the ChatGPT device-code sign-in flow (`lib/data/codex_auth.dart`),
+- storage of API keys (`flutter_secure_storage` integration, `lib/data/llm_settings.dart`),
 - parsing of untrusted JSON during topic import/export (`lib/data/topic_catalog.dart`, `lib/data/topic_draft.dart`),
-- loading of `assets/config/.env` and key handling on Web (`flutter_secure_storage` uses WebCrypto/LocalStorage in the browser).
+- key handling on Web (`flutter_secure_storage` uses WebCrypto/LocalStorage in the browser); app builds must not include credentials.
 
 Out of scope: provider-side issues (for example, missing CORS headers on a third-party API), and anything requiring a malicious user to already have full access to the device.

@@ -22,7 +22,6 @@ class TopicScreen extends StatefulWidget {
   final TrainingViewModel viewModel;
   final TopicCatalog catalog;
 
-  /// Глобальное отключение AI: скрывает кнопки чатов по теме.
   final ValueListenable<bool>? aiDisabled;
 
   @override
@@ -105,41 +104,45 @@ class _TopicScreenState extends State<TopicScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    widget.topic.title,
+                    topic.title,
                     style: Theme.of(context).textTheme.headlineLarge,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    widget.topic.description,
+                    topic.description,
                     style: Theme.of(context).textTheme.bodyLarge
                         ?.copyWith(color: context.colors.muted),
                   ),
                   const SizedBox(height: 24),
                   ProgressTrack(
-                    value:
-                        widget.viewModel.completedIn(widget.topic) /
-                        widget.topic.questions.length,
+                    value: topic.questions.isEmpty
+                        ? 0
+                        : widget.viewModel.completedIn(topic) /
+                              topic.questions.length,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     context.l10n.topicProgress(
-                      widget.viewModel.completedIn(widget.topic),
-                      widget.topic.questions.length,
+                      widget.viewModel.completedIn(topic),
+                      topic.questions.length,
                     ),
                     style: TextStyle(color: context.colors.muted, fontSize: 13),
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
-                    onPressed: () {
-                      final next = widget.topic.questions.indexWhere(
-                        (q) => widget.viewModel.scoreFor(q) == null,
-                      );
-                      _openPractice(context, next < 0 ? 0 : next);
-                    },
+                    onPressed: topic.questions.isEmpty
+                        ? null
+                        : () {
+                            final next = topic.questions.indexWhere(
+                              (q) => widget.viewModel.scoreFor(q) == null,
+                            );
+                            _openPractice(context, next < 0 ? 0 : next);
+                          },
                     icon: const Icon(Icons.arrow_forward_rounded),
                     label: Text(
-                      widget.viewModel.completedIn(widget.topic) ==
-                              widget.topic.questions.length
+                      topic.questions.isNotEmpty &&
+                              widget.viewModel.completedIn(topic) ==
+                                  topic.questions.length
                           ? context.l10n.repeatTopic
                           : context.l10n.continueTraining,
                     ),
@@ -217,7 +220,7 @@ class _TopicScreenState extends State<TopicScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    widget.topic.questions[index].prompt,
+                                    topic.questions[index].prompt,
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,

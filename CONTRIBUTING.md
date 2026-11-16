@@ -28,7 +28,7 @@ flutter analyze
 flutter test
 ```
 
-The tests in `test/manual/` (`real_llm_smoke_test`, `real_topic_generation_test`) send real requests to an LLM provider. They are skipped automatically when `assets/config/.env` is absent, so plain `flutter test` stays green without any keys. To run them locally, copy `.env.example` to `assets/config/.env` and fill in your own values — **never commit that file**, it is excluded from Git.
+The tests in `test/manual/` (`real_llm_smoke_test`, `real_topic_generation_test`) send real requests to an LLM provider. They are skipped automatically when `assets/config/.env` is absent. To run them locally, copy `.env.example` to `assets/config/.env` and fill in your own values — **never commit that file**, it is excluded from Git and is not bundled with the app. If the file is present, `flutter test` also runs these paid/metered requests; remove it or explicitly select the non-manual test paths for offline checks.
 
 ## Working with content
 

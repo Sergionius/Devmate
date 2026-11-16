@@ -50,11 +50,6 @@ abstract final class DevmateColors {
   static const disabled = Color(0xFF647180);
 }
 
-/// Смысловая палитра одной темы: те же роли, что в сырой тёмной палитре
-/// [DevmateColors] (плюс производные оверлеи взаимодействия), но со
-/// значениями конкретной светлоты. Регистрируется в теме как
-/// [ThemeExtension]; в UI значения читаются через `context.colors`, поэтому
-/// экраны не зависят от конкретной темы и не дублируют сырые цвета.
 @immutable
 class DevmatePalette extends ThemeExtension<DevmatePalette> {
   const DevmatePalette({
@@ -76,55 +71,38 @@ class DevmatePalette extends ThemeExtension<DevmatePalette> {
     required this.focusRing,
   });
 
-  /// Фон экранов.
   final Color canvas;
 
-  /// Заливка карточек и полей ввода.
   final Color surface;
 
-  /// Приподнятые поверхности: бары, диалоги, уведомления.
   final Color surfaceRaised;
 
-  /// Линии, границы, разделители.
   final Color border;
 
-  /// Основной текст и иконки.
   final Color primary;
 
-  /// Вторичный текст и иконки.
   final Color muted;
 
-  /// Акцент: основные действия, успех, фокус.
   final Color accent;
 
-  /// Контент поверх заливки [accent].
   final Color accentInk;
 
-  /// Второй акцент: информация, подсказки стриминга.
   final Color lavender;
 
-  /// Ошибки и разрушительные действия.
   final Color error;
 
-  /// Контент поверх заливки [error].
   final Color onError;
 
-  /// Отключённый контент; используется вместе с [DevmateStates.disabledOpacity].
   final Color disabled;
 
-  /// Оверлей наведения (~8% основного чернила).
   final Color hoverOverlay;
 
-  /// Оверлей нажатия (~14% основного чернила).
   final Color pressedOverlay;
 
-  /// Оверлей клавиатурного фокуса (~25% акцента).
   final Color focusOverlay;
 
-  /// Сплошной цвет рамки фокуса (см. [DevmateStates.focusRingWidth]).
   final Color focusRing;
 
-  /// Действующая тёмная палитра — значения [DevmateColors], не меняются.
   static const DevmatePalette dark = DevmatePalette(
     canvas: DevmateColors.canvas,
     surface: DevmateColors.surface,
@@ -144,9 +122,6 @@ class DevmatePalette extends ThemeExtension<DevmatePalette> {
     focusRing: DevmateStates.focusRing,
   );
 
-  /// Светлая палитра: не инверсия тёмной, а спокойные светлые значения
-  /// тех же ролей. Салатовый акцент на белом теряется, поэтому акцентом
-  /// становится тёмный зелёный, а ink на нём — белый.
   static const DevmatePalette light = DevmatePalette(
     canvas: Color(0xFFF7F9F6),
     surface: Color(0xFFFFFFFF),
@@ -190,8 +165,6 @@ class DevmatePalette extends ThemeExtension<DevmatePalette> {
     );
   }
 
-  // Палитра неизменяема и заменяется целиком при смене темы, поэтому
-  // по-полярный copyWith не нужен.
   @override
   DevmatePalette copyWith() => this;
 
@@ -236,10 +209,6 @@ class DevmatePalette extends ThemeExtension<DevmatePalette> {
   );
 }
 
-/// Палитра активной темы: `context.colors.accent` и т.д. вместо сырых
-/// [DevmateColors], чтобы один и тот же виджет корректно выглядел в обеих
-/// темах. Если темы Devmate нет (голый MaterialApp в тестах/хостах),
-/// возвращается палитра по яркости активной темы.
 extension DevmatePaletteContext on BuildContext {
   DevmatePalette get colors {
     final theme = Theme.of(this);
@@ -315,11 +284,8 @@ abstract final class DevmateIndicators {
   static const double spinnerStroke = 2;
 }
 
-/// Тёмная тема продукта: значения [DevmateColors] и [DevmatePalette.dark]
-/// — неизменны с момента миграции на темы.
 ThemeData devmateTheme() => _devmateTheme(Brightness.dark);
 
-/// Светлая тема: те же компонентные формы, но палитра [DevmatePalette.light].
 ThemeData devmateLightTheme() => _devmateTheme(Brightness.light);
 
 ThemeData _devmateTheme(Brightness brightness) {
@@ -513,7 +479,6 @@ class Eyebrow extends StatelessWidget {
   const Eyebrow(this.label, {super.key, this.color});
   final String label;
 
-  /// Цвет подписи; по умолчанию — акцент текущей темы.
   final Color? color;
 
   @override

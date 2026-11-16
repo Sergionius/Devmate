@@ -926,6 +926,12 @@ abstract class AppLocalizations {
   /// **'Название'**
   String get editTopicNameLabel;
 
+  /// No description provided for @addTopicTitleRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите название темы.'**
+  String get addTopicTitleRequired;
+
   /// No description provided for @editTopicDescLabel.
   ///
   /// In ru, this message translates to:
@@ -1178,96 +1184,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, few{вопроса} many{вопросов} one{вопрос} other{вопроса}}'**
   String createAddedQuestionsSuffix(int count);
 
-  /// No description provided for @llmSubscriptionExpired.
-  ///
-  /// In ru, this message translates to:
-  /// **'Сессия подписки ChatGPT истекла — войдите заново в настройках.'**
-  String get llmSubscriptionExpired;
-
-  /// No description provided for @codexLogin.
-  ///
-  /// In ru, this message translates to:
-  /// **'Войти через ChatGPT'**
-  String get codexLogin;
-
-  /// No description provided for @codexLogout.
-  ///
-  /// In ru, this message translates to:
-  /// **'Выйти'**
-  String get codexLogout;
-
-  /// No description provided for @codexLoginHint.
-  ///
-  /// In ru, this message translates to:
-  /// **'Откроется код подтверждения: введите его на странице auth.openai.com в браузере.'**
-  String get codexLoginHint;
-
-  /// No description provided for @codexDeviceCodeLabel.
-  ///
-  /// In ru, this message translates to:
-  /// **'Код подтверждения'**
-  String get codexDeviceCodeLabel;
-
-  /// No description provided for @codexOpenLoginPage.
-  ///
-  /// In ru, this message translates to:
-  /// **'Открыть страницу входа'**
-  String get codexOpenLoginPage;
-
-  /// No description provided for @codexCopyCode.
-  ///
-  /// In ru, this message translates to:
-  /// **'Скопировать код'**
-  String get codexCopyCode;
-
-  /// No description provided for @codexCopied.
-  ///
-  /// In ru, this message translates to:
-  /// **'Скопировано'**
-  String get codexCopied;
-
-  /// No description provided for @codexWaitingApproval.
-  ///
-  /// In ru, this message translates to:
-  /// **'Ожидаем подтверждение в браузере…'**
-  String get codexWaitingApproval;
-
-  /// No description provided for @codexLoginSuccess.
-  ///
-  /// In ru, this message translates to:
-  /// **'Подписка подключена ✓'**
-  String get codexLoginSuccess;
-
-  /// No description provided for @codexLoginCancelled.
-  ///
-  /// In ru, this message translates to:
-  /// **'Вход отменён'**
-  String get codexLoginCancelled;
-
-  /// No description provided for @codexLoginError.
-  ///
-  /// In ru, this message translates to:
-  /// **'Не удалось выполнить вход: {error}'**
-  String codexLoginError(String error);
-
-  /// No description provided for @codexLoggedInUntil.
-  ///
-  /// In ru, this message translates to:
-  /// **'Подписка подключена, обновится до {time}'**
-  String codexLoggedInUntil(String time);
-
-  /// No description provided for @codexWebUnsupported.
-  ///
-  /// In ru, this message translates to:
-  /// **'Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере.'**
-  String get codexWebUnsupported;
-
-  /// No description provided for @presetCodexLabel.
-  ///
-  /// In ru, this message translates to:
-  /// **'ChatGPT Codex (подписка)'**
-  String get presetCodexLabel;
-
   /// No description provided for @presetZaiCodingLabel.
   ///
   /// In ru, this message translates to:
@@ -1291,36 +1207,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Свой endpoint'**
   String get presetCustomLabel;
-
-  /// No description provided for @codexErrorNetwork.
-  ///
-  /// In ru, this message translates to:
-  /// **'Ошибка сети. Проверьте подключение к интернету.'**
-  String get codexErrorNetwork;
-
-  /// No description provided for @codexErrorInvalidResponse.
-  ///
-  /// In ru, this message translates to:
-  /// **'Некорректный ответ сервера входа. Попробуйте позже.'**
-  String get codexErrorInvalidResponse;
-
-  /// No description provided for @codexErrorRejected.
-  ///
-  /// In ru, this message translates to:
-  /// **'Код отклонён или истёк. Запросите новый.'**
-  String get codexErrorRejected;
-
-  /// No description provided for @codexErrorSessionExpired.
-  ///
-  /// In ru, this message translates to:
-  /// **'Вход отменён или время ожидания истекло.'**
-  String get codexErrorSessionExpired;
-
-  /// No description provided for @codexErrorTimeout.
-  ///
-  /// In ru, this message translates to:
-  /// **'Превышено время ожидания подтверждения. Попробуйте ещё раз.'**
-  String get codexErrorTimeout;
 }
 
 class _AppLocalizationsDelegate
