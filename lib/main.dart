@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,35 +15,25 @@ import 'ui/training_view_model.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await dotenv.load(fileName: 'assets/config/.env');
-  } catch (_) {
-    dotenv.loadFromString(envString: '', isOptional: true);
-  }
   final llmSettings = LlmSettingsRepository();
   final appPreferences = AppPreferencesRepository();
-  // null — язык системы; иначе явный выбор пользователя из настроек.
-  // Сбой чтения не должен мешать старту приложения.
   AppLanguage savedLanguage = AppLanguage.system;
   try {
     savedLanguage = await appPreferences.loadLanguage();
   } catch (error) {
-    debugPrint('main: чтение сохранённого языка не удалось: $error');
+    debugPrint('main: failed to read saved language: $error');
   }
-  // Глобальное отключение AI: скрывает чаты и раздел провайдера.
   bool aiDisabled = false;
   try {
     aiDisabled = await appPreferences.loadAiDisabled();
   } catch (error) {
-    debugPrint('main: чтение отключения AI не удалось: $error');
+    debugPrint('main: failed to read AI-disabled setting: $error');
   }
-  // Режим темы: тёмная по умолчанию, светлая или как на устройстве.
-  // Сбой чтения не должен мешать старту приложения.
   AppThemePreference savedTheme = AppThemePreference.dark;
   try {
     savedTheme = await appPreferences.loadTheme();
   } catch (error) {
-    debugPrint('main: чтение сохранённой темы не удалось: $error');
+    debugPrint('main: failed to read saved theme: $error');
   }
   final catalogLanguage =
       savedLanguage.locale?.languageCode ??
@@ -95,13 +84,10 @@ class DevmateApp extends StatelessWidget {
   final GoRouter router;
   final Locale? locale;
 
-  /// Живой выбор языка из настроек; `null` в значении — язык системы.
   final ValueNotifier<Locale?>? appLocale;
 
-  /// Глобальное отключение AI: true — AI-кнопки скрыты по всему приложению.
   final ValueNotifier<bool>? aiDisabled;
 
-  /// Живой режим темы (тёмная/светлая/как на устройстве).
   final ValueNotifier<ThemeMode>? themeMode;
 
   final AppPreferencesRepository? appPreferences;
@@ -121,8 +107,6 @@ class DevmateApp extends StatelessWidget {
       );
     }
     if (modeNotifier != null) {
-      // Внешний слой слушает режим темы, внутренний — язык, чтобы оба
-      // переключения применялись мгновенно и независимо друг от друга.
       if (localeNotifier != null) {
         app = ValueListenableBuilder<ThemeMode>(
           valueListenable: modeNotifier,

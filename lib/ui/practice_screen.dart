@@ -22,7 +22,6 @@ class PracticeScreen extends StatefulWidget {
   final int initialIndex;
   final TrainingViewModel viewModel;
 
-  /// Глобальное отключение AI: скрывает кнопку разбора с AI.
   final ValueListenable<bool>? aiDisabled;
 
   @override

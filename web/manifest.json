@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#0D1323",
     "theme_color": "#0D1323",
-    "description": "Офлайн-тренажёр для подготовки к собеседованиям разработчиков.",
+    "description": "Offline technical interview practice for developers.",
         "prefer_related_applications": false,
     "icons": [
         {

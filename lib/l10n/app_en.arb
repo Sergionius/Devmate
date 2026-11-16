@@ -220,6 +220,7 @@
   "editTopicButton": "Edit",
   "editTopicTitle": "Edit topic",
   "editTopicNameLabel": "Title",
+  "addTopicTitleRequired": "Enter a topic title.",
   "editTopicDescLabel": "Description",
   "editSaveTopic": "Save topic",
   "editAddQuestion": "Add question",
@@ -314,42 +315,8 @@
       }
     }
   },
-  "llmSubscriptionExpired": "The ChatGPT subscription session expired — sign in again in settings.",
-  "codexLogin": "Sign in with ChatGPT",
-  "codexLogout": "Sign out",
-  "codexLoginHint": "A confirmation code will appear — enter it at auth.openai.com in your browser.",
-  "codexDeviceCodeLabel": "Confirmation code",
-  "codexOpenLoginPage": "Open the sign-in page",
-  "codexCopyCode": "Copy code",
-  "codexCopied": "Copied",
-  "codexWaitingApproval": "Waiting for confirmation in the browser…",
-  "codexLoginSuccess": "Subscription connected ✓",
-  "codexLoginCancelled": "Sign-in cancelled",
-  "codexLoginError": "Sign-in failed: {error}",
-  "@codexLoginError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "codexLoggedInUntil": "Subscription connected, renews until {time}",
-  "@codexLoggedInUntil": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "codexWebUnsupported": "ChatGPT sign-in is available only in the app (iOS/Android), not in the browser.",
-  "presetCodexLabel": "ChatGPT Codex (subscription)",
   "presetZaiCodingLabel": "z.ai GLM Coding (subscription)",
   "presetZaiLabel": "z.ai API (pay-as-you-go)",
   "presetOllamaLabel": "Ollama (local)",
-  "presetCustomLabel": "Custom endpoint",
-  "codexErrorNetwork": "Network error. Check your internet connection.",
-  "codexErrorInvalidResponse": "Invalid response from the sign-in server. Try again later.",
-  "codexErrorRejected": "The code was rejected or expired. Request a new one.",
-  "codexErrorSessionExpired": "Sign-in was cancelled or timed out.",
-  "codexErrorTimeout": "Timed out waiting for confirmation. Try again."
+  "presetCustomLabel": "Custom endpoint"
 }

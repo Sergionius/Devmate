@@ -206,7 +206,6 @@ InterviewTopic? userTopicFromJson(Map<String, dynamic> json) {
       })
       .whereType<InterviewQuestion>()
       .toList();
-  if (parsed.isEmpty) return null;
   return InterviewTopic(
     id,
     title,
@@ -254,14 +253,14 @@ List<_ParsedTopic> _parseImportTopics(String source) {
   try {
     decoded = jsonDecode(source);
   } on FormatException {
-    throw const FormatException('Некорректный JSON');
+    throw const FormatException('Invalid JSON');
   }
   if (decoded is! Map<String, dynamic> ||
       decoded['version'] != 1 ||
       decoded['topics'] is! List ||
       (decoded['topics'] as List).isEmpty) {
     throw const FormatException(
-      'Ожидается объект version: 1 с непустым topics',
+      'Expected version: 1 and a non-empty topics list',
     );
   }
   final parsed = <_ParsedTopic>[];
@@ -270,9 +269,8 @@ List<_ParsedTopic> _parseImportTopics(String source) {
         raw['title'] is! String ||
         (raw['title'] as String).trim().isEmpty ||
         raw['description'] is! String ||
-        raw['questions'] is! List ||
-        (raw['questions'] as List).isEmpty) {
-      throw const FormatException('Некорректная тема');
+        raw['questions'] is! List) {
+      throw const FormatException('Invalid topic');
     }
     final questions = <_ParsedQuestion>[];
     for (final q in raw['questions'] as List) {
@@ -282,7 +280,7 @@ List<_ParsedTopic> _parseImportTopics(String source) {
           q['answer'] is! String ||
           (q['answer'] as String).trim().isEmpty) {
         throw const FormatException(
-          'Каждый вопрос должен иметь prompt и answer',
+          'Each question must have a prompt and answer',
         );
       }
       questions.add((
@@ -313,6 +311,16 @@ class TopicCatalog extends ChangeNotifier {
   List<InterviewTopic> _userList = [];
   final Map<String, List<InterviewQuestion>> _extraQuestions = {};
   CatalogOverrides _overrides = CatalogOverrides();
+  Future<void> _pendingMutation = Future<void>.value();
+
+  Future<T> _enqueueMutation<T>(Future<T> Function() mutation) {
+    final result = _pendingMutation.then((_) => mutation());
+    _pendingMutation = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace stackTrace) {},
+    );
+    return result;
+  }
 
   List<InterviewTopic> get topics => [
     for (final topic in _baseTopics)
@@ -354,7 +362,7 @@ class TopicCatalog extends ChangeNotifier {
     String title,
     String description,
     List<(String prompt, String answer)> questions,
-  ) async {
+  ) => _enqueueMutation(() async {
     final uniqueTitle = _uniqueTitle(title);
     final topicId = _uuid.v4();
     final added = InterviewTopic(
@@ -366,19 +374,20 @@ class TopicCatalog extends ChangeNotifier {
           InterviewQuestion(_uuid.v4(), prompt, answer),
       ],
     );
-    _userList = [..._userList, added];
-    await _persistUserTopics();
+    final updated = [..._userList, added];
+    await _persistUserTopics(updated);
+    _userList = updated;
     notifyListeners();
     return added;
-  }
+  });
 
   Future<void> addQuestionsToTopic(
     String topicId,
     List<(String prompt, String answer)> questions,
-  ) async {
+  ) => _enqueueMutation(() async {
     final topic = topicById(topicId);
     if (topic == null) {
-      throw ArgumentError.value(topicId, 'topicId', 'Тема не найдена');
+      throw ArgumentError.value(topicId, 'topicId', 'Topic not found');
     }
     final appended = [
       for (final (prompt, answer) in questions)
@@ -386,30 +395,38 @@ class TopicCatalog extends ChangeNotifier {
     ];
     final index = _userList.indexWhere((t) => t.id == topicId);
     if (index >= 0) {
-      _userList[index] = InterviewTopic(
+      final updated = [..._userList];
+      updated[index] = InterviewTopic(
         topic.id,
         topic.title,
         topic.description,
         [...topic.questions, ...appended],
       );
-      await _persistUserTopics();
+      await _persistUserTopics(updated);
+      _userList = updated;
     } else {
-      _extraQuestions[topicId] = [...?_extraQuestions[topicId], ...appended];
-      await _persistExtraQuestions();
+      final updated = {
+        ..._extraQuestions,
+        topicId: [...?_extraQuestions[topicId], ...appended],
+      };
+      await _persistExtraQuestions(updated);
+      _extraQuestions
+        ..clear()
+        ..addAll(updated);
     }
     notifyListeners();
-  }
+  });
 
   Future<void> updateQuestion(
     String questionId,
     String prompt,
     String answer,
-  ) async {
+  ) => _enqueueMutation(() async {
     final question = topicById(_questionOwner(questionId))?.questions
         .where((q) => q.id == questionId)
         .firstOrNull;
     if (question == null) {
-      throw ArgumentError.value(questionId, 'questionId', 'Вопрос не найден');
+      throw ArgumentError.value(questionId, 'questionId', 'Question not found');
     }
     final trimmedPrompt = prompt.trim();
     final trimmedAnswer = answer.trim();
@@ -417,18 +434,21 @@ class TopicCatalog extends ChangeNotifier {
       (topic) => topic.questions.every((q) => q.id != questionId),
     );
     if (isBuiltin) {
+      final updated = CatalogOverrides.fromJson(_overrides.toJson());
       if (_matchesBuiltin(questionId, trimmedPrompt, trimmedAnswer)) {
-        _overrides.questionEdits.remove(questionId);
+        updated.questionEdits.remove(questionId);
       } else {
-        _overrides.questionEdits[questionId] = (trimmedPrompt, trimmedAnswer);
+        updated.questionEdits[questionId] = (trimmedPrompt, trimmedAnswer);
       }
-      await _persistOverrides();
+      await _persistOverrides(updated);
+      _overrides = updated;
     } else {
       final index = _userList.indexWhere(
         (topic) => topic.questions.any((q) => q.id == questionId),
       );
       final stored = _userList[index];
-      _userList[index] = InterviewTopic(
+      final updated = [..._userList];
+      updated[index] = InterviewTopic(
         stored.id,
         stored.title,
         stored.description,
@@ -439,10 +459,11 @@ class TopicCatalog extends ChangeNotifier {
                 : q,
         ],
       );
-      await _persistUserTopics();
+      await _persistUserTopics(updated);
+      _userList = updated;
     }
     notifyListeners();
-  }
+  });
 
   bool _matchesBuiltin(String questionId, String prompt, String answer) {
     for (final topic in _baseTopics) {
@@ -455,19 +476,22 @@ class TopicCatalog extends ChangeNotifier {
     return false;
   }
 
-  Future<void> deleteQuestion(String questionId) async {
+  Future<void> deleteQuestion(String questionId) => _enqueueMutation(() async {
     final isBuiltin = _userList.every(
       (topic) => topic.questions.every((q) => q.id != questionId),
     );
     if (isBuiltin) {
-      _overrides.deletedQuestionIds.add(questionId);
-      await _persistOverrides();
+      final updated = CatalogOverrides.fromJson(_overrides.toJson());
+      updated.deletedQuestionIds.add(questionId);
+      await _persistOverrides(updated);
+      _overrides = updated;
     } else {
       final index = _userList.indexWhere(
         (topic) => topic.questions.any((q) => q.id == questionId),
       );
       final stored = _userList[index];
-      _userList[index] = InterviewTopic(
+      final updated = [..._userList];
+      updated[index] = InterviewTopic(
         stored.id,
         stored.title,
         stored.description,
@@ -476,32 +500,37 @@ class TopicCatalog extends ChangeNotifier {
             if (q.id != questionId) q,
         ],
       );
-      await _persistUserTopics();
+      await _persistUserTopics(updated);
+      _userList = updated;
     }
     notifyListeners();
-  }
+  });
 
   Future<void> updateTopicMeta(
     String topicId,
     String title,
     String description,
-  ) async {
+  ) => _enqueueMutation(() async {
     final index = _userList.indexWhere((t) => t.id == topicId);
     if (index >= 0) {
       final stored = _userList[index];
-      _userList[index] = InterviewTopic(
+      final updated = [..._userList];
+      updated[index] = InterviewTopic(
         stored.id,
         title.trim(),
         description.trim(),
         stored.questions,
       );
-      await _persistUserTopics();
+      await _persistUserTopics(updated);
+      _userList = updated;
     } else {
-      _overrides.topicEdits[topicId] = (title.trim(), description.trim());
-      await _persistOverrides();
+      final updated = CatalogOverrides.fromJson(_overrides.toJson());
+      updated.topicEdits[topicId] = (title.trim(), description.trim());
+      await _persistOverrides(updated);
+      _overrides = updated;
     }
     notifyListeners();
-  }
+  });
 
   String _uniqueTitle(String title) {
     final clean = title.trim();
@@ -529,29 +558,29 @@ class TopicCatalog extends ChangeNotifier {
     ]);
   }
 
-  Future<void> _persistUserTopics() async {
+  Future<void> _persistUserTopics(List<InterviewTopic> topics) async {
     final repository = _userTopics;
     if (repository == null) return;
-    await repository.save([
-      for (final topic in _userList) userTopicToJson(topic),
-    ]);
+    await repository.save([for (final topic in topics) userTopicToJson(topic)]);
   }
 
-  Future<void> _persistExtraQuestions() async {
+  Future<void> _persistExtraQuestions(
+    Map<String, List<InterviewQuestion>> extraQuestions,
+  ) async {
     final repository = _userTopics;
     if (repository == null) return;
     await repository.saveExtra({
-      for (final entry in _extraQuestions.entries)
+      for (final entry in extraQuestions.entries)
         entry.key: [
           for (final question in entry.value) userQuestionToJson(question),
         ],
     });
   }
 
-  Future<void> _persistOverrides() async {
+  Future<void> _persistOverrides(CatalogOverrides overrides) async {
     final repository = _userTopics;
     if (repository == null) return;
-    await repository.saveOverrides(_overrides.toJson());
+    await repository.saveOverrides(overrides.toJson());
   }
 
   String exportJson() => const JsonEncoder.withIndent('  ').convert({
@@ -559,7 +588,7 @@ class TopicCatalog extends ChangeNotifier {
     'topics': [for (final topic in topics) userTopicToJson(topic)],
   });
 
-  Future<void> importJson(String source) async {
+  Future<void> importJson(String source) => _enqueueMutation(() async {
     final parsedTopics = _parseImportTopics(source);
     final imported = [
       for (final parsed in parsedTopics)
@@ -586,7 +615,7 @@ class TopicCatalog extends ChangeNotifier {
     _extraQuestions.clear();
     _overrides = overrides;
     notifyListeners();
-  }
+  });
 
   /// Adds topics from an import payload without replacing existing data:
   /// topics matching a visible topic by title (trimmed, case-insensitive)
@@ -605,7 +634,7 @@ class TopicCatalog extends ChangeNotifier {
     }
   }
 
-  Future<void> reset() async {
+  Future<void> reset() => _enqueueMutation(() async {
     final repository = _userTopics;
     if (repository != null) {
       await repository.saveOverrides({});
@@ -616,33 +645,35 @@ class TopicCatalog extends ChangeNotifier {
     _extraQuestions.clear();
     _overrides = CatalogOverrides();
     notifyListeners();
-  }
+  });
 
-  Future<void> load() async {
+  Future<void> load() => _enqueueMutation(() async {
     final repository = _userTopics;
     if (repository == null) return;
     try {
-      _userList = [
+      final loadedTopics = [
         for (final raw in await repository.load())
           if (userTopicFromJson(raw) case final InterviewTopic topic) topic,
       ];
+      final loadedExtra = {
+        for (final entry in (await repository.loadExtra()).entries)
+          entry.key: [
+            for (final question in entry.value)
+              if (userQuestionFromJson(question) case final InterviewQuestion q)
+                q,
+          ],
+      };
+      final loadedOverrides = CatalogOverrides.fromJson(
+        await repository.loadOverrides(),
+      );
+      _userList = loadedTopics;
       _extraQuestions
         ..clear()
-        ..addAll({
-          for (final entry in (await repository.loadExtra()).entries)
-            entry.key: [
-              for (final question in entry.value)
-                if (userQuestionFromJson(question)
-                    case final InterviewQuestion q)
-                  q,
-            ],
-        });
-      _overrides = CatalogOverrides.fromJson(await repository.loadOverrides());
+        ..addAll(loadedExtra);
+      _overrides = loadedOverrides;
+      notifyListeners();
     } on Exception {
-      _userList = [];
-      _extraQuestions.clear();
-      _overrides = CatalogOverrides();
+      // A read failure must not discard topics already loaded in memory.
     }
-    notifyListeners();
-  }
+  });
 }

@@ -252,7 +252,9 @@ GoRouter createRouter(
             path: 'practice/:index',
             builder: (context, state) {
               final topic = catalog.topicById(state.pathParameters['topicId']!);
-              if (topic == null) return const NotFoundScreen();
+              if (topic == null || topic.questions.isEmpty) {
+                return const NotFoundScreen();
+              }
               final index = int.tryParse(state.pathParameters['index']!) ?? 0;
               return PracticeScreen(
                 topic: topic,

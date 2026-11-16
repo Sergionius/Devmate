@@ -20,6 +20,40 @@ class _MemoryProgress implements ProgressRepository {
 }
 
 void main() {
+  testWidgets('empty topic updates when a question is added manually', (
+    tester,
+  ) async {
+    final catalog = TopicCatalog(baseTopics: []);
+    final topic = await catalog.addUserTopic('My topic', 'Description', []);
+    final model = TrainingViewModel(_MemoryProgress());
+    await model.load();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: TopicScreen(topic: topic, viewModel: model, catalog: catalog),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Repeat topic'), findsNothing);
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNull,
+    );
+
+    await catalog.addQuestionsToTopic(topic.id, [('First question', 'Answer')]);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('First question'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('First question'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('section reset requires confirmation and keeps other topics', (
     tester,
   ) async {

@@ -10,7 +10,7 @@ An offline trainer for technical interview prep. A Flutter app for iOS, Android,
 - Questions are bundled with the app — no account or API required for offline practice. First-time loading of the Web build requires access to the hosted app.
 - Your own topics: create and edit topics by hand, save a topic the AI drafted in chat, or import topics as JSON (add or replace). Export copies the catalog to JSON; **Share instruction** gives your AI agent the exact JSON format to fill.
 - Interface language: system default, English, or Russian — switched in settings. The UI applies immediately; question content reloads on the next app start.
-- AI chat per topic and per question (optional): OpenAI-compatible APIs with streaming replies — presets for ChatGPT Codex (sign in with your ChatGPT subscription via a device code in the browser; iOS/Android only), z.ai GLM Coding (subscription), z.ai API, OpenAI, OpenRouter, DeepSeek, Groq, Ollama — plus a custom endpoint (BYOK). When the model returns a topic as JSON, the app detects it and offers to save it as your own. The chat is built on `openai_dart`; the conversation stays in memory only while its screen is open.
+- AI chat per topic and per question (optional): OpenAI-compatible APIs with streaming replies — presets for z.ai GLM Coding (subscription), z.ai API, OpenAI, OpenRouter, DeepSeek, Groq, Ollama — plus a custom endpoint (BYOK). When the model returns a topic as JSON, the app detects it and offers to save it as your own. The chat is built on `openai_dart`; the conversation stays in memory only while its screen is open.
 
 ## Getting started
 
@@ -29,15 +29,18 @@ Checks: `flutter analyze` and `flutter test`. Web build: `flutter build web`.
 
 On the home screen, open **AI settings**, pick a provider or enter your own OpenAI-compatible **Base URL**, model name, and API key. The "Test connection" button sends a short paid/metered request to the provider. Then open the AI chat from a topic or question screen. Requests go **directly** to the selected provider — Devmate has no server of its own. Settings are stored in `flutter_secure_storage` (iOS Keychain, Android encrypted storage, WebCrypto/LocalStorage in the current browser on web).
 
-Optional initial values can be supplied like this (note: it must be `assets/config/.env` — the app does not read a file placed in the project root):
+For a ready-to-use **local debug build**, copy the example and add your own provider credentials:
 
 ```sh
-cp .env.example assets/config/.env
-# Edit assets/config/.env
-flutter run
+cp config/local.example.json config/local.json
+# Edit config/local.json, then run on your device:
+flutter run -d ios --dart-define-from-file=config/local.json
+# Or: flutter run -d android --dart-define-from-file=config/local.json
 ```
 
-If the file is missing or empty, the app starts with empty settings. Saved settings take precedence over `.env`, including a deliberately cleared key. **Never commit `assets/config/.env`: it is excluded from Git. Do not put a real API key into `.env` for a distributable build — especially web: Flutter bundles the asset into the package where any user can read it.** The preferred flow is entering your personal key in the app on the device. Web requires HTTPS (or localhost) for WebCrypto and CORS headers from the API (see the table below); a server without CORS won't work in the browser without your own proxy. For a local HTTP API on Android, cleartext traffic may need to be enabled separately — this build does not enable it.
+`config/local.json` is Git-ignored. Debug builds read these compile-time defaults; any settings saved in the app take precedence, including an explicitly cleared key. To restore defaults after clearing settings, remove the saved app data. **Never pass this file to `flutter build`, a release build, or a distributable web build**: build-time defines are not a secret store. Release and profile builds ignore these defaults, but do not rely on that to sanitize a build made with credentials. For normal use, enter your key in the app instead. The app does not load or bundle `.env` files; `assets/config/.env` is used only by optional manual network tests and is excluded from Git and app assets.
+
+Web requires HTTPS (or localhost) for WebCrypto and CORS headers from the API (see the table below); a server without CORS won't work in the browser without your own proxy. For a local HTTP API on Android, cleartext traffic may need to be enabled separately — this build does not enable it.
 
 ### CORS on web
 

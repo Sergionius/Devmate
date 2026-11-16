@@ -22,8 +22,6 @@ class _EmptyProgress implements ProgressRepository {
 }
 
 void main() {
-  // Компактный телефон с увеличенным системным текстом: основные экраны
-  // не должны вызывать переполнений (RenderFlex overflow и т.п.).
   Future<void> pumpCompactAtLargerText(
     WidgetTester tester,
     Widget child,
@@ -111,9 +109,6 @@ void main() {
         ),
       ),
     );
-    // Карточки темы видимы и не переполняются при фиксированной высоте
-    // плитки, масштабируемой вместе с текстом; на крупном шрифте первая
-    // плитка уходит за первый экран, поэтому прокручиваем к ней.
     await tester.scrollUntilVisible(
       find.text(catalog.topics.first.title),
       200,

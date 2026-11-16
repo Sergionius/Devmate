@@ -18,13 +18,11 @@ extension LlmErrorText on BuildContext {
     LlmErrorKind.connection => l10n.llmConnectionError,
     LlmErrorKind.emptyTestResponse => l10n.llmTestEmptyResponse,
     LlmErrorKind.emptyReply => l10n.llmEmptyReply,
-    LlmErrorKind.subscriptionExpired => l10n.llmSubscriptionExpired,
   };
 }
 
 extension PresetLabel on BuildContext {
   String presetLabel(LlmPreset preset) => switch (preset.id) {
-    'codex' => l10n.presetCodexLabel,
     'zaiCoding' => l10n.presetZaiCodingLabel,
     'zai' => l10n.presetZaiLabel,
     'ollama' => l10n.presetOllamaLabel,

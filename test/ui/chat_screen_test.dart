@@ -227,19 +227,16 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 
-      // Пока первого фрагмента нет: индикатор UI kit, поле ввода отключено.
       expect(find.byType(DevmateDotsLoader), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
 
-      // Первый фрагмент пришёл: точки исчезли, текст стримится.
       session.release();
       await tester.pumpAndSettle();
       expect(find.byType(DevmateDotsLoader), findsNothing);
       expect(find.textContaining('partial'), findsOneWidget);
       expect(find.textContaining('answer'), findsOneWidget);
 
-      // Стриминг завершён: поле снова активно.
       expect(tester.widget<TextField>(find.byType(TextField)).enabled, isTrue);
     },
   );
@@ -262,7 +259,6 @@ class _SlowStartSession extends ChangeNotifier implements ChatSession {
       ..add(LlmChatMessage(LlmRole.user, prompt))
       ..add(LlmChatMessage(LlmRole.assistant, ''));
     notifyListeners();
-    // Пауза до первого фрагмента: экран показывает индикатор ожидания.
     _gate = Completer<void>();
     await _gate!.future;
     _history.last.text += 'partial ';

@@ -59,7 +59,6 @@ void main() {
     expect(palette.onError, Colors.white);
     expect(palette.focusRing, const Color(0xFF3D6B27));
 
-    // Компонентные роли тоже светлые: заливка полей и кнопки.
     expect(theme.scaffoldBackgroundColor, palette.canvas);
     expect(theme.inputDecorationTheme.fillColor, palette.surface);
     expect(theme.colorScheme.primary, palette.accent);

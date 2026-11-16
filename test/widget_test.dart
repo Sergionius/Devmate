@@ -23,6 +23,78 @@ class MemoryProgressRepository implements ProgressRepository {
 }
 
 void main() {
+  testWidgets('practice deep link for an empty topic shows not found', (
+    tester,
+  ) async {
+    final model = TrainingViewModel(MemoryProgressRepository());
+    await model.load();
+    final catalog = TopicCatalog(baseTopics: []);
+    final topic = await catalog.addUserTopic('Empty topic', '', []);
+    final app = DevmateApp(
+      viewModel: model,
+      llmSettings: LlmSettingsRepository(),
+      catalog: catalog,
+      locale: const Locale('en'),
+    );
+    await tester.pumpWidget(app);
+    app.router.go('/topic/${topic.id}/practice/0');
+    await tester.pumpAndSettle();
+    expect(find.text('This page does not exist.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('adds a topic manually as the last tile with AI disabled', (
+    tester,
+  ) async {
+    final model = TrainingViewModel(MemoryProgressRepository());
+    await model.load();
+    final catalog = TopicCatalog(baseTopics: questionCatalogFor('en'));
+    await tester.pumpWidget(
+      DevmateApp(
+        viewModel: model,
+        llmSettings: LlmSettingsRepository(),
+        catalog: catalog,
+        locale: const Locale('en'),
+        aiDisabled: ValueNotifier(true),
+      ),
+    );
+
+    final grid = tester.widget<SliverGrid>(find.byType(SliverGrid));
+    expect(grid.delegate.estimatedChildCount, catalog.topics.length + 1);
+    final scrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('Add topic'),
+      300,
+      scrollable: scrollable,
+    );
+    expect(find.text('Add topic'), findsOneWidget);
+    await tester.tap(find.text('Add topic'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add topic').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Enter a topic title.'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).first, 'My own topic');
+    await tester.enterText(find.byType(TextField).last, 'Practice without AI');
+    await tester.tap(find.text('Add topic').last);
+    await tester.pumpAndSettle();
+
+    expect(catalog.topics.last.title, 'My own topic');
+    expect(catalog.topics.last.questions, isEmpty);
+    expect(find.text('Edit topic'), findsOneWidget);
+    await tester.tap(find.text('Add question'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'A sample answer');
+    await tester.enterText(
+      find.byType(TextField).at(find.byType(TextField).evaluate().length - 2),
+      'A sample question',
+    );
+    await tester.tap(find.text('Save').last);
+    await tester.pumpAndSettle();
+    expect(catalog.topics.last.questions.single.prompt, 'A sample question');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('shows topics and completes the self-assessment flow', (
     tester,
   ) async {
@@ -149,7 +221,6 @@ void main() {
 
     themeMode.value = ThemeMode.system;
     await tester.pumpAndSettle();
-    // Тестовый стенд по умолчанию «светлое устройство» — system даёт светлую.
     expect(Theme.of(context).brightness, Brightness.light);
   });
 }

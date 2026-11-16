@@ -58,8 +58,6 @@ enum LlmErrorKind {
   connection,
   emptyTestResponse,
   emptyReply,
-
-  subscriptionExpired,
 }
 
 const List<String> _quotaMarkers = [
@@ -132,7 +130,7 @@ String? llmErrorDetail(Object error) {
 String _truncate(String text) =>
     text.length > 300 ? '${text.substring(0, 300)}…' : text;
 
-const String llmTestPrompt = 'Ответь одним словом: ок';
+const String llmTestPrompt = 'Reply with one word: ok';
 
 Future<LlmErrorKind?> testLlmConnection(LlmSettings settings) async {
   try {
@@ -180,7 +178,7 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
 
   @override
   Stream<String> sendMessageStream(String prompt) {
-    assert(_controller == null, 'Одновременные стримы не поддерживаются');
+    assert(_controller == null, 'Concurrent streams are not supported');
     late final StreamController<String> controller;
     var received = false;
     late final LlmChatMessage assistant;

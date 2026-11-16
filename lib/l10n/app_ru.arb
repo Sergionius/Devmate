@@ -221,6 +221,7 @@
   "editTopicButton": "Редактировать",
   "editTopicTitle": "Редактирование темы",
   "editTopicNameLabel": "Название",
+  "addTopicTitleRequired": "Введите название темы.",
   "editTopicDescLabel": "Описание",
   "editSaveTopic": "Сохранить тему",
   "editAddQuestion": "Добавить вопрос",
@@ -315,42 +316,8 @@
       }
     }
   },
-  "llmSubscriptionExpired": "Сессия подписки ChatGPT истекла — войдите заново в настройках.",
-  "codexLogin": "Войти через ChatGPT",
-  "codexLogout": "Выйти",
-  "codexLoginHint": "Откроется код подтверждения: введите его на странице auth.openai.com в браузере.",
-  "codexDeviceCodeLabel": "Код подтверждения",
-  "codexOpenLoginPage": "Открыть страницу входа",
-  "codexCopyCode": "Скопировать код",
-  "codexCopied": "Скопировано",
-  "codexWaitingApproval": "Ожидаем подтверждение в браузере…",
-  "codexLoginSuccess": "Подписка подключена ✓",
-  "codexLoginCancelled": "Вход отменён",
-  "codexLoginError": "Не удалось выполнить вход: {error}",
-  "@codexLoginError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "codexLoggedInUntil": "Подписка подключена, обновится до {time}",
-  "@codexLoggedInUntil": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "codexWebUnsupported": "Вход через ChatGPT доступен только в приложении (iOS/Android), не в браузере.",
-  "presetCodexLabel": "ChatGPT Codex (подписка)",
   "presetZaiCodingLabel": "z.ai GLM Coding (подписка)",
   "presetZaiLabel": "z.ai API (оплата за токены)",
   "presetOllamaLabel": "Ollama (локально)",
-  "presetCustomLabel": "Свой endpoint",
-  "codexErrorNetwork": "Ошибка сети. Проверьте подключение к интернету.",
-  "codexErrorInvalidResponse": "Некорректный ответ сервера входа. Попробуйте позже.",
-  "codexErrorRejected": "Код отклонён или истёк. Запросите новый.",
-  "codexErrorSessionExpired": "Вход отменён или время ожидания истекло.",
-  "codexErrorTimeout": "Превышено время ожидания подтверждения. Попробуйте ещё раз."
+  "presetCustomLabel": "Свой endpoint"
 }
