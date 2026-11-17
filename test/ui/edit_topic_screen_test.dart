@@ -3,9 +3,9 @@ import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/ui/design_system.dart';
 import 'package:devmate/ui/edit_topic_screen.dart';
 import 'package:devmate/ui/platform_ui.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

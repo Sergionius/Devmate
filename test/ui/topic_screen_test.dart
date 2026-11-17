@@ -4,7 +4,7 @@ import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/ui/topic_screen.dart';
 import 'package:devmate/ui/training_view_model.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _MemoryProgress implements ProgressRepository {
