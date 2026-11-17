@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+// flutter_markdown_plus requires Flutter's ThemeData, not material_ui.ThemeData.
+// ignore: deprecated_member_use
+import 'package:flutter/material.dart' as flutter_material;
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:go_router/go_router.dart';
@@ -461,7 +464,7 @@ class _Bubble extends StatelessWidget {
   }
 
   MarkdownStyleSheet _assistantMarkdownStyle(BuildContext context) =>
-      MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+      MarkdownStyleSheet.fromTheme(flutter_material.Theme.of(context)).copyWith(
         p: TextStyle(
           color: context.colors.primary,
           fontSize: 15.5,

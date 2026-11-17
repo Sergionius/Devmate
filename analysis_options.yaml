@@ -15,6 +15,9 @@ analyzer:
     - android/**
     - ios/**
     - web/**
+    # Flutter gen-l10n regenerates this file with deprecated Flutter delegates.
+    # Keep deprecation checks enabled for all handwritten application code.
+    - lib/l10n/app_localizations.dart
 
 linter:
   # The lint rules applied to this project can be customized in the

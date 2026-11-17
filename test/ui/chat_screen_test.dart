@@ -10,7 +10,7 @@ import 'package:devmate/router.dart';
 import 'package:devmate/ui/chat_screen.dart';
 import 'package:devmate/ui/design_system.dart';
 import 'package:devmate/ui/training_view_model.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
