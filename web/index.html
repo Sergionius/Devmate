@@ -63,6 +63,13 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    // Telegram puts launch data in the URL fragment. Its SDK reads it above;
+    // clear it before Flutter's default hash router treats it as an app route.
+    if (/^#(?:\/?\?)?tgWebApp[A-Za-z]*=/.test(location.hash)) {
+      history.replaceState(history.state, '', location.pathname + location.search);
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
