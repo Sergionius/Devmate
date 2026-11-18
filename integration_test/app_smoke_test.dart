@@ -7,7 +7,7 @@ import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/main.dart';
 import 'package:devmate/ui/practice_screen.dart';
 import 'package:devmate/ui/training_view_model.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,9 +42,27 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Home shows the library with built-in topics.
-    expect(find.text('Pick a topic'), findsOneWidget);
-    await tester.tap(find.text('Frontend'));
+    // Home shows the library with built-in topics (the section eyebrow is
+    // rendered uppercase).
+    await _waitFor(
+      tester,
+      () => find.text('PICK A TOPIC').evaluate().isNotEmpty,
+    );
+    // Diagnostics for CI: dump what is actually on screen if the wait
+    // succeeded or not — makes the first failing run interpretable.
+    final screenTexts = find
+        .byType(Text)
+        .evaluate()
+        .take(60)
+        .map((element) {
+          final widget = element.widget as Text;
+          return widget.data ?? widget.textSpan?.toPlainText() ?? '<rich>';
+        })
+        .join(' | ');
+    // ignore: avoid_print
+    print('HOME TEXTS: $screenTexts');
+    expect(find.text('PICK A TOPIC'), findsOneWidget);
+    await tester.tap(find.text('Frontend').first);
     await tester.pumpAndSettle();
 
     // Topic screen → the first unanswered question.

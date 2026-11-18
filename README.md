@@ -1,6 +1,12 @@
 # Devmate
 
+[![CI](https://github.com/Sergionius/Devmate/actions/workflows/ci.yml/badge.svg)](https://github.com/Sergionius/Devmate/actions/workflows/ci.yml)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-orange)](LICENSE)
+![Flutter](https://img.shields.io/badge/Flutter-3.50.0-blue)
+
 An offline trainer for technical interview prep. A Flutter app for iOS, Android, and Web.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the layer map and the decisions behind it.
 
 > The UI kit is built on [`material_ui`](https://pub.dev/packages/material_ui) and
 > [`cupertino_ui`](https://pub.dev/packages/cupertino_ui) — official packages from the
