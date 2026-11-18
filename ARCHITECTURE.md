@@ -96,11 +96,13 @@ better score for questions that already exist on the device.
 - `test/ui` — widget tests per screen and platform-adaptive behavior;
   `test/visual_test.dart` (repo test root) adds large-text and
   compact-viewport checks.
-- `integration_test/` — one end-to-end smoke (launch → practice → progress
-  saved) on an Android emulator in CI.
+- `integration_test/` — an end-to-end smoke (launch → practice → progress
+  saved), run locally against an emulator or device before releases and
+  dependency upgrades: `flutter test integration_test`.
 - CI (`.github/workflows/ci.yml`): format gate, `flutter analyze`, 194
-  tests with a coverage summary artifact, generated-catalog freshness check,
-  and the Android integration job.
+  tests with a coverage summary artifact, and a generated-catalog freshness
+  check. No emulator in CI by decision — the smoke test is a local
+  pre-release check (see docs/backlog/release-pipeline-and-changelog.md).
 
 ## Decisions
 

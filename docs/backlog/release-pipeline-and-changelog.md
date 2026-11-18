@@ -4,12 +4,17 @@ priority: p2
 where: integration_test/app_smoke_test.dart:1
 added: 2026-11-18
 ---
-# release workflow parked: smoke test needs local debugging
+# release workflow parked; smoke test is a local pre-release check
 
-The release workflow was removed from the repo on 2026-11-18 (owner call:
-CI must stay fast; the emulator pipeline burned 15–45 minutes per run and
-kept failing). Push CI (`.github/workflows/ci.yml`) is back to the fast
-green path: format gate, analyze, catalog freshness, 194 tests, coverage.
+Decision (owner, 2026-11-18): no emulator in CI at all — the emulator
+pipeline burned 15–45 minutes per run. Push CI
+(`.github/workflows/ci.yml`) is the fast green path: format gate, analyze,
+catalog freshness, 194 tests, coverage. `integration_test/` stays in the
+repo as a LOCAL pre-release check:
+
+    flutter test integration_test
+
+run against an emulator/device before releases and dependency upgrades.
 
 What was already learned and verified, so re-enabling is cheap:
 - The release pipeline itself works end to end: web build + APK build were
@@ -27,8 +32,9 @@ What was already learned and verified, so re-enabling is cheap:
   diagnosed. The test dumps visible texts (`HOME TEXTS: …`) into the log —
   the last attempt's diagnosis was cut short.
 
-Re-enable path: restore `release.yml` from commit 12fbcbc (+ the disk/KVM
-steps), run `flutter test integration_test` against a LOCAL Android
-emulator (or iOS simulator) until the assertions pass, then bring the
-workflow back — gate it on `workflow_dispatch` + `v*` tags only, never on
-push. CHANGELOG and the first `v1.0.0` tag remain part of this item.
+Re-enable path (owner-approved shape: Pages + APK in releases, no emulator
+gate): restore `release.yml` from commit 12fbcbc, drop the android-smoke
+job, keep build-web/build-android-apk/create-release, and add a
+GitHub Pages deploy job for the web build. Run the smoke test locally
+before tagging. CHANGELOG and the first `v1.0.0` tag remain part of this
+item.
