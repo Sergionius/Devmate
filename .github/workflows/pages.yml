@@ -1,0 +1,47 @@
+# Deploys the web build to GitHub Pages on every push to main.
+# Deep links (e.g. /Devmate/topic/frontend) work because index.html is
+# copied to 404.html: GitHub serves it on unknown paths, the app boots and
+# go_router restores the route from the URL.
+
+name: Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.50.0
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build web --base-href "/Devmate/"
+
+      - name: SPA fallback for deep links
+        run: cp build/web/index.html build/web/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
