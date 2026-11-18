@@ -101,8 +101,12 @@ better score for questions that already exist on the device.
   dependency upgrades: `flutter test integration_test`.
 - CI (`.github/workflows/ci.yml`): format gate, `flutter analyze`, 194
   tests with a coverage summary artifact, and a generated-catalog freshness
-  check. No emulator in CI by decision — the smoke test is a local
-  pre-release check (see docs/backlog/release-pipeline-and-changelog.md).
+  check. No emulator in CI by decision — the integration smoke
+  (`integration_test/`) is a local pre-release check.
+- Pages (`.github/workflows/pages.yml`): the web build deploys to
+  https://sergionius.github.io/Devmate/ on every push to main.
+- Release (`.github/workflows/release.yml`): a `v*` tag attaches a
+  debug-signed demo APK to a GitHub Release.
 
 ## Decisions
 
