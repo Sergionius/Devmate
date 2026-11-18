@@ -95,6 +95,52 @@ class AppLocalizationsRu extends AppLocalizations {
   String get shareFailed => 'Не удалось открыть меню «Поделиться»';
 
   @override
+  String get exportQuestionsFile => 'Экспорт в файл';
+
+  @override
+  String get importQuestionsFile => 'Импорт из файла';
+
+  @override
+  String get fileReadFailed => 'Не удалось прочитать файл';
+
+  @override
+  String get backupSectionTitle => 'Полный бэкап';
+
+  @override
+  String get backupHint =>
+      'Один JSON-файл со своими темами, прогрессом и настройками — удобно для переноса на другое устройство. API-ключи в файл не попадают. «Заменить всё» восстанавливает ровно то, что в файле. «Объединить» добавляет темы поверх текущих: уже существующие вопросы сохраняют лучший результат, а прогресс новых вопросов начинается заново; настройки не меняются.';
+
+  @override
+  String get exportBackup => 'Экспортировать всё';
+
+  @override
+  String get importBackup => 'Импортировать бэкап';
+
+  @override
+  String backupSummary(int topics, int answers) {
+    return 'Тем в файле: $topics, вопросов с отметками прогресса: $answers';
+  }
+
+  @override
+  String get backupMergeAction => 'Объединить';
+
+  @override
+  String get backupReplaceAction => 'Заменить всё';
+
+  @override
+  String get backupImportedReplace => 'Бэкап восстановлен';
+
+  @override
+  String get backupImportedMerge =>
+      'Темы добавлены. Лучший результат сохранён для уже существующих вопросов; прогресс новых вопросов начнётся заново';
+
+  @override
+  String get backupInvalid => 'Это не файл бэкапа Devmate';
+
+  @override
+  String get backupImportFailed => 'Не удалось восстановить бэкап';
+
+  @override
   String get pageNotFound => 'Такой страницы нет.';
 
   @override

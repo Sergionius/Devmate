@@ -1,6 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/llm_settings.dart';
 import '../data/topic_catalog.dart';
@@ -247,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (_) => _NewTopicForm(catalog: widget.catalog),
     );
     if (!mounted || topic == null) return;
-    context.push('/topic/${topic.id}/edit');
+    unawaited(context.push('/topic/${topic.id}/edit'));
   }
 
   void _continue(BuildContext context) {

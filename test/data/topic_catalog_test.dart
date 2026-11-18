@@ -660,4 +660,85 @@ void main() {
       expect(catalog.topics.where((t) => t.title == 'X'), isEmpty);
     },
   );
+
+  group('restoreJson', () {
+    const payload =
+        '{"version":1,"topics":[{'
+        '"id":"topic-1","title":"Docker","description":"Containers",'
+        '"questions":[{'
+        '"id":"q-image","prompt":"Image?","answer":"A template."'
+        '}]}]}';
+
+    test('preserves topic and question IDs so progress stays valid', () async {
+      final repo = MemoryUserTopics();
+      final catalog = TopicCatalog(userTopicsRepository: repo);
+      await catalog.load();
+      await catalog.restoreJson(payload);
+      final topic = catalog.topicById('topic-1');
+      expect(topic, isNotNull);
+      expect(topic!.title, 'Docker');
+      expect(topic.questions.single.id, 'q-image');
+      expect(catalog.knownQuestionIds, contains('q-image'));
+      // Built-in questions are hidden, only the restored topics remain.
+      expect(catalog.topics.length, 1);
+    });
+
+    test('persists IDs so a reload keeps them', () async {
+      final repo = MemoryUserTopics();
+      final catalog = TopicCatalog(userTopicsRepository: repo);
+      await catalog.load();
+      await catalog.restoreJson(payload);
+      final reloaded = TopicCatalog(userTopicsRepository: repo);
+      await reloaded.load();
+      expect(reloaded.topicById('topic-1')!.questions.single.id, 'q-image');
+    });
+
+    test('an empty topics list clears user topics', () async {
+      final repo = MemoryUserTopics();
+      final catalog = TopicCatalog(userTopicsRepository: repo);
+      await catalog.load();
+      await catalog.addUserTopic('Docker', '', [('Image?', 'A template.')]);
+      await catalog.restoreJson('{"version":1,"topics":[]}');
+      expect(catalog.topics.where((topic) => topic.title == 'Docker'), isEmpty);
+      expect(repo.stored, isEmpty);
+    });
+
+    test('rejects duplicate, empty or missing IDs without changes', () async {
+      final repo = MemoryUserTopics();
+      final catalog = TopicCatalog(userTopicsRepository: repo);
+      await catalog.load();
+      await catalog.restoreJson(payload);
+      final before = catalog.exportJson();
+      final beforeStored = List.of(repo.stored);
+
+      const duplicateTopic =
+          '{"version":1,"topics":['
+          '{"id":"t1","title":"A","description":"","questions":[]},'
+          '{"id":"t1","title":"B","description":"","questions":[]}]}';
+      const duplicateQuestion =
+          '{"version":1,"topics":['
+          '{"id":"t1","title":"A","description":"","questions":['
+          '{"id":"q1","prompt":"P","answer":"A"}]},'
+          '{"id":"t2","title":"B","description":"","questions":['
+          '{"id":"q1","prompt":"P","answer":"A"}]}]}';
+      const emptyId =
+          '{"version":1,"topics":['
+          '{"id":"","title":"A","description":"","questions":[]}]}';
+      const missingQuestionId =
+          '{"version":1,"topics":['
+          '{"id":"t1","title":"A","description":"","questions":['
+          '{"prompt":"P","answer":"A"}]}]}';
+
+      for (final source in [
+        duplicateTopic,
+        duplicateQuestion,
+        emptyId,
+        missingQuestionId,
+      ]) {
+        await expectLater(catalog.restoreJson(source), throwsFormatException);
+      }
+      expect(catalog.exportJson(), before);
+      expect(repo.stored, beforeStored);
+    });
+  });
 }

@@ -458,7 +458,9 @@ ThemeData _devmateTheme(Brightness brightness) {
       actionTextColor: palette.accent,
       closeIconColor: palette.muted,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(DevmateRadii.notice)),
+        borderRadius: const BorderRadius.all(
+          Radius.circular(DevmateRadii.notice),
+        ),
         side: BorderSide(color: palette.border),
       ),
     ),

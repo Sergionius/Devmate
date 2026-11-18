@@ -1,13 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
 // flutter_markdown_plus requires Flutter's ThemeData, not material_ui.ThemeData.
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart' as flutter_material;
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
@@ -217,7 +217,7 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(height: 16),
           Text(
             context.l10n.chatKeyRequired,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
           Text(

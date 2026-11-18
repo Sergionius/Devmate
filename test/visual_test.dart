@@ -1,6 +1,6 @@
 import 'package:devmate/data/llm_settings.dart';
-import 'package:devmate/data/question_catalog.dart';
 import 'package:devmate/data/progress_repository.dart';
+import 'package:devmate/data/question_catalog.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/ui/chat_screen.dart';
@@ -9,8 +9,8 @@ import 'package:devmate/ui/home_screen.dart';
 import 'package:devmate/ui/practice_screen.dart';
 import 'package:devmate/ui/topic_screen.dart';
 import 'package:devmate/ui/training_view_model.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'support/memory_secure_storage.dart';
 

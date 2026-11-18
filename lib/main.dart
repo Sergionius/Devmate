@@ -1,13 +1,15 @@
-import 'package:material_ui/material_ui.dart';
+import 'dart:async';
+
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'l10n/app_localizations.dart';
 import 'data/app_preferences.dart';
 import 'data/llm_settings.dart';
 import 'data/progress_repository.dart';
 import 'data/question_catalog.dart';
 import 'data/topic_catalog.dart';
+import 'l10n/app_localizations.dart';
 import 'router.dart';
 import 'ui/design_system.dart';
 import 'ui/training_view_model.dart';
@@ -46,10 +48,7 @@ Future<void> main() async {
   await catalog.load();
   runApp(
     DevmateApp(
-      viewModel: TrainingViewModel(
-        LocalProgressRepository(SharedPreferencesAsync()),
-        catalogRepository: catalog,
-      )..load(),
+      viewModel: _startTraining(catalog),
       llmSettings: llmSettings,
       catalog: catalog,
       appLocale: ValueNotifier<Locale?>(savedLanguage.locale),
@@ -58,6 +57,15 @@ Future<void> main() async {
       appPreferences: appPreferences,
     ),
   );
+}
+
+TrainingViewModel _startTraining(TopicCatalog catalog) {
+  final viewModel = TrainingViewModel(
+    LocalProgressRepository(SharedPreferencesAsync()),
+    catalogRepository: catalog,
+  );
+  unawaited(viewModel.load());
+  return viewModel;
 }
 
 class DevmateApp extends StatelessWidget {

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'design_system.dart';
 
@@ -255,7 +255,7 @@ void _dismissActiveBanner() {
 @visibleForTesting
 void debugResetDevmateNotifications() => _dismissActiveBanner();
 
-Future<void> showDevmateNotice(
+void showDevmateNotice(
   BuildContext context,
   String message, {
   DevmateNoticeKind kind = DevmateNoticeKind.info,
@@ -266,25 +266,24 @@ Future<void> showDevmateNotice(
   if (!_isAppleLike(context) && !_isWeb) {
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger != null) {
-      messenger
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            duration: effectiveDuration,
-            showCloseIcon: true,
-            content: Row(
-              children: [
-                Icon(
-                  _noticeIcon(kind),
-                  color: _noticeColor(context, kind),
-                  size: 20,
-                ),
-                const SizedBox(width: DevmateSpacing.md),
-                Expanded(child: Text(message)),
-              ],
-            ),
+      messenger.clearSnackBars();
+      messenger.showSnackBar(
+        SnackBar(
+          duration: effectiveDuration,
+          showCloseIcon: true,
+          content: Row(
+            children: [
+              Icon(
+                _noticeIcon(kind),
+                color: _noticeColor(context, kind),
+                size: 20,
+              ),
+              const SizedBox(width: DevmateSpacing.md),
+              Expanded(child: Text(message)),
+            ],
           ),
-        );
+        ),
+      );
       return;
     }
   }
@@ -637,8 +636,9 @@ class DevmateAiVisibility extends StatelessWidget {
     if (listenable == null) return child;
     return ValueListenableBuilder<bool>(
       valueListenable: listenable,
-      builder: (context, disabled, _) =>
-          disabled ? SizedBox.shrink() : Padding(padding: topGap, child: child),
+      builder: (context, disabled, _) => disabled
+          ? const SizedBox.shrink()
+          : Padding(padding: topGap, child: child),
     );
   }
 }

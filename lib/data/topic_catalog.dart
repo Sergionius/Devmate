@@ -245,6 +245,76 @@ typedef _ParsedTopic = ({
   List<_ParsedQuestion> questions,
 });
 
+/// Parses a restore payload with the same schema as [_parseImportTopics],
+/// but keeps topic and question IDs and allows an empty `topics` list.
+/// All IDs must be non-empty and unique, otherwise progress keyed by
+/// question IDs could silently point at the wrong questions.
+List<InterviewTopic> _parseRestoreTopics(String source) {
+  final dynamic decoded;
+  try {
+    decoded = jsonDecode(source);
+  } on FormatException {
+    throw const FormatException('Invalid JSON');
+  }
+  if (decoded is! Map<String, dynamic> ||
+      decoded['version'] != 1 ||
+      decoded['topics'] is! List) {
+    throw const FormatException('Expected version: 1 and a topics list');
+  }
+  final parsed = <InterviewTopic>[];
+  final topicIds = <String>{};
+  final questionIds = <String>{};
+  for (final raw in decoded['topics'] as List) {
+    if (raw is! Map<String, dynamic> ||
+        raw['id'] is! String ||
+        (raw['id'] as String).isEmpty ||
+        raw['title'] is! String ||
+        (raw['title'] as String).trim().isEmpty ||
+        raw['description'] is! String ||
+        raw['questions'] is! List) {
+      throw const FormatException('Invalid topic');
+    }
+    final topicId = raw['id'] as String;
+    if (!topicIds.add(topicId)) {
+      throw FormatException('Duplicate topic ID: $topicId');
+    }
+    final questions = <InterviewQuestion>[];
+    for (final q in raw['questions'] as List) {
+      if (q is! Map<String, dynamic> ||
+          q['id'] is! String ||
+          (q['id'] as String).isEmpty ||
+          q['prompt'] is! String ||
+          (q['prompt'] as String).trim().isEmpty ||
+          q['answer'] is! String ||
+          (q['answer'] as String).trim().isEmpty) {
+        throw const FormatException(
+          'Each question must have an ID, a prompt and an answer',
+        );
+      }
+      final questionId = q['id'] as String;
+      if (!questionIds.add(questionId)) {
+        throw FormatException('Duplicate question ID: $questionId');
+      }
+      questions.add(
+        InterviewQuestion(
+          questionId,
+          (q['prompt'] as String).trim(),
+          (q['answer'] as String).trim(),
+        ),
+      );
+    }
+    parsed.add(
+      InterviewTopic(
+        topicId,
+        (raw['title'] as String).trim(),
+        raw['description'] as String,
+        questions,
+      ),
+    );
+  }
+  return parsed;
+}
+
 /// Parses and fully validates an import payload before any catalog change.
 /// Accepts the current `version: 1` schema with a non-empty `topics` list;
 /// IDs from the input JSON are ignored, callers generate fresh ones.
@@ -612,6 +682,40 @@ class TopicCatalog extends ChangeNotifier {
       await repository.saveOverrides(overrides.toJson());
     }
     _userList = imported;
+    _extraQuestions.clear();
+    _overrides = overrides;
+    notifyListeners();
+  });
+
+  /// Validates a restore payload without applying it. Throws FormatException
+  /// under the same conditions as [restoreJson]; cheap enough to run before
+  /// any mutation so a bad file never leaves the catalog half-restored.
+  void validateRestoreJson(String source) => _parseRestoreTopics(source);
+
+  /// Restores a catalog payload preserving topic and question IDs, so that
+  /// progress keyed by those IDs stays valid after a backup restore. Same
+  /// replace semantics as [importJson]: user topics are replaced, extras
+  /// cleared and built-in questions hidden. Unlike [importJson], an empty
+  /// `topics` list is valid (a device may have no own topics) and IDs are
+  /// required and must be unique — otherwise progress would point at the
+  /// wrong questions.
+  Future<void> restoreJson(String source) => _enqueueMutation(() async {
+    final restored = _parseRestoreTopics(source);
+    final repository = _userTopics;
+    final overrides = CatalogOverrides(
+      deletedQuestionIds: {
+        for (final topic in _baseTopics)
+          for (final question in topic.questions) question.id,
+      },
+    );
+    if (repository != null) {
+      await repository.save([
+        for (final topic in restored) userTopicToJson(topic),
+      ]);
+      await repository.saveExtra({});
+      await repository.saveOverrides(overrides.toJson());
+    }
+    _userList = restored;
     _extraQuestions.clear();
     _overrides = overrides;
     notifyListeners();

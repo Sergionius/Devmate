@@ -1,12 +1,11 @@
 import 'package:devmate/data/progress_repository.dart';
-
 import 'package:devmate/domain/question.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/ui/practice_screen.dart';
 import 'package:devmate/ui/training_view_model.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   const topic = InterviewTopic('t1', 'Topic', 'Description', [

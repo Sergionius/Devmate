@@ -1,6 +1,6 @@
 import 'package:devmate/ui/design_system.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('dark theme keeps the historical palette', (tester) async {

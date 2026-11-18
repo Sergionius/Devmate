@@ -1,13 +1,15 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../l10n/l10n.dart';
 import 'data/app_preferences.dart';
 import 'data/llm_settings.dart';
 import 'data/topic_catalog.dart';
-import '../l10n/l10n.dart';
+import 'ui/ai_settings_screen.dart';
 import 'ui/chat_screen.dart';
-import 'ui/edit_topic_screen.dart';
+import 'ui/data_settings_screen.dart';
 import 'ui/design_system.dart';
+import 'ui/edit_topic_screen.dart';
 import 'ui/home_screen.dart';
 import 'ui/practice_screen.dart';
 import 'ui/settings_screen.dart';
@@ -99,6 +101,7 @@ GoRouter createRouter(
               settingsRepository: llmSettings,
               catalog: catalog,
               viewModel: viewModel,
+              appPreferences: appPreferences,
             ),
           ),
         ],
@@ -284,7 +287,7 @@ class NotFoundScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             context.l10n.pageNotFound,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           FilledButton(

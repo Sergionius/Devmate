@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:devmate/data/question_catalog.dart';
 import 'package:devmate/data/progress_repository.dart';
+import 'package:devmate/data/question_catalog.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/ui/training_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';

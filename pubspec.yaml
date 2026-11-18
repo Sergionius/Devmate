@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.13.7
+  sdk: ^3.14.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -46,11 +46,15 @@ dependencies:
   url_launcher: ^6.3.3
   uuid: ^4.6.0
   share_plus: ^13.3.1
+  cross_file: ^0.3.5
 
   material_ui: ^1.11.1
   cupertino_ui: ^1.1.7
+  file_picker: ^13.4.0
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
   shared_preferences_platform_interface: ^2.4.2
