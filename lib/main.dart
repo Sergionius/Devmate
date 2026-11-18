@@ -10,6 +10,7 @@ import 'data/progress_repository.dart';
 import 'data/question_catalog.dart';
 import 'data/topic_catalog.dart';
 import 'l10n/app_localizations.dart';
+import 'platform/app_environment.dart';
 import 'router.dart';
 import 'ui/design_system.dart';
 import 'ui/training_view_model.dart';
@@ -46,8 +47,10 @@ Future<void> main() async {
   );
 
   await catalog.load();
+  final environment = createAppEnvironment();
   runApp(
     DevmateApp(
+      environment: environment,
       viewModel: _startTraining(catalog),
       llmSettings: llmSettings,
       catalog: catalog,
@@ -57,6 +60,7 @@ Future<void> main() async {
       appPreferences: appPreferences,
     ),
   );
+  WidgetsBinding.instance.addPostFrameCallback((_) => environment.ready());
 }
 
 TrainingViewModel _startTraining(TopicCatalog catalog) {
@@ -79,6 +83,7 @@ class DevmateApp extends StatelessWidget {
     this.aiDisabled,
     this.themeMode,
     this.appPreferences,
+    this.environment,
   }) : router = createRouter(
          viewModel,
          llmSettings,
@@ -87,9 +92,12 @@ class DevmateApp extends StatelessWidget {
          aiDisabled: aiDisabled,
          themeMode: themeMode,
          appPreferences: appPreferences,
-       );
+       ) {
+    environment?.attachRouter(router);
+  }
 
   final GoRouter router;
+  final AppEnvironment? environment;
   final Locale? locale;
 
   final ValueNotifier<Locale?>? appLocale;
@@ -102,9 +110,19 @@ class DevmateApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hostTheme = environment?.preferredTheme;
+    if (hostTheme == null) return _buildApp(null);
+    return ValueListenableBuilder<ThemeMode?>(
+      valueListenable: hostTheme,
+      builder: (context, mode, _) => _buildApp(mode),
+    );
+  }
+
+  Widget _buildApp(ThemeMode? hostMode) {
     final localeNotifier = appLocale;
     final modeNotifier = themeMode;
-    ThemeMode initialMode() => modeNotifier?.value ?? ThemeMode.dark;
+    ThemeMode initialMode() =>
+        effectiveThemeMode(modeNotifier?.value ?? ThemeMode.dark, hostMode);
 
     Widget app = _materialApp(locale, initialMode());
     if (localeNotifier != null) {
@@ -120,13 +138,17 @@ class DevmateApp extends StatelessWidget {
           valueListenable: modeNotifier,
           builder: (context, mode, _) => ValueListenableBuilder<Locale?>(
             valueListenable: localeNotifier,
-            builder: (context, value, _) => _materialApp(value ?? locale, mode),
+            builder: (context, value, _) => _materialApp(
+              value ?? locale,
+              effectiveThemeMode(mode, hostMode),
+            ),
           ),
         );
       } else {
         app = ValueListenableBuilder<ThemeMode>(
           valueListenable: modeNotifier,
-          builder: (context, mode, _) => _materialApp(locale, mode),
+          builder: (context, mode, _) =>
+              _materialApp(locale, effectiveThemeMode(mode, hostMode)),
         );
       }
     }
