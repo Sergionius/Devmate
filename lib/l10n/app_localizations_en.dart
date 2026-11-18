@@ -95,6 +95,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareFailed => 'Couldn\'t open the share menu';
 
   @override
+  String get exportQuestionsFile => 'Export to file';
+
+  @override
+  String get importQuestionsFile => 'Import from file';
+
+  @override
+  String get fileReadFailed => 'Couldn\'t read the file';
+
+  @override
+  String get backupSectionTitle => 'Full backup';
+
+  @override
+  String get backupHint =>
+      'A single JSON file with your topics, progress, and settings — handy when moving to another device. API keys are never included. Replace everything restores exactly what the file contains. Merge adds topics on top of your current ones: questions that already exist on this device keep their best score, while progress for newly added topics starts fresh. Settings are left untouched.';
+
+  @override
+  String get exportBackup => 'Export everything';
+
+  @override
+  String get importBackup => 'Import backup';
+
+  @override
+  String backupSummary(int topics, int answers) {
+    return 'Topics in file: $topics, questions with progress marks: $answers';
+  }
+
+  @override
+  String get backupMergeAction => 'Merge';
+
+  @override
+  String get backupReplaceAction => 'Replace everything';
+
+  @override
+  String get backupImportedReplace => 'Backup restored';
+
+  @override
+  String get backupImportedMerge =>
+      'Topics added. Existing questions keep their best score; progress for newly added topics starts fresh';
+
+  @override
+  String get backupInvalid => 'Not a Devmate backup file';
+
+  @override
+  String get backupImportFailed => 'Failed to restore the backup';
+
+  @override
   String get pageNotFound => 'This page does not exist.';
 
   @override

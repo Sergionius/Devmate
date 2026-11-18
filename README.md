@@ -2,13 +2,20 @@
 
 An offline trainer for technical interview prep. A Flutter app for iOS, Android, and Web.
 
+> The UI kit is built on [`material_ui`](https://pub.dev/packages/material_ui) and
+> [`cupertino_ui`](https://pub.dev/packages/cupertino_ui) — official packages from the
+> [flutter/packages](https://github.com/flutter/packages) monorepo, adopted early while Flutter
+> moves these libraries out of the SDK into packages. The app layers its own design tokens
+> (colors, spacing, radii, typography) on top of them in `lib/ui/design_system.dart`.
+
 ## Features
 
 - 120 questions across 10 topics: Frontend, Flutter, iOS, AI-first, architecture, O(n) complexity, JavaScript / TypeScript, algorithms and data structures, testing, system design. Full content ships in English and Russian.
 - Answer in your own words → compare with the reference answer → self-assess. If an answer needs another pass, you restate it before moving on.
 - Per-topic progress and XP (5 or 10 per question), stored locally on the device. Repeating a question doesn't farm points; a better self-assessment updates the result.
 - Questions are bundled with the app — no account or API required for offline practice. First-time loading of the Web build requires access to the hosted app.
-- Your own topics: create and edit topics by hand, save a topic the AI drafted in chat, or import topics as JSON (add or replace). Export copies the catalog to JSON; **Share instruction** gives your AI agent the exact JSON format to fill.
+- Your own topics: create and edit topics by hand, save a topic the AI drafted in chat, or import topics as JSON — pasted from the clipboard or picked from a file (add or replace). Export copies the catalog to JSON or hands it to the share sheet as a file ("Save to Files", including iCloud Drive, on iOS). **Share instruction** gives your AI agent the exact JSON format to fill.
+- Full backup: one JSON file with your topics, training progress, and settings (no API keys) to move to another device. Restore replaces everything from the file or merges it — imported topics are added and existing questions keep their best score.
 - Interface language: system default, English, or Russian — switched in settings. The UI applies immediately; question content reloads on the next app start.
 - AI chat per topic and per question (optional): OpenAI-compatible APIs with streaming replies — presets for z.ai GLM Coding (subscription), z.ai API, OpenAI, OpenRouter, DeepSeek, Groq, Ollama — plus a custom endpoint (BYOK). When the model returns a topic as JSON, the app detects it and offers to save it as your own. The chat is built on `openai_dart`; the conversation stays in memory only while its screen is open.
 

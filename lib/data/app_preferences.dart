@@ -77,4 +77,46 @@ class AppPreferencesRepository {
 
   Future<void> saveTheme(AppThemePreference theme) =>
       _preferences.setString(_themeKey, theme.code);
+
+  /// Serializable snapshot for a full backup; unknown-safe codes only.
+  Future<Map<String, dynamic>> exportBackup() async {
+    final theme = await loadTheme();
+    final language = await loadLanguage();
+    final aiDisabled = await loadAiDisabled();
+    return {
+      'theme': theme.code,
+      if (language.code != null) 'language': language.code,
+      'aiDisabled': aiDisabled,
+    };
+  }
+
+  /// Applies a preferences snapshot from a backup; unknown or malformed
+  /// values are ignored so a damaged snapshot keeps the current settings.
+  Future<void> restoreBackup(Map<String, dynamic> json) async {
+    if (json['theme'] is String) {
+      final theme = _themeByCode(json['theme'] as String);
+      if (theme != null) await saveTheme(theme);
+    }
+    if (json['language'] is String) {
+      final language = _languageByCode(json['language'] as String);
+      if (language != null) await saveLanguage(language);
+    }
+    if (json['aiDisabled'] is bool) {
+      await saveAiDisabled(json['aiDisabled'] as bool);
+    }
+  }
+
+  static AppThemePreference? _themeByCode(String code) {
+    for (final theme in AppThemePreference.values) {
+      if (theme.code == code) return theme;
+    }
+    return null;
+  }
+
+  static AppLanguage? _languageByCode(String code) {
+    for (final language in AppLanguage.values) {
+      if (language.code == code) return language;
+    }
+    return null;
+  }
 }

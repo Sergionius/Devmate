@@ -1,5 +1,6 @@
-import 'package:devmate/data/llm_settings.dart';
+import 'dart:async';
 
+import 'package:devmate/data/llm_settings.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
@@ -7,12 +8,10 @@ import 'package:devmate/router.dart';
 import 'package:devmate/ui/design_system.dart';
 import 'package:devmate/ui/training_view_model.dart';
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../support/memory_secure_storage.dart';
-
-import 'dart:async';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -30,7 +29,9 @@ void main() {
       final model = TrainingViewModel(
         _MemoryProgressRepository(),
         catalogRepository: TopicCatalog(),
-      )..load();
+      );
+
+      unawaited(model.load());
       final router = createRouter(
         model,
         LlmSettingsRepository(storage: storage),

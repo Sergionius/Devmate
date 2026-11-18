@@ -1,20 +1,27 @@
-import 'package:devmate/data/app_preferences.dart';
-import 'package:devmate/data/llm_settings.dart';
+import 'dart:async';
 
+import 'dart:convert';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:devmate/data/app_preferences.dart';
+import 'package:devmate/data/data_transfer.dart';
+import 'package:devmate/data/llm_settings.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
+import 'package:devmate/domain/question.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/router.dart';
+import 'package:devmate/ui/ai_settings_screen.dart';
+import 'package:devmate/ui/data_settings_screen.dart';
 import 'package:devmate/ui/design_system.dart';
 import 'package:devmate/ui/platform_ui.dart';
 import 'package:devmate/ui/settings_screen.dart';
 import 'package:devmate/ui/training_view_model.dart';
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
@@ -346,7 +353,9 @@ void main() {
     final model = TrainingViewModel(
       _MemoryProgress(),
       catalogRepository: TopicCatalog(),
-    )..load();
+    );
+
+    unawaited(model.load());
     final router = createRouter(
       model,
       LlmSettingsRepository(storage: MemorySecureStorage()),
@@ -633,6 +642,10 @@ void main() {
         220,
         scrollable: find.byType(Scrollable).first,
       );
+      // The backup section above made the button land at the very edge of
+      // the viewport; make sure it is fully on screen before tapping.
+      await tester.ensureVisible(button.first);
+      await tester.pumpAndSettle();
       await tester.tap(button.first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Reset progress only').last);
@@ -668,7 +681,9 @@ void main() {
       final model = TrainingViewModel(
         _MemoryProgress(),
         catalogRepository: catalog,
-      )..load();
+      );
+
+      unawaited(model.load());
       await model.record(topic.questions.single, knewAnswer: true);
 
       await tester.pumpWidget(
@@ -724,7 +739,9 @@ void main() {
       final model = TrainingViewModel(
         _MemoryProgress(),
         catalogRepository: catalog,
-      )..load();
+      );
+
+      unawaited(model.load());
       await model.record(topic.questions.single, knewAnswer: true);
 
       await tester.pumpWidget(
@@ -829,5 +846,300 @@ void main() {
 
     expect(aiDisabled.value, isTrue);
     expect(find.text('AI provider'), findsNothing);
+  });
+
+  group('file transfer and backup', () {
+    late LlmSettingsRepository settings;
+    late TopicCatalog catalog;
+    late _MemoryProgress progress;
+    late TrainingViewModel model;
+    late AppPreferencesRepository appPreferences;
+    late InterviewTopic docker;
+
+    Future<void> pumpScreen(
+      WidgetTester tester, {
+      Future<String?> Function()? pickJsonFile,
+      void Function(String fileName, String content)? onShare,
+    }) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: DataSettingsScreen(
+            settingsRepository: settings,
+            catalog: catalog,
+            viewModel: model,
+            appPreferences: appPreferences,
+            pickJsonFile: pickJsonFile ?? () async => null,
+            shareJsonFile: (fileName, content) async =>
+                onShare?.call(fileName, content),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    setUp(() async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      settings = LlmSettingsRepository(storage: MemorySecureStorage());
+      await settings.save(
+        const LlmSettings(
+          baseUrl: 'https://current.example/v1',
+          model: 'current-model',
+          apiKey: 'secret-key',
+        ),
+      );
+      catalog = TopicCatalog();
+      docker = await catalog.addUserTopic('Docker', 'Containers', [
+        ('What is an image?', 'A template.'),
+      ]);
+      progress = _MemoryProgress();
+      model = TrainingViewModel(progress, catalogRepository: catalog);
+      await model.load();
+      await model.record(docker.questions.single, knewAnswer: true);
+      appPreferences = AppPreferencesRepository();
+      await appPreferences.saveTheme(AppThemePreference.dark);
+    });
+
+    /// scrollUntilVisible stops once a lazy ListView child is built, which
+    /// can leave it just off-screen; ensureVisible brings it fully into view.
+    Future<void> scrollTo(WidgetTester tester, String label) async {
+      final finder = find.text(label);
+      await tester.scrollUntilVisible(
+        finder,
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(finder);
+      await tester.pumpAndSettle();
+    }
+
+    /// The apply path runs through several awaits after the dialog closes;
+    /// pump until the expected condition appears instead of one settle.
+    Future<void> pumpUntil(
+      WidgetTester tester,
+      bool Function() condition,
+    ) async {
+      for (var i = 0; i < 40 && !condition(); i++) {
+        // Escaping FakeAsync lets the dialog's async apply path actually run.
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 10)),
+        );
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('export to file shares the catalog JSON', (tester) async {
+      final shared = <String>[];
+      await pumpScreen(
+        tester,
+        onShare: (fileName, content) => shared.add('$fileName|$content'),
+      );
+      await scrollTo(tester, 'Export to file');
+      await tester.tap(find.text('Export to file'));
+      await tester.pumpAndSettle();
+
+      expect(shared, hasLength(1));
+      final parts = shared.single.split('|');
+      expect(parts.first, startsWith('devmate-questions-'));
+      final exported = jsonDecode(parts.last) as Map<String, dynamic>;
+      expect(exported['version'], 1);
+      expect(
+        (exported['topics'] as List).where(
+          (topic) => (topic as Map<String, dynamic>)['title'] == 'Docker',
+        ),
+        isNotEmpty,
+      );
+    });
+
+    testWidgets('export backup includes progress and never the API key', (
+      tester,
+    ) async {
+      final shared = <String>[];
+      await pumpScreen(
+        tester,
+        onShare: (fileName, content) => shared.add('$fileName|$content'),
+      );
+      await scrollTo(tester, 'Export everything');
+      await tester.tap(find.text('Export everything'));
+      await tester.pumpAndSettle();
+
+      expect(shared, hasLength(1));
+      final parts = shared.single.split('|');
+      expect(parts.first, startsWith('devmate-backup-'));
+      final backup = DevmateBackup.parse(parts.last);
+      expect(backup.scores[docker.questions.single.id], 10);
+      expect(jsonEncode(backup.encode()), isNot(contains('secret-key')));
+      final ai = backup.ai!;
+      expect(ai['baseUrl'], 'https://current.example/v1');
+      expect(ai['model'], 'current-model');
+      expect(ai.containsKey('apiKey'), isFalse);
+      expect(backup.preferences!['theme'], 'dark');
+    });
+
+    testWidgets('backup import replace restores IDs, progress and settings', (
+      tester,
+    ) async {
+      final backup = DevmateBackup(
+        catalog: {
+          'version': 1,
+          'topics': [
+            {
+              'id': 'topic-1',
+              'title': 'Git',
+              'description': 'VCS',
+              'questions': [
+                {
+                  'id': 'q-rebase',
+                  'prompt': 'What is a rebase?',
+                  'answer': 'Rewriting history.',
+                },
+              ],
+            },
+          ],
+        },
+        scores: {'q-rebase': 10, 'q-unknown': 5},
+        preferences: {'theme': 'light', 'aiDisabled': true},
+        ai: {'baseUrl': 'https://backup.example/v1', 'model': 'backup-model'},
+      );
+      await pumpScreen(tester, pickJsonFile: () async => backup.encode());
+      await scrollTo(tester, 'Import backup');
+      await tester.tap(find.text('Import backup'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Topics in file: 1'), findsOneWidget);
+      await tester.tap(find.text('Replace everything'));
+      await pumpUntil(tester, () => catalog.topicById('topic-1') != null);
+
+      final git = catalog.topicById('topic-1');
+      expect(git, isNotNull);
+      expect(git!.questions.single.id, 'q-rebase');
+      expect(model.scores, {'q-rebase': 10});
+      expect(progress.scores, {'q-rebase': 10});
+      expect(await appPreferences.loadTheme(), AppThemePreference.light);
+      expect(await appPreferences.loadAiDisabled(), isTrue);
+      final restoredAi = await settings.load();
+      expect(restoredAi.baseUrl, 'https://backup.example/v1');
+      expect(restoredAi.model, 'backup-model');
+      expect(restoredAi.apiKey, 'secret-key');
+      expect(find.textContaining('Backup restored'), findsOneWidget);
+    });
+
+    testWidgets('backup import merge keeps the better score per question', (
+      tester,
+    ) async {
+      final backup = DevmateBackup(
+        catalog: {
+          'version': 1,
+          'topics': [
+            {
+              'id': 'topic-2',
+              'title': 'HTTP',
+              'description': 'Protocol',
+              'questions': [
+                {
+                  'id': 'q-status',
+                  'prompt': 'What is 404?',
+                  'answer': 'Not found.',
+                },
+              ],
+            },
+          ],
+        },
+        scores: {docker.questions.single.id: 5, 'q-status': 10},
+      );
+      await pumpScreen(tester, pickJsonFile: () async => backup.encode());
+      await scrollTo(tester, 'Import backup');
+      await tester.tap(find.text('Import backup'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Merge'));
+      // The notice is the last step of the apply chain — waiting for it
+      // proves the whole merge finished.
+      await pumpUntil(
+        tester,
+        () => find
+            .textContaining('Topics added. Existing questions')
+            .evaluate()
+            .isNotEmpty,
+      );
+
+      final http = catalog.topics.singleWhere((topic) => topic.title == 'HTTP');
+      expect(http.questions.single.prompt, 'What is 404?');
+      // Merge keeps IDs fresh for imported questions, so their backup
+      // progress is not applied; existing questions keep the best score.
+      expect(model.scores[docker.questions.single.id], 10);
+      expect(model.scores.containsKey(http.questions.single.id), isFalse);
+      final ai = await settings.load();
+      expect(ai.baseUrl, 'https://current.example/v1');
+      expect(await appPreferences.loadTheme(), AppThemePreference.dark);
+      expect(
+        find.textContaining('Topics added. Existing questions'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('import from file prefills the dialog and appends', (
+      tester,
+    ) async {
+      const incoming =
+          '{"version":1,"topics":[{"title":"Kotlin","description":"Lang","questions":[{"prompt":"suspend?","answer":"Coroutines."}]}]}';
+      await pumpScreen(tester, pickJsonFile: () async => incoming);
+      await scrollTo(tester, 'Import from file');
+      await tester.tap(find.text('Import from file'));
+      await tester.pumpAndSettle();
+
+      final controller = tester
+          .widget<TextField>(find.byType(TextField).first)
+          .controller;
+      expect(controller!.text, incoming);
+      await tester.tap(find.text('Add'));
+      await pumpUntil(
+        tester,
+        () => catalog.topics.any((topic) => topic.title == 'Kotlin'),
+      );
+
+      expect(catalog.topics.any((topic) => topic.title == 'Kotlin'), isTrue);
+      expect(model.points, 10);
+    });
+
+    testWidgets('a foreign file shows a clear error and changes nothing', (
+      tester,
+    ) async {
+      await pumpScreen(tester, pickJsonFile: () async => '{"hello": "world"}');
+      await scrollTo(tester, 'Import backup');
+      await tester.tap(find.text('Import backup'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Not a Devmate backup file'), findsOneWidget);
+      expect(catalog.topicById('topic-1'), isNull);
+      expect(model.points, 10);
+    });
+
+    testWidgets('a broken catalog inside a valid backup shows details', (
+      tester,
+    ) async {
+      final broken = jsonEncode({
+        'format': 'devmate-backup',
+        'version': 1,
+        'catalog': {
+          'version': 1,
+          'topics': [
+            {'id': '', 'title': 'Git', 'description': '', 'questions': []},
+          ],
+        },
+      });
+      await pumpScreen(tester, pickJsonFile: () async => broken);
+      await scrollTo(tester, 'Import backup');
+      await tester.tap(find.text('Import backup'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Invalid topic'), findsOneWidget);
+      // Nothing changed: built-ins plus the user topic from setUp remain.
+      expect(catalog.topics.length, 11);
+      expect(catalog.topics.where((topic) => topic.title == 'Git'), isEmpty);
+      expect(model.points, 10);
+    });
   });
 }

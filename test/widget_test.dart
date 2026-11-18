@@ -1,14 +1,13 @@
 import 'package:devmate/data/llm_settings.dart';
-
+import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/question_catalog.dart';
 import 'package:devmate/data/topic_catalog.dart';
-import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/main.dart';
 import 'package:devmate/ui/design_system.dart';
 import 'package:devmate/ui/training_view_model.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 class MemoryProgressRepository implements ProgressRepository {
   Map<String, int> scores = {};

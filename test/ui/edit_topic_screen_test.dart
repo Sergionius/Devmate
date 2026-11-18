@@ -1,12 +1,12 @@
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/ui/design_system.dart';
 import 'package:devmate/ui/edit_topic_screen.dart';
 import 'package:devmate/ui/platform_ui.dart';
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

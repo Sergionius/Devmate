@@ -26,6 +26,26 @@
   "agentJsonInstruction": "Agent instruction: create valid JSON without Markdown. The root object must have version set to 1 and a non-empty topics array. Each topic has a non-empty title, a string description (may be empty) and a non-empty questions array. Every question has non-empty prompt and answer. For each topic prepare 4–12 distinct questions; answers should be precise, 2–4 sentences each. Don't include IDs — the app will generate them on import.",
   "shareInstruction": "Share instruction",
   "shareFailed": "Couldn't open the share menu",
+  "exportQuestionsFile": "Export to file",
+  "importQuestionsFile": "Import from file",
+  "fileReadFailed": "Couldn't read the file",
+  "backupSectionTitle": "Full backup",
+  "backupHint": "A single JSON file with your topics, progress, and settings — handy when moving to another device. API keys are never included. Replace everything restores exactly what the file contains. Merge adds topics on top of your current ones: questions that already exist on this device keep their best score, while progress for newly added topics starts fresh. Settings are left untouched.",
+  "exportBackup": "Export everything",
+  "importBackup": "Import backup",
+  "backupSummary": "Topics in file: {topics}, questions with progress marks: {answers}",
+  "@backupSummary": {
+    "placeholders": {
+      "topics": {"type": "int"},
+      "answers": {"type": "int"}
+    }
+  },
+  "backupMergeAction": "Merge",
+  "backupReplaceAction": "Replace everything",
+  "backupImportedReplace": "Backup restored",
+  "backupImportedMerge": "Topics added. Existing questions keep their best score; progress for newly added topics starts fresh",
+  "backupInvalid": "Not a Devmate backup file",
+  "backupImportFailed": "Failed to restore the backup",
   "pageNotFound": "This page does not exist.",
   "goHome": "Home",
   "aiSettings": "AI settings",

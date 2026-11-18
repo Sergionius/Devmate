@@ -254,6 +254,90 @@ abstract class AppLocalizations {
   /// **'Не удалось открыть меню «Поделиться»'**
   String get shareFailed;
 
+  /// No description provided for @exportQuestionsFile.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экспорт в файл'**
+  String get exportQuestionsFile;
+
+  /// No description provided for @importQuestionsFile.
+  ///
+  /// In ru, this message translates to:
+  /// **'Импорт из файла'**
+  String get importQuestionsFile;
+
+  /// No description provided for @fileReadFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось прочитать файл'**
+  String get fileReadFailed;
+
+  /// No description provided for @backupSectionTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Полный бэкап'**
+  String get backupSectionTitle;
+
+  /// No description provided for @backupHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Один JSON-файл со своими темами, прогрессом и настройками — удобно для переноса на другое устройство. API-ключи в файл не попадают. «Заменить всё» восстанавливает ровно то, что в файле. «Объединить» добавляет темы поверх текущих: уже существующие вопросы сохраняют лучший результат, а прогресс новых вопросов начинается заново; настройки не меняются.'**
+  String get backupHint;
+
+  /// No description provided for @exportBackup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экспортировать всё'**
+  String get exportBackup;
+
+  /// No description provided for @importBackup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Импортировать бэкап'**
+  String get importBackup;
+
+  /// No description provided for @backupSummary.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тем в файле: {topics}, вопросов с отметками прогресса: {answers}'**
+  String backupSummary(int topics, int answers);
+
+  /// No description provided for @backupMergeAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Объединить'**
+  String get backupMergeAction;
+
+  /// No description provided for @backupReplaceAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заменить всё'**
+  String get backupReplaceAction;
+
+  /// No description provided for @backupImportedReplace.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бэкап восстановлен'**
+  String get backupImportedReplace;
+
+  /// No description provided for @backupImportedMerge.
+  ///
+  /// In ru, this message translates to:
+  /// **'Темы добавлены. Лучший результат сохранён для уже существующих вопросов; прогресс новых вопросов начнётся заново'**
+  String get backupImportedMerge;
+
+  /// No description provided for @backupInvalid.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это не файл бэкапа Devmate'**
+  String get backupInvalid;
+
+  /// No description provided for @backupImportFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось восстановить бэкап'**
+  String get backupImportFailed;
+
   /// No description provided for @pageNotFound.
   ///
   /// In ru, this message translates to:

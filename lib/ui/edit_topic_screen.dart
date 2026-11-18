@@ -100,7 +100,7 @@ class _EditTopicScreenState extends State<EditTopicScreen> {
                 ),
               const SizedBox(height: 14),
               OutlinedButton.icon(
-                onPressed: () => _showQuestionDialog(),
+                onPressed: _showQuestionDialog,
                 icon: const Icon(Icons.add_rounded),
                 label: Text(l10n.editAddQuestion),
               ),

@@ -1,11 +1,11 @@
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:devmate/ui/design_system.dart';
 import 'package:devmate/ui/platform_ui.dart';
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -97,10 +97,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: MediaQuery(
-            data: const MediaQueryData(disableAnimations: true),
-            child: const Scaffold(body: DevmateDotsLoader()),
+            data: MediaQueryData(disableAnimations: true),
+            child: Scaffold(body: DevmateDotsLoader()),
           ),
         ),
       );

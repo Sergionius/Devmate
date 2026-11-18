@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../data/data_transfer.dart';
 import '../data/progress_repository.dart';
 import '../data/topic_catalog.dart';
 import '../domain/question.dart';
@@ -23,6 +24,7 @@ class TrainingViewModel extends ChangeNotifier {
   TrainingError? get error => _error;
   int get points => _scores.values.fold(0, (sum, value) => sum + value);
   int get completed => _scores.length;
+  Map<String, int> get scores => Map.unmodifiable(_scores);
   int completedIn(InterviewTopic topic) => topic.questions
       .where((question) => _scores.containsKey(question.id))
       .length;
@@ -79,6 +81,26 @@ class TrainingViewModel extends ChangeNotifier {
     _error = null;
     notifyListeners();
   });
+
+  /// Restores progress from a backup. With [merge] the better score wins
+  /// per question, matching how repeated answers are scored; otherwise the
+  /// given scores replace all progress. Entries for questions missing from
+  /// the catalog, or with an unexpected value, are dropped.
+  Future<void> restoreProgress(Map<String, int> scores, {bool merge = false}) =>
+      _enqueueWrite(() async {
+        final known = _catalog?.knownQuestionIds;
+        final incoming = {
+          for (final entry in scores.entries)
+            if ((known == null || known.contains(entry.key)) &&
+                (entry.value == 5 || entry.value == 10))
+              entry.key: entry.value,
+        };
+        final updated = merge ? mergeScores(_scores, incoming) : incoming;
+        await _repository.save(updated);
+        _scores = updated;
+        _error = null;
+        notifyListeners();
+      });
 
   Future<bool> record(
     InterviewQuestion question, {
