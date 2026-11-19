@@ -144,7 +144,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 value: (_index + 1) / widget.topic.questions.length,
               ),
               const SizedBox(height: 40),
-              Text(
+              SelectableText(
                 _question.prompt,
                 style: Theme.of(context).textTheme.headlineSmall
                     ?.copyWith(fontSize: 28, height: 1.22),
