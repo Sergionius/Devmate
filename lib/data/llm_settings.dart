@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LlmSettings {
@@ -120,16 +119,11 @@ class LlmSettingsRepository {
   static const _legacyCodexTokenKey = 'codex.auth';
   final FlutterSecureStorage _storage;
 
-  static LlmSettings get debugDefaults {
-    if (!kDebugMode) {
-      return const LlmSettings(baseUrl: '', model: '', apiKey: '');
-    }
-    return const LlmSettings(
-      baseUrl: String.fromEnvironment('LLM_BASE_URL'),
-      model: String.fromEnvironment('LLM_MODEL'),
-      apiKey: String.fromEnvironment('LLM_API_KEY'),
-    );
-  }
+  static LlmSettings get buildDefaults => const LlmSettings(
+    baseUrl: String.fromEnvironment('LLM_BASE_URL'),
+    model: String.fromEnvironment('LLM_MODEL'),
+    apiKey: String.fromEnvironment('LLM_API_KEY'),
+  );
 
   LlmPreset? detectPreset(LlmSettings settings) {
     for (final preset in llmPresets) {
@@ -153,7 +147,7 @@ class LlmSettingsRepository {
       return const LlmSettings(baseUrl: '', model: '', apiKey: '');
     }
     if (legacyMode != null) await _storage.delete(key: _legacyAuthModeKey);
-    final defaults = debugDefaults;
+    final defaults = buildDefaults;
     return LlmSettings(
       baseUrl: baseUrl ?? defaults.baseUrl,
       model: model ?? defaults.model,

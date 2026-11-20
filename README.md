@@ -42,16 +42,17 @@ Checks: `flutter analyze` and `flutter test`. Web build: `flutter build web`.
 
 On the home screen, open **AI settings**, pick a provider or enter your own OpenAI-compatible **Base URL**, model name, and API key. The "Test connection" button sends a short paid/metered request to the provider. Then open the AI chat from a topic or question screen. Requests go **directly** to the selected provider — Devmate has no server of its own. Settings are stored in `flutter_secure_storage` (iOS Keychain, Android encrypted storage, WebCrypto/LocalStorage in the current browser on web).
 
-For a ready-to-use **local debug build**, copy the example and add your own provider credentials:
+For a ready-to-use **local test build**, copy the example and add your own provider credentials:
 
 ```sh
 cp config/local.example.json config/local.json
 # Edit config/local.json, then run on your device:
 flutter run -d ios --dart-define-from-file=config/local.json
 # Or: flutter run -d android --dart-define-from-file=config/local.json
+# To test release locally: flutter run --release --dart-define-from-file=config/local.json
 ```
 
-`config/local.json` is Git-ignored. Debug builds read these compile-time defaults; any settings saved in the app take precedence, including an explicitly cleared key. To restore defaults after clearing settings, remove the saved app data. **Never pass this file to `flutter build`, a release build, or a distributable web build**: build-time defines are not a secret store. Release and profile builds ignore these defaults, but do not rely on that to sanitize a build made with credentials. For normal use, enter your key in the app instead. The app does not load or bundle `.env` files; `assets/config/.env` is used only by optional manual network tests and is excluded from Git and app assets.
+`config/local.json` is Git-ignored. Debug, profile, and release builds read these compile-time defaults; any settings saved in the app take precedence, including an explicitly cleared key. To restore defaults after clearing settings, remove the saved app data. **Do not distribute a build made with this file**: build-time defines are not a secret store, and the API key can be extracted from the binary. For distributable builds, omit the file and enter your key in the app instead. The app does not load or bundle `.env` files; `assets/config/.env` is used only by optional manual network tests and is excluded from Git and app assets.
 
 Web requires HTTPS (or localhost) for WebCrypto and CORS headers from the API (see the table below); a server without CORS won't work in the browser without your own proxy. For a local HTTP API on Android, cleartext traffic may need to be enabled separately — this build does not enable it.
 
