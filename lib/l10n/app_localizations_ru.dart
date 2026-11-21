@@ -10,6 +10,30 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
+  String get searchTitle => 'Поиск';
+
+  @override
+  String get searchHint => 'Поиск по темам и вопросам';
+
+  @override
+  String get searchClear => 'Очистить поиск';
+
+  @override
+  String get searchAnswers => 'Искать также в ответах';
+
+  @override
+  String get searchStart => 'Введите слово или фразу для поиска по библиотеке.';
+
+  @override
+  String get searchEmpty => 'Ничего не найдено.';
+
+  @override
+  String get searchTopics => 'Темы';
+
+  @override
+  String get searchQuestions => 'Вопросы';
+
+  @override
   String get questionsManagement => 'Управление вопросами';
 
   @override
@@ -148,9 +172,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get aiSettings => 'Настройки AI';
-
-  @override
-  String get offlineBadge => 'ОФЛАЙН';
 
   @override
   String get logoSemantics => 'Логотип Devmate';

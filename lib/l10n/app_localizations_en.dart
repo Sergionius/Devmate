@@ -10,6 +10,30 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get searchTitle => 'Search';
+
+  @override
+  String get searchHint => 'Search topics and questions';
+
+  @override
+  String get searchClear => 'Clear search';
+
+  @override
+  String get searchAnswers => 'Include answers';
+
+  @override
+  String get searchStart => 'Enter a word or phrase to search the library.';
+
+  @override
+  String get searchEmpty => 'No matches found.';
+
+  @override
+  String get searchTopics => 'Topics';
+
+  @override
+  String get searchQuestions => 'Questions';
+
+  @override
   String get questionsManagement => 'Question management';
 
   @override
@@ -148,9 +172,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSettings => 'AI settings';
-
-  @override
-  String get offlineBadge => 'OFFLINE';
 
   @override
   String get logoSemantics => 'Devmate logo';

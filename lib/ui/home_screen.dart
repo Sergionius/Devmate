@@ -87,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             _BrandHeader(
                               onOpenSettings: () => context.push('/settings'),
+                              onOpenSearch: () => context.push('/search'),
                             ),
                             const SizedBox(height: 38),
                             LayoutBuilder(
@@ -272,8 +273,12 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _BrandHeader extends StatelessWidget {
-  const _BrandHeader({required this.onOpenSettings});
+  const _BrandHeader({
+    required this.onOpenSettings,
+    required this.onOpenSearch,
+  });
   final VoidCallback onOpenSettings;
+  final VoidCallback onOpenSearch;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -297,22 +302,11 @@ class _BrandHeader extends StatelessWidget {
         ),
       ),
       const Spacer(),
-      Icon(Icons.wifi_off_rounded, size: 15, color: context.colors.muted),
-      const SizedBox(width: 6),
-      Flexible(
-        child: Text(
-          context.l10n.offlineBadge,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: context.colors.muted,
-            fontSize: 11,
-            letterSpacing: 1.4,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+      IconButton(
+        tooltip: context.l10n.searchTitle,
+        onPressed: onOpenSearch,
+        icon: Icon(Icons.search_rounded, size: 23, color: context.colors.muted),
       ),
-      const SizedBox(width: 10),
       IconButton(
         tooltip: context.l10n.settingsTitle,
         onPressed: onOpenSettings,

@@ -4,6 +4,17 @@ All notable changes to Devmate are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [semver](https://semver.org/).
 
+## [1.1.0] - 2026-11-21
+
+### Added
+
+- Search built-in and custom topics and question prompts, with an optional filter to include reference answers.
+- Compile-time LLM defaults can now be used in local release-mode test builds.
+
+### Changed
+
+- Removed the misleading offline badge from the home header.
+
 ## [1.0.0] - 2026-11-18
 
 ### Added

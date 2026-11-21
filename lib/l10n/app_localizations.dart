@@ -98,6 +98,54 @@ abstract class AppLocalizations {
     Locale('ru'),
   ];
 
+  /// No description provided for @searchTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поиск'**
+  String get searchTitle;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поиск по темам и вопросам'**
+  String get searchHint;
+
+  /// No description provided for @searchClear.
+  ///
+  /// In ru, this message translates to:
+  /// **'Очистить поиск'**
+  String get searchClear;
+
+  /// No description provided for @searchAnswers.
+  ///
+  /// In ru, this message translates to:
+  /// **'Искать также в ответах'**
+  String get searchAnswers;
+
+  /// No description provided for @searchStart.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите слово или фразу для поиска по библиотеке.'**
+  String get searchStart;
+
+  /// No description provided for @searchEmpty.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ничего не найдено.'**
+  String get searchEmpty;
+
+  /// No description provided for @searchTopics.
+  ///
+  /// In ru, this message translates to:
+  /// **'Темы'**
+  String get searchTopics;
+
+  /// No description provided for @searchQuestions.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопросы'**
+  String get searchQuestions;
+
   /// No description provided for @questionsManagement.
   ///
   /// In ru, this message translates to:
@@ -355,12 +403,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Настройки AI'**
   String get aiSettings;
-
-  /// No description provided for @offlineBadge.
-  ///
-  /// In ru, this message translates to:
-  /// **'ОФЛАЙН'**
-  String get offlineBadge;
 
   /// No description provided for @logoSemantics.
   ///

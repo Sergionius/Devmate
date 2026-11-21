@@ -12,6 +12,7 @@ import 'ui/design_system.dart';
 import 'ui/edit_topic_screen.dart';
 import 'ui/home_screen.dart';
 import 'ui/practice_screen.dart';
+import 'ui/search_screen.dart';
 import 'ui/settings_screen.dart';
 import 'ui/topic_screen.dart';
 import 'ui/training_view_model.dart';
@@ -80,6 +81,10 @@ GoRouter createRouter(
           settingsRepository: llmSettings,
           aiDisabled: aiDisabled,
         ),
+      ),
+      _route(
+        path: '/search',
+        builder: (context, state) => SearchScreen(catalog: catalog),
       ),
       _route(
         path: '/settings',
