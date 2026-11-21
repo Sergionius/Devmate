@@ -2,8 +2,7 @@
 # and attaches it to a GitHub Release. The web demo lives on GitHub Pages
 # (deployed on every push to main by pages.yml), so it is not rebuilt here.
 #
-# The APK is debug-signed — labeled as a demo build in the release notes —
-# because no production signing key exists yet.
+# Release signing credentials are supplied as GitHub Actions secrets.
 #
 # Run the integration smoke locally before tagging:
 #   flutter test integration_test
@@ -46,13 +45,36 @@ jobs:
 
       - run: flutter pub get
 
-      # Debug-signed: installs and runs for a demo; do not ship as production.
-      - run: flutter build apk --debug
+      - name: Build and verify release-signed APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          : "${ANDROID_KEYSTORE_BASE64:?Missing ANDROID_KEYSTORE_BASE64 secret}"
+          : "${ANDROID_STORE_PASSWORD:?Missing ANDROID_STORE_PASSWORD secret}"
+          : "${ANDROID_KEY_PASSWORD:?Missing ANDROID_KEY_PASSWORD secret}"
+          : "${ANDROID_KEY_ALIAS:?Missing ANDROID_KEY_ALIAS secret}"
+          trap 'rm -f android/key.properties android/app/upload-keystore.jks' EXIT
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' \
+            "$ANDROID_STORE_PASSWORD" "$ANDROID_KEY_PASSWORD" "$ANDROID_KEY_ALIAS" > android/key.properties
+          chmod 600 android/key.properties android/app/upload-keystore.jks
+          flutter build apk --release
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          for signer in "$ANDROID_HOME"/build-tools/*/apksigner; do :; done
+          actual=$("$signer" verify --print-certs "$apk" | awk '/Signer #1 certificate SHA-256 digest:/ {print $NF; exit}')
+          expected=$(keytool -exportcert -keystore android/app/upload-keystore.jks \
+            -storepass "$ANDROID_STORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" | sha256sum | cut -d' ' -f1)
+          test -n "$actual" && test "$actual" = "$expected"
+          echo 'Release APK signature matches the configured upload keystore.'
 
       - uses: actions/upload-artifact@v4
         with:
-          name: devmate-android-demo-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: devmate-android-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
   create-release:
@@ -68,7 +90,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: devmate-android-demo-apk
+          name: devmate-android-release-apk
           path: artifacts
 
       - name: Create GitHub Release
@@ -80,5 +102,5 @@ jobs:
           gh release create "$RELEASE_TAG" \
             --title "$RELEASE_TAG" \
             --generate-notes \
-            --notes "**Demo APK is debug-signed — for trying the app, not production.** Web demo: https://sergionius.github.io/Devmate/" \
-            artifacts/app-debug.apk
+            --notes "**Android release APK signed with the project's upload keystore.** Web demo: https://sergionius.github.io/Devmate/" \
+            artifacts/app-release.apk
