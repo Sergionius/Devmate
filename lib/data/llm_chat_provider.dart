@@ -154,7 +154,7 @@ Future<LlmErrorKind?> testLlmConnection(LlmSettings settings) async {
 abstract interface class ChatSession implements Listenable {
   List<LlmChatMessage> get history;
 
-  Stream<String> sendMessageStream(String prompt);
+  Stream<String> sendMessageStream(String prompt, {bool retry = false});
 
   void dispose();
 }
@@ -177,8 +177,16 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
   List<LlmChatMessage> get history => List.unmodifiable(_history);
 
   @override
-  Stream<String> sendMessageStream(String prompt) {
+  Stream<String> sendMessageStream(String prompt, {bool retry = false}) {
     assert(_controller == null, 'Concurrent streams are not supported');
+    if (retry &&
+        (_history.length < 2 ||
+            _history[_history.length - 2].role != LlmRole.user ||
+            _history[_history.length - 2].text != prompt ||
+            _history.last.role != LlmRole.assistant ||
+            !_history.last.failed)) {
+      throw StateError('Only the last failed reply can be retried');
+    }
     late final StreamController<String> controller;
     var received = false;
     late final LlmChatMessage assistant;
@@ -206,9 +214,14 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
       onListen: () {
         if (!_active) return;
         assistant = LlmChatMessage(LlmRole.assistant, '');
-        _history
-          ..add(LlmChatMessage(LlmRole.user, prompt))
-          ..add(assistant);
+        if (retry) {
+          _history.removeLast();
+          _history.add(assistant);
+        } else {
+          _history
+            ..add(LlmChatMessage(LlmRole.user, prompt))
+            ..add(assistant);
+        }
         if (_active) notifyListeners();
         try {
           final client = _clientFor(_settings);

@@ -1,8 +1,35 @@
 import 'package:devmate/ui/design_system.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {
+  testWidgets(
+    'app bar titles center on Apple platforms and stay left elsewhere',
+    (tester) async {
+      final titles = <bool>{};
+      Future<void> pump(TargetPlatform platform) async {
+        debugDefaultTargetPlatformOverride = platform;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: devmateTheme(),
+            home: Builder(
+              builder: (context) {
+                titles.add(Theme.of(context).appBarTheme.centerTitle!);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+        debugDefaultTargetPlatformOverride = null;
+      }
+
+      await pump(TargetPlatform.iOS);
+      await pump(TargetPlatform.android);
+      expect(titles, unorderedEquals([true, false]));
+    },
+  );
+
   testWidgets('dark theme keeps the historical palette', (tester) async {
     late final ThemeData theme;
     await tester.pumpWidget(
@@ -28,6 +55,10 @@ void main() {
     expect(theme.focusColor, DevmateStates.focusOverlay);
     expect(theme.splashColor, DevmateStates.pressedOverlay);
     expect(theme.inputDecorationTheme.fillColor, DevmateColors.surface);
+    expect(
+      theme.inputDecorationTheme.disabledBorder,
+      isA<OutlineInputBorder>(),
+    );
   });
 
   testWidgets('light theme uses the approved light palette', (tester) async {
@@ -61,6 +92,10 @@ void main() {
 
     expect(theme.scaffoldBackgroundColor, palette.canvas);
     expect(theme.inputDecorationTheme.fillColor, palette.surface);
+    expect(
+      theme.inputDecorationTheme.disabledBorder,
+      isA<OutlineInputBorder>(),
+    );
     expect(theme.colorScheme.primary, palette.accent);
     expect(theme.colorScheme.onPrimary, palette.accentInk);
     expect(theme.appBarTheme.backgroundColor, palette.canvas);

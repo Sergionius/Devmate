@@ -194,7 +194,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => context.push(
                       '/chat/question/${widget.topic.id}/$_index',
-                      extra: _answer.text.trim(),
+                      extra: _answer.text,
                     ),
                     icon: const Icon(Icons.chat_rounded, size: 20),
                     label: Text(context.l10n.discussWithAi),
@@ -260,7 +260,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                           child: OutlinedButton.icon(
                             onPressed: () => context.push(
                               '/chat/question/${widget.topic.id}/$_index',
-                              extra: _answer.text.trim(),
+                              extra: _answer.text,
                             ),
                             icon: const Icon(Icons.chat_rounded, size: 20),
                             label: Text(context.l10n.discussWithAi),
@@ -317,7 +317,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => context.push(
                       '/chat/question/${widget.topic.id}/$_index',
-                      extra: _answer.text.trim(),
+                      extra: _rewrite.text.trim().isNotEmpty
+                          ? _rewrite.text
+                          : _answer.text,
                     ),
                     icon: const Icon(Icons.chat_rounded, size: 20),
                     label: Text(context.l10n.discussWithAi),

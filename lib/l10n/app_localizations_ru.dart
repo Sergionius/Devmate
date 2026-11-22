@@ -10,6 +10,116 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
+  String get chatRetry => 'Повторить';
+
+  @override
+  String get chatCopy => 'Копировать';
+
+  @override
+  String get chatShare => 'Поделиться';
+
+  @override
+  String get vacancyTitle => 'Вопросы из вакансии';
+
+  @override
+  String get vacancyCardSubtitle =>
+      'Вставьте описание вакансии и составьте вопросы с AI';
+
+  @override
+  String get vacancyIntro =>
+      'Вставьте текст вакансии. Перед сохранением можно проверить и изменить каждый вопрос. Текст будет отправлен вашему AI-провайдеру.';
+
+  @override
+  String get vacancyText => 'Текст вакансии';
+
+  @override
+  String get vacancyHint => 'Требования, обязанности, стек технологий…';
+
+  @override
+  String get vacancyGenerate => 'Сгенерировать вопросы';
+
+  @override
+  String get vacancyGenerating => 'Генерируем вопросы…';
+
+  @override
+  String get vacancyPreview => 'Предпросмотр вопросов';
+
+  @override
+  String get vacancyDestination => 'Куда сохранить';
+
+  @override
+  String get vacancyNewTopic => 'Новая тема';
+
+  @override
+  String get vacancyTopicTitle => 'Название темы';
+
+  @override
+  String get vacancyTopicDescription => 'Описание темы';
+
+  @override
+  String get vacancyQuestion => 'Вопрос';
+
+  @override
+  String get vacancyAnswer => 'Эталонный ответ';
+
+  @override
+  String get vacancyEdit => 'Изменить вопрос';
+
+  @override
+  String get vacancyApply => 'Готово';
+
+  @override
+  String get vacancyRemove => 'Удалить вопрос';
+
+  @override
+  String get vacancySave => 'Сохранить вопросы в тему';
+
+  @override
+  String get vacancyValidate =>
+      'Укажите название темы и оставьте хотя бы один заполненный вопрос.';
+
+  @override
+  String get vacancyNoQuestions =>
+      'Все вопросы удалены. Сгенерируйте их заново, чтобы сохранить тему.';
+
+  @override
+  String get vacancyAiDisabled =>
+      'AI отключён в настройках. Генерация вопросов из вакансии недоступна.';
+
+  @override
+  String get vacancyEnterText => 'Вставьте текст вакансии.';
+
+  @override
+  String get vacancyReplaceTitle => 'Заменить предпросмотр?';
+
+  @override
+  String get vacancyReplaceWarning =>
+      'Текущие вопросы и ваши правки исчезнут. Сгенерировать вопросы заново?';
+
+  @override
+  String get vacancyReplaceAction => 'Сгенерировать заново';
+
+  @override
+  String get vacancyKeyRequired =>
+      'Добавьте API-ключ в настройках AI, чтобы создавать вопросы из вакансии.';
+
+  @override
+  String get vacancyGenerationError =>
+      'Не удалось получить вопросы. Проверьте подключение и попробуйте снова.';
+
+  @override
+  String get vacancyInvalidReply =>
+      'AI вернул ответ без списка вопросов. Попробуйте сгенерировать их снова.';
+
+  @override
+  String get vacancySaveError =>
+      'Не удалось сохранить вопросы. Проверьте тему и повторите попытку.';
+
+  @override
+  String get vacancyInstruction =>
+      'Ты составляешь вопросы для подготовки к техническому собеседованию по тексту вакансии. Отвечай на русском. Выдели реальные требования и технологии; не выдумывай то, чего нет в вакансии. Верни строго один JSON-объект без Markdown и пояснений: title (короткое название темы), description (краткое описание), questions (массив из 4–10 объектов с непустыми prompt и answer). Ответы должны быть точными, по 2–4 предложения. Вопросы не должны повторяться. Если вакансия недостаточно информативна, верни вопросы только по явно указанным требованиям.';
+
+  @override
   String get searchTitle => 'Поиск';
 
   @override

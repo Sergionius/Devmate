@@ -5,6 +5,7 @@ import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/l10n/app_localizations.dart';
 import 'package:devmate/main.dart';
 import 'package:devmate/ui/design_system.dart';
+import 'package:devmate/ui/platform_ui.dart';
 import 'package:devmate/ui/training_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -22,6 +23,82 @@ class MemoryProgressRepository implements ProgressRepository {
 }
 
 void main() {
+  testWidgets(
+    'home app bar exposes brand actions and enables status-bar scroll-to-top',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final model = TrainingViewModel(MemoryProgressRepository());
+      await model.load();
+      final app = DevmateApp(
+        viewModel: model,
+        llmSettings: LlmSettingsRepository(),
+        catalog: TopicCatalog(baseTopics: questionCatalogFor('en')),
+        locale: const Locale('en'),
+      );
+      await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SliverAppBar), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
+      await tester.tap(find.byTooltip('Search'));
+      await tester.pumpAndSettle();
+      expect(find.text('Search'), findsWidgets);
+      app.router.go('/');
+      await tester.pumpAndSettle();
+
+      final scaffoldContext = tester.element(find.byType(Scaffold).first);
+      final primary = PrimaryScrollController.maybeOf(scaffoldContext);
+      expect(primary, isNotNull);
+      expect(primary!.hasClients, isTrue);
+      await tester.drag(
+        find.text('TECH INTERVIEW PREP'),
+        const Offset(0, -600),
+      );
+      await tester.pumpAndSettle();
+      final position = primary.positions.first;
+      expect(position.pixels, greaterThan(0));
+      primary.animateTo(
+        position.minScrollExtent,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCirc,
+      );
+      await tester.pumpAndSettle();
+      expect(primary.positions.first.pixels, 0);
+    },
+  );
+
+  testWidgets(
+    'web home keeps the static brand header without a sliver app bar',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      debugDevmateSimulateWeb = true;
+      addTearDown(() => debugDevmateSimulateWeb = false);
+      final model = TrainingViewModel(MemoryProgressRepository());
+      await model.load();
+      final app = DevmateApp(
+        viewModel: model,
+        llmSettings: LlmSettingsRepository(),
+        catalog: TopicCatalog(baseTopics: questionCatalogFor('en')),
+        locale: const Locale('en'),
+      );
+      await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SliverAppBar), findsNothing);
+      expect(find.byType(Image), findsOneWidget);
+      expect(find.text('devmate'), findsOneWidget);
+      await tester.tap(find.byTooltip('Search'));
+      await tester.pumpAndSettle();
+      expect(find.text('Search'), findsWidgets);
+    },
+  );
+
   testWidgets('practice deep link for an empty topic shows not found', (
     tester,
   ) async {
@@ -48,6 +125,10 @@ void main() {
     final model = TrainingViewModel(MemoryProgressRepository());
     await model.load();
     final catalog = TopicCatalog(baseTopics: questionCatalogFor('en'));
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       DevmateApp(
         viewModel: model,
@@ -60,12 +141,8 @@ void main() {
 
     final grid = tester.widget<SliverGrid>(find.byType(SliverGrid));
     expect(grid.delegate.estimatedChildCount, catalog.topics.length + 1);
-    final scrollable = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(
-      find.text('Add topic'),
-      300,
-      scrollable: scrollable,
-    );
+    await tester.ensureVisible(find.text('Add topic'));
+    await tester.pump();
     expect(find.text('Add topic'), findsOneWidget);
     await tester.tap(find.text('Add topic'));
     await tester.pumpAndSettle();
@@ -117,7 +194,7 @@ void main() {
     expect(find.text('Pick a topic'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Frontend'),
-      250,
+      80,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.ensureVisible(find.text('Frontend'));

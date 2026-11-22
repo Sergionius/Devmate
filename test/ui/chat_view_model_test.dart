@@ -52,10 +52,14 @@ class _FakeSession extends ChangeNotifier implements ChatSession {
   List<LlmChatMessage> get history => List.unmodifiable(_history);
 
   @override
-  Stream<String> sendMessageStream(String prompt) {
-    _history
-      ..add(LlmChatMessage(LlmRole.user, prompt))
-      ..add(LlmChatMessage(LlmRole.assistant, ''));
+  Stream<String> sendMessageStream(String prompt, {bool retry = false}) {
+    if (retry) {
+      _history.removeLast();
+      assert(_history.last.text == prompt);
+    } else {
+      _history.add(LlmChatMessage(LlmRole.user, prompt));
+    }
+    _history.add(LlmChatMessage(LlmRole.assistant, ''));
     notifyListeners();
     final reply = _replyIndex < _replies.length ? _replies[_replyIndex++] : '';
     if (reply is Stream<String>) {

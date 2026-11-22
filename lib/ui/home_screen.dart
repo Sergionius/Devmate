@@ -58,9 +58,11 @@ class _HomeScreenState extends State<HomeScreen> {
       0,
       (sum, topic) => sum + topic.questions.length,
     );
-    return Scaffold(
-      body: SafeArea(
-        child: ListenableBuilder(
+    return PrimaryScrollController(
+      controller: _scrollController,
+      // Lets the iOS status-bar tap scroll the home list back to top.
+      child: Scaffold(
+        body: ListenableBuilder(
           listenable: Listenable.merge([
             widget.viewModel,
             widget.catalog,
@@ -68,12 +70,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ]),
           builder: (context, _) {
             final aiDisabled = widget.aiDisabled?.value ?? false;
+            final webLike = devmateIsWebLike;
             if (widget.viewModel.loading) {
               return const Center(
                 child: DevmateSpinner(size: 28, strokeWidth: 2.5),
               );
             }
-            return Center(
+            final scrollArea = Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1080),
                 child: Scrollbar(
@@ -81,15 +84,69 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: CustomScrollView(
                     controller: _scrollController,
                     slivers: [
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
-                        sliver: SliverList.list(
-                          children: [
-                            _BrandHeader(
+                      if (webLike) ...[
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+                          sliver: SliverToBoxAdapter(
+                            child: _BrandHeader(
                               onOpenSettings: () => context.push('/settings'),
                               onOpenSearch: () => context.push('/search'),
                             ),
-                            const SizedBox(height: 38),
+                          ),
+                        ),
+                      ] else
+                        SliverAppBar(
+                          backgroundColor: context.colors.canvas,
+                          surfaceTintColor: Colors.transparent,
+                          automaticallyImplyLeading: false,
+                          floating: true,
+                          pinned: false,
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.asset(
+                              'assets/branding/devmate_source.png',
+                              width: 30,
+                              height: 30,
+                              fit: BoxFit.contain,
+                              semanticLabel: context.l10n.logoSemantics,
+                            ),
+                          ),
+                          title: GestureDetector(
+                            onTap: _scrollToTop,
+                            child: const Text('devmate'),
+                          ),
+                          actions: [
+                            IconButton(
+                              tooltip: context.l10n.searchTitle,
+                              onPressed: () => context.push('/search'),
+                              icon: Icon(
+                                Icons.search_rounded,
+                                size: 23,
+                                color: context.colors.muted,
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: context.l10n.settingsTitle,
+                              onPressed: () => context.push('/settings'),
+                              icon: Icon(
+                                Icons.settings_rounded,
+                                size: 21,
+                                color: context.colors.muted,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                        ),
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          24,
+                          webLike ? 38 : 22,
+                          24,
+                          24,
+                        ),
+                        sliver: SliverList.list(
+                          children: [
+                            if (!webLike) const SizedBox(height: 16),
                             LayoutBuilder(
                               builder: (context, constraints) {
                                 final intro = _Intro(
@@ -159,6 +216,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               const _FreeChatCard(),
                               const SizedBox(height: 12),
                               const _CreateTopicCard(),
+                              const SizedBox(height: 12),
+                              _VacancyCard(
+                                onTap: () => context.push('/vacancy'),
+                              ),
                             ],
                             const SizedBox(height: 40),
                             Row(
@@ -237,9 +298,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             );
+            // Web keeps the old SafeArea layout; mobile slivers already
+            // consume the top inset via SliverAppBar.
+            return webLike ? SafeArea(child: scrollArea) : scrollArea;
           },
         ),
       ),
+    );
+  }
+
+  void _scrollToTop() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels <= position.minScrollExtent) return;
+    _scrollController.animateTo(
+      position.minScrollExtent,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -270,54 +345,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
-}
-
-class _BrandHeader extends StatelessWidget {
-  const _BrandHeader({
-    required this.onOpenSettings,
-    required this.onOpenSearch,
-  });
-  final VoidCallback onOpenSettings;
-  final VoidCallback onOpenSearch;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Image.asset(
-          'assets/branding/devmate_source.png',
-          width: 42,
-          height: 42,
-          semanticLabel: context.l10n.logoSemantics,
-        ),
-      ),
-      const SizedBox(width: 11),
-      const Text(
-        'devmate',
-        style: TextStyle(
-          fontSize: 21,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.8,
-        ),
-      ),
-      const Spacer(),
-      IconButton(
-        tooltip: context.l10n.searchTitle,
-        onPressed: onOpenSearch,
-        icon: Icon(Icons.search_rounded, size: 23, color: context.colors.muted),
-      ),
-      IconButton(
-        tooltip: context.l10n.settingsTitle,
-        onPressed: onOpenSettings,
-        icon: Icon(
-          Icons.settings_rounded,
-          size: 21,
-          color: context.colors.muted,
-        ),
-      ),
-    ],
-  );
 }
 
 class _Intro extends StatelessWidget {
@@ -537,6 +564,68 @@ class _CreateTopicCard extends StatelessWidget {
                   const SizedBox(height: DevmateSpacing.xs),
                   Text(
                     context.l10n.createChatCardSubtitle,
+                    style: TextStyle(
+                      color: context.colors.muted,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: context.colors.muted),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _VacancyCard extends StatelessWidget {
+  const _VacancyCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: context.colors.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: DevmateRadii.cardBorder,
+      side: BorderSide(color: context.colors.border),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: DevmatePressable(
+      borderRadius: DevmateRadii.cardBorder,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(DevmateSpacing.xl + 2),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: context.colors.lavender,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                Icons.work_outline_rounded,
+                color: context.colors.accentInk,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: DevmateSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.vacancyTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: DevmateSpacing.xs),
+                  Text(
+                    context.l10n.vacancyCardSubtitle,
                     style: TextStyle(
                       color: context.colors.muted,
                       fontSize: 14,
@@ -812,5 +901,56 @@ class _TopicTile extends StatelessWidget {
         ),
       ),
     ),
+  );
+}
+
+/// Static in-content header used on web/desktop: logo, wordmark and the
+/// search/settings actions scroll away together with the page content.
+class _BrandHeader extends StatelessWidget {
+  const _BrandHeader({
+    required this.onOpenSettings,
+    required this.onOpenSearch,
+  });
+
+  final VoidCallback onOpenSettings;
+  final VoidCallback onOpenSearch;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.asset(
+          'assets/branding/devmate_source.png',
+          width: 42,
+          height: 42,
+          semanticLabel: context.l10n.logoSemantics,
+        ),
+      ),
+      const SizedBox(width: 11),
+      const Text(
+        'devmate',
+        style: TextStyle(
+          fontSize: 21,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.8,
+        ),
+      ),
+      const Spacer(),
+      IconButton(
+        tooltip: context.l10n.searchTitle,
+        onPressed: onOpenSearch,
+        icon: Icon(Icons.search_rounded, size: 23, color: context.colors.muted),
+      ),
+      IconButton(
+        tooltip: context.l10n.settingsTitle,
+        onPressed: onOpenSettings,
+        icon: Icon(
+          Icons.settings_rounded,
+          size: 21,
+          color: context.colors.muted,
+        ),
+      ),
+    ],
   );
 }

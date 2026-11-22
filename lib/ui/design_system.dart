@@ -288,6 +288,12 @@ ThemeData devmateTheme() => _devmateTheme(Brightness.dark);
 
 ThemeData devmateLightTheme() => _devmateTheme(Brightness.light);
 
+/// iOS/macOS nav bars keep centered titles; Android and web stay left-aligned.
+bool get _appleLikeTitles =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS);
+
 ThemeData _devmateTheme(Brightness brightness) {
   final palette = brightness == Brightness.dark
       ? DevmatePalette.dark
@@ -370,7 +376,7 @@ ThemeData _devmateTheme(Brightness brightness) {
     appBarTheme: AppBarTheme(
       backgroundColor: palette.canvas,
       foregroundColor: palette.primary,
-      centerTitle: false,
+      centerTitle: _appleLikeTitles,
       scrolledUnderElevation: 0,
       titleTextStyle: TextStyle(
         fontSize: 18,
@@ -422,6 +428,10 @@ ThemeData _devmateTheme(Brightness brightness) {
       fillColor: palette.surface,
       hintStyle: TextStyle(color: palette.muted),
       enabledBorder: OutlineInputBorder(
+        borderRadius: DevmateRadii.fieldBorder,
+        borderSide: BorderSide(color: palette.border),
+      ),
+      disabledBorder: OutlineInputBorder(
         borderRadius: DevmateRadii.fieldBorder,
         borderSide: BorderSide(color: palette.border),
       ),

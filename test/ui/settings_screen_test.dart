@@ -185,7 +185,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(DropdownButtonFormField<LlmPreset>), findsNothing);
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Provider'));
+      await tester.tap(find.widgetWithText(DevmateSelectionField, 'Provider'));
       await tester.pumpAndSettle();
       expect(find.byType(CupertinoActionSheet), findsOneWidget);
       await tester.tap(find.text('OpenAI').last);

@@ -10,6 +10,116 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get chatRetry => 'Retry';
+
+  @override
+  String get chatCopy => 'Copy';
+
+  @override
+  String get chatShare => 'Share';
+
+  @override
+  String get vacancyTitle => 'Questions from a job posting';
+
+  @override
+  String get vacancyCardSubtitle =>
+      'Turn a job description into interview questions with AI';
+
+  @override
+  String get vacancyIntro =>
+      'Paste the job description below. You can review and edit each question before saving. The text will be sent to your AI provider.';
+
+  @override
+  String get vacancyText => 'Job description';
+
+  @override
+  String get vacancyHint => 'Requirements, responsibilities, tech stack…';
+
+  @override
+  String get vacancyGenerate => 'Generate questions';
+
+  @override
+  String get vacancyGenerating => 'Generating questions…';
+
+  @override
+  String get vacancyPreview => 'Review questions';
+
+  @override
+  String get vacancyDestination => 'Save to';
+
+  @override
+  String get vacancyNewTopic => 'New topic';
+
+  @override
+  String get vacancyTopicTitle => 'Topic title';
+
+  @override
+  String get vacancyTopicDescription => 'Topic description';
+
+  @override
+  String get vacancyQuestion => 'Question';
+
+  @override
+  String get vacancyAnswer => 'Reference answer';
+
+  @override
+  String get vacancyEdit => 'Edit question';
+
+  @override
+  String get vacancyApply => 'Done';
+
+  @override
+  String get vacancyRemove => 'Remove question';
+
+  @override
+  String get vacancySave => 'Save questions to topic';
+
+  @override
+  String get vacancyValidate =>
+      'Enter a topic title and keep at least one complete question.';
+
+  @override
+  String get vacancyNoQuestions =>
+      'All questions were removed. Generate a new set before saving.';
+
+  @override
+  String get vacancyAiDisabled =>
+      'AI is disabled in Settings. Job posting import is unavailable.';
+
+  @override
+  String get vacancyEnterText => 'Paste a job description first.';
+
+  @override
+  String get vacancyReplaceTitle => 'Replace the current preview?';
+
+  @override
+  String get vacancyReplaceWarning =>
+      'The current questions and your edits will be lost. Generate a new set?';
+
+  @override
+  String get vacancyReplaceAction => 'Generate again';
+
+  @override
+  String get vacancyKeyRequired =>
+      'Add an API key in AI settings to generate questions from a job posting.';
+
+  @override
+  String get vacancyGenerationError =>
+      'Couldn\'t generate questions. Check your connection and try again.';
+
+  @override
+  String get vacancyInvalidReply =>
+      'The AI response didn\'t include a valid list of questions. Try generating again.';
+
+  @override
+  String get vacancySaveError =>
+      'Couldn\'t save the questions. Check the destination and try again.';
+
+  @override
+  String get vacancyInstruction =>
+      'Create technical interview practice questions based on the job description. Write in English. Focus on requirements and technologies actually mentioned; do not invent unrelated requirements. Return exactly one JSON object, without Markdown or commentary: title (a short topic title), description (a brief summary), and questions (an array of 4–10 objects, each with a non-empty prompt and answer). Each reference answer should be accurate and 2–4 sentences long. Avoid duplicate questions. If the description is vague, cover only the requirements it explicitly states.';
+
+  @override
   String get searchTitle => 'Search';
 
   @override

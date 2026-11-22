@@ -13,7 +13,10 @@ import 'design_system.dart';
 @visibleForTesting
 bool debugDevmateSimulateWeb = false;
 
-bool get _isWeb => kIsWeb || debugDevmateSimulateWeb;
+/// True when rendering in a browser (or simulating one in tests).
+bool get devmateIsWebLike => kIsWeb || debugDevmateSimulateWeb;
+
+bool get _isWeb => devmateIsWebLike;
 
 bool _isAppleLike(BuildContext context) {
   if (_isWeb) return false;
@@ -92,6 +95,58 @@ InputDecoration devmateFieldDecoration(
     labelText: label,
     hintText: hint,
     alignLabelWithHint: alignLabelWithHint,
+  );
+}
+
+/// A full-width selection control with its current value at the trailing edge.
+class DevmateSelectionField extends StatelessWidget {
+  const DevmateSelectionField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onPressed,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: context.colors.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: DevmateRadii.controlBorder,
+      side: BorderSide(color: context.colors.border),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: DevmatePressable(
+      borderRadius: DevmateRadii.controlBorder,
+      onTap: onPressed,
+      enabled: onPressed != null,
+      haptic: DevmateHapticImpact.selection,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 54),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(child: Text(label, overflow: TextOverflow.ellipsis)),
+              Flexible(
+                fit: FlexFit.tight,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(CupertinoIcons.chevron_down, size: 16),
+            ],
+          ),
+        ),
+      ),
+    ),
   );
 }
 

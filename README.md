@@ -6,6 +6,8 @@
 
 An offline trainer for technical interview prep. A Flutter app for iOS, Android, and Web.
 
+[Open the Telegram Mini App](https://t.me/devmate_interview_bot/devmate)
+
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the layer map and the decisions behind it.
 
 > The UI kit is built on [`material_ui`](https://pub.dev/packages/material_ui) and

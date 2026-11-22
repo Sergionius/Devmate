@@ -128,6 +128,23 @@ void main() {
     },
   );
 
+  test('retry replaces failed reply without duplicating user prompt', () async {
+    final provider = OpenAiCompatibleProvider(
+      settings: _unreachable,
+      systemPrompt: 'sys',
+    );
+    await provider.sendMessageStream('First').toList();
+    expect(provider.history.last.failed, isTrue);
+    await provider.sendMessageStream('First', retry: true).toList();
+    expect(provider.history.length, 2);
+    expect(provider.history.first.text, 'First');
+    expect(provider.history.last.failed, isTrue);
+    expect(
+      () => provider.sendMessageStream('Other', retry: true),
+      throwsStateError,
+    );
+  });
+
   test('a failed assistant turn is excluded from later context', () async {
     final provider = OpenAiCompatibleProvider(
       settings: _unreachable,

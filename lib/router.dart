@@ -16,6 +16,7 @@ import 'ui/search_screen.dart';
 import 'ui/settings_screen.dart';
 import 'ui/topic_screen.dart';
 import 'ui/training_view_model.dart';
+import 'ui/vacancy_screen.dart';
 
 CustomTransitionPage<Object?> _transitionPage(
   BuildContext context,
@@ -79,6 +80,14 @@ GoRouter createRouter(
           viewModel: viewModel,
           catalog: catalog,
           settingsRepository: llmSettings,
+          aiDisabled: aiDisabled,
+        ),
+      ),
+      _route(
+        path: '/vacancy',
+        builder: (context, state) => VacancyScreen(
+          catalog: catalog,
+          settings: llmSettings,
           aiDisabled: aiDisabled,
         ),
       ),
@@ -202,7 +211,11 @@ GoRouter createRouter(
                   question.prompt,
                   question.answer,
                 ) +
-                (draft.isNotEmpty ? context.l10n.questionDraftPart(draft) : ''),
+                (draft.trim().isNotEmpty
+                    ? context.l10n.questionDraftPart(draft.trim())
+                    : ''),
+            initialQuestion: question.prompt,
+            initialInput: draft,
             intro: context.l10n.questionChatIntro,
             settingsRepository: llmSettings,
             catalog: catalog,

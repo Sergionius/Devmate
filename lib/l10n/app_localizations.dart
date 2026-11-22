@@ -98,6 +98,204 @@ abstract class AppLocalizations {
     Locale('ru'),
   ];
 
+  /// No description provided for @chatRetry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить'**
+  String get chatRetry;
+
+  /// No description provided for @chatCopy.
+  ///
+  /// In ru, this message translates to:
+  /// **'Копировать'**
+  String get chatCopy;
+
+  /// No description provided for @chatShare.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поделиться'**
+  String get chatShare;
+
+  /// No description provided for @vacancyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопросы из вакансии'**
+  String get vacancyTitle;
+
+  /// No description provided for @vacancyCardSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вставьте описание вакансии и составьте вопросы с AI'**
+  String get vacancyCardSubtitle;
+
+  /// No description provided for @vacancyIntro.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вставьте текст вакансии. Перед сохранением можно проверить и изменить каждый вопрос. Текст будет отправлен вашему AI-провайдеру.'**
+  String get vacancyIntro;
+
+  /// No description provided for @vacancyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Текст вакансии'**
+  String get vacancyText;
+
+  /// No description provided for @vacancyHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Требования, обязанности, стек технологий…'**
+  String get vacancyHint;
+
+  /// No description provided for @vacancyGenerate.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сгенерировать вопросы'**
+  String get vacancyGenerate;
+
+  /// No description provided for @vacancyGenerating.
+  ///
+  /// In ru, this message translates to:
+  /// **'Генерируем вопросы…'**
+  String get vacancyGenerating;
+
+  /// No description provided for @vacancyPreview.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предпросмотр вопросов'**
+  String get vacancyPreview;
+
+  /// No description provided for @vacancyDestination.
+  ///
+  /// In ru, this message translates to:
+  /// **'Куда сохранить'**
+  String get vacancyDestination;
+
+  /// No description provided for @vacancyNewTopic.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новая тема'**
+  String get vacancyNewTopic;
+
+  /// No description provided for @vacancyTopicTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Название темы'**
+  String get vacancyTopicTitle;
+
+  /// No description provided for @vacancyTopicDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Описание темы'**
+  String get vacancyTopicDescription;
+
+  /// No description provided for @vacancyQuestion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопрос'**
+  String get vacancyQuestion;
+
+  /// No description provided for @vacancyAnswer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эталонный ответ'**
+  String get vacancyAnswer;
+
+  /// No description provided for @vacancyEdit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменить вопрос'**
+  String get vacancyEdit;
+
+  /// No description provided for @vacancyApply.
+  ///
+  /// In ru, this message translates to:
+  /// **'Готово'**
+  String get vacancyApply;
+
+  /// No description provided for @vacancyRemove.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить вопрос'**
+  String get vacancyRemove;
+
+  /// No description provided for @vacancySave.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранить вопросы в тему'**
+  String get vacancySave;
+
+  /// No description provided for @vacancyValidate.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите название темы и оставьте хотя бы один заполненный вопрос.'**
+  String get vacancyValidate;
+
+  /// No description provided for @vacancyNoQuestions.
+  ///
+  /// In ru, this message translates to:
+  /// **'Все вопросы удалены. Сгенерируйте их заново, чтобы сохранить тему.'**
+  String get vacancyNoQuestions;
+
+  /// No description provided for @vacancyAiDisabled.
+  ///
+  /// In ru, this message translates to:
+  /// **'AI отключён в настройках. Генерация вопросов из вакансии недоступна.'**
+  String get vacancyAiDisabled;
+
+  /// No description provided for @vacancyEnterText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вставьте текст вакансии.'**
+  String get vacancyEnterText;
+
+  /// No description provided for @vacancyReplaceTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заменить предпросмотр?'**
+  String get vacancyReplaceTitle;
+
+  /// No description provided for @vacancyReplaceWarning.
+  ///
+  /// In ru, this message translates to:
+  /// **'Текущие вопросы и ваши правки исчезнут. Сгенерировать вопросы заново?'**
+  String get vacancyReplaceWarning;
+
+  /// No description provided for @vacancyReplaceAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сгенерировать заново'**
+  String get vacancyReplaceAction;
+
+  /// No description provided for @vacancyKeyRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавьте API-ключ в настройках AI, чтобы создавать вопросы из вакансии.'**
+  String get vacancyKeyRequired;
+
+  /// No description provided for @vacancyGenerationError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось получить вопросы. Проверьте подключение и попробуйте снова.'**
+  String get vacancyGenerationError;
+
+  /// No description provided for @vacancyInvalidReply.
+  ///
+  /// In ru, this message translates to:
+  /// **'AI вернул ответ без списка вопросов. Попробуйте сгенерировать их снова.'**
+  String get vacancyInvalidReply;
+
+  /// No description provided for @vacancySaveError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сохранить вопросы. Проверьте тему и повторите попытку.'**
+  String get vacancySaveError;
+
+  /// No description provided for @vacancyInstruction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ты составляешь вопросы для подготовки к техническому собеседованию по тексту вакансии. Отвечай на русском. Выдели реальные требования и технологии; не выдумывай то, чего нет в вакансии. Верни строго один JSON-объект без Markdown и пояснений: title (короткое название темы), description (краткое описание), questions (массив из 4–10 объектов с непустыми prompt и answer). Ответы должны быть точными, по 2–4 предложения. Вопросы не должны повторяться. Если вакансия недостаточно информативна, верни вопросы только по явно указанным требованиям.'**
+  String get vacancyInstruction;
+
   /// No description provided for @searchTitle.
   ///
   /// In ru, this message translates to:

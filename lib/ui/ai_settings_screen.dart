@@ -201,22 +201,10 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
                   const SizedBox(height: 24),
                   if (!kIsWeb &&
                       Theme.of(context).platform == TargetPlatform.iOS)
-                    OutlinedButton(
+                    DevmateSelectionField(
+                      label: context.l10n.providerLabel,
+                      value: context.presetLabel(_preset),
                       onPressed: _choosePreset,
-                      child: Row(
-                        children: [
-                          Expanded(child: Text(context.l10n.providerLabel)),
-                          Flexible(
-                            child: Text(
-                              context.presetLabel(_preset),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(CupertinoIcons.chevron_down, size: 16),
-                        ],
-                      ),
                     )
                   else
                     DropdownButtonFormField<LlmPreset>(

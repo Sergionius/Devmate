@@ -30,8 +30,14 @@ void main() {
         ),
         GoRoute(
           path: '/chat/question/:topicId/:index',
-          builder: (context, state) =>
-              const Center(child: Text('question-chat-marker')),
+          builder: (context, state) => Center(
+            child: Column(
+              children: [
+                const Text('question-chat-marker'),
+                Text('draft:${state.extra ?? ''}'),
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -70,6 +76,7 @@ void main() {
 
       await tapVisible(tester, find.text('Work through it with AI'));
       expect(find.text('question-chat-marker'), findsOneWidget);
+      expect(find.text('draft:My answer'), findsOneWidget);
     },
   );
 
@@ -85,8 +92,13 @@ void main() {
 
     expect(find.byKey(const Key('rewrite-field')), findsOneWidget);
 
+    await tester.enterText(
+      find.byKey(const Key('rewrite-field')),
+      'Rewrite draft',
+    );
     await tapVisible(tester, find.text('Work through it with AI'));
     expect(find.text('question-chat-marker'), findsOneWidget);
+    expect(find.text('draft:Rewrite draft'), findsOneWidget);
   });
 
   testWidgets('the AI walkthrough button is hidden when AI is disabled', (

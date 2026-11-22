@@ -16,6 +16,7 @@ class ChatViewModel extends ChangeNotifier {
     this.catalog,
     this.appendToTopic,
     this.editQuestionId,
+    this.onSessionDetached,
     ChatSession Function(LlmSettings settings, String systemPrompt)?
     sessionFactory,
   }) : _sessionFactory =
@@ -33,6 +34,8 @@ class ChatViewModel extends ChangeNotifier {
   final String? appendToTopic;
 
   final String? editQuestionId;
+
+  final void Function(ChatSession session)? onSessionDetached;
 
   final ChatSession Function(LlmSettings settings, String systemPrompt)
   _sessionFactory;
@@ -109,6 +112,7 @@ class ChatViewModel extends ChangeNotifier {
   void _detachSession() {
     final session = _session;
     if (session == null) return;
+    onSessionDetached?.call(session);
     session.removeListener(_onSessionChanged);
     session.dispose();
     _session = null;
@@ -122,14 +126,31 @@ class ChatViewModel extends ChangeNotifier {
     _notify();
   }
 
-  Future<void> send(String text) async {
+  String? get retryPrompt {
+    final history = messages;
+    if (_streaming ||
+        history.length < 2 ||
+        history.last.role != LlmRole.assistant ||
+        !history.last.failed ||
+        history[history.length - 2].role != LlmRole.user) {
+      return null;
+    }
+    return history[history.length - 2].text;
+  }
+
+  Future<void> retry() async {
+    final prompt = retryPrompt;
+    if (prompt != null) await send(prompt, retry: true);
+  }
+
+  Future<void> send(String text, {bool retry = false}) async {
     text = text.trim();
     final session = _session;
     if (text.isEmpty || _streaming || session == null) return;
     _streaming = true;
     _notify();
     try {
-      await for (final _ in session.sendMessageStream(text)) {}
+      await for (final _ in session.sendMessageStream(text, retry: retry)) {}
     } catch (error) {
       debugPrint('ChatViewModel: response stream failed: $error');
     } finally {
@@ -147,7 +168,12 @@ class ChatViewModel extends ChangeNotifier {
   void _parseReplyActions() {
     final catalog = this.catalog;
     final session = _session;
-    if (catalog == null || session == null) return;
+    if (catalog == null ||
+        session == null ||
+        session.history.isEmpty ||
+        session.history.last.failed) {
+      return;
+    }
     final reply = session.history.last.text;
     if (editQuestionId != null) {
       final update = parseAnswerUpdate(reply);

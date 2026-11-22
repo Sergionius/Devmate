@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
 // flutter_markdown_plus requires Flutter's ThemeData, not material_ui.ThemeData.
 // ignore: deprecated_member_use
@@ -8,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
@@ -30,6 +32,8 @@ class ChatScreen extends StatefulWidget {
     this.catalog,
     this.appendToTopic,
     this.editQuestionId,
+    this.initialQuestion,
+    this.initialInput,
     this.sessionFactory,
   });
 
@@ -42,6 +46,8 @@ class ChatScreen extends StatefulWidget {
   final String? appendToTopic;
 
   final String? editQuestionId;
+  final String? initialQuestion;
+  final String? initialInput;
   final List<String> suggestions;
   final String intro;
 
@@ -55,11 +61,22 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _input = TextEditingController();
   final FocusNode _inputFocus = FocusNode();
+  final ScrollController _messageScroll = ScrollController();
+  ChatSession? _observedSession;
+  bool _scrollCorrectionScheduled = false;
   late final ChatViewModel _viewModel;
+  LlmChatMessage? _questionContext;
 
   @override
   void initState() {
     super.initState();
+    _input.text = widget.initialInput ?? '';
+    if (widget.initialQuestion != null) {
+      _questionContext = LlmChatMessage(
+        LlmRole.assistant,
+        widget.initialQuestion!,
+      );
+    }
 
     _viewModel = ChatViewModel(
       settingsRepository: widget.settingsRepository,
@@ -67,11 +84,21 @@ class _ChatScreenState extends State<ChatScreen> {
       catalog: widget.catalog,
       appendToTopic: widget.appendToTopic,
       editQuestionId: widget.editQuestionId,
+      onSessionDetached: _detachObservedSession,
       sessionFactory: widget.sessionFactory,
     )..loadSettings();
   }
 
+  void _detachObservedSession(ChatSession session) {
+    if (identical(_observedSession, session)) {
+      session.removeListener(_keepReadingPosition);
+      _observedSession = null;
+    }
+  }
+
   Future<void> _openSettings() async {
+    final session = _observedSession;
+    if (session != null) _detachObservedSession(session);
     await context.push('/settings/ai');
     if (!mounted) return;
     await _viewModel.reloadSettings();
@@ -239,6 +266,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildEmpty() => ListView(
     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
     children: [
+      if (_questionContext != null) ...[
+        _messageItem(_questionContext!, streaming: false, retryable: false),
+        const SizedBox(height: 24),
+      ],
       Eyebrow(context.l10n.chatEyebrow, color: context.colors.muted),
       const SizedBox(height: 12),
       Text(widget.intro, style: const TextStyle(fontSize: 18, height: 1.45)),
@@ -256,24 +287,200 @@ class _ChatScreenState extends State<ChatScreen> {
     ],
   );
 
+  void _keepReadingPosition() {
+    if (!_messageScroll.hasClients ||
+        _messageScroll.position.pixels < 48 ||
+        _scrollCorrectionScheduled) {
+      return;
+    }
+    final before = _messageScroll.position.maxScrollExtent;
+    final offset = _messageScroll.offset;
+    _scrollCorrectionScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollCorrectionScheduled = false;
+      if (!mounted || !_messageScroll.hasClients) return;
+      final position = _messageScroll.position;
+      if (position.isScrollingNotifier.value ||
+          (position.pixels - offset).abs() > 2 ||
+          position.maxScrollExtent == before) {
+        return;
+      }
+      _messageScroll.jumpTo(
+        (offset + position.maxScrollExtent - before).clamp(
+          0.0,
+          position.maxScrollExtent,
+        ),
+      );
+    });
+  }
+
+  Widget _messageItem(
+    LlmChatMessage message, {
+    required bool streaming,
+    required bool retryable,
+  }) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Semantics(
+        onLongPress: () => _showMessageActions(message),
+        child: GestureDetector(
+          onLongPress: () => _showMessageActions(message),
+          child: SelectionArea(
+            contextMenuBuilder: (context, selection) =>
+                flutter_material.AdaptiveTextSelectionToolbar.buttonItems(
+                  anchors: selection.contextMenuAnchors,
+                  buttonItems: [
+                    flutter_material.ContextMenuButtonItem(
+                      label: context.l10n.chatCopy,
+                      onPressed: () {
+                        selection.hideToolbar();
+                        final text = _messageText(message);
+                        if (text.isNotEmpty) {
+                          Clipboard.setData(ClipboardData(text: text));
+                        }
+                      },
+                    ),
+                    flutter_material.ContextMenuButtonItem(
+                      label: context.l10n.chatShare,
+                      onPressed: () {
+                        selection.hideToolbar();
+                        _shareMessage(message);
+                      },
+                    ),
+                  ],
+                ),
+            child: _Bubble(message: message, streaming: streaming),
+          ),
+        ),
+      ),
+      if (retryable)
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: TextButton.icon(
+            onPressed: _viewModel.retry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(context.l10n.chatRetry),
+            style: TextButton.styleFrom(foregroundColor: context.colors.error),
+          ),
+        ),
+    ],
+  );
+
+  String _messageText(LlmChatMessage message) => message.failed
+      ? context.llmErrorText(message.errorKind ?? LlmErrorKind.connection)
+      : message.text;
+
+  Future<void> _shareMessage(LlmChatMessage message) async {
+    final text = _messageText(message);
+    if (!mounted || text.isEmpty) return;
+    final size = MediaQuery.sizeOf(context);
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        sharePositionOrigin: Rect.fromLTWH(
+          size.width / 2,
+          size.height / 2,
+          1,
+          1,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMessageActions(LlmChatMessage message) async {
+    final action = !kIsWeb && Theme.of(context).platform == TargetPlatform.iOS
+        ? await showCupertinoModalPopup<String>(
+            context: context,
+            builder: (sheetContext) => CupertinoTheme(
+              data: CupertinoThemeData(
+                brightness: Theme.of(sheetContext).brightness,
+                primaryColor: context.colors.accent,
+                scaffoldBackgroundColor: context.colors.canvas,
+                barBackgroundColor: context.colors.surfaceRaised,
+              ),
+              child: CupertinoActionSheet(
+                actions: [
+                  CupertinoActionSheetAction(
+                    onPressed: () => Navigator.pop(sheetContext, 'copy'),
+                    child: Text(context.l10n.chatCopy),
+                  ),
+                  CupertinoActionSheetAction(
+                    onPressed: () => Navigator.pop(sheetContext, 'share'),
+                    child: Text(context.l10n.chatShare),
+                  ),
+                ],
+                cancelButton: CupertinoActionSheetAction(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  child: Text(context.l10n.cancelAction),
+                ),
+              ),
+            ),
+          )
+        : await showModalBottomSheet<String>(
+            context: context,
+            builder: (sheetContext) => SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.copy_rounded),
+                    title: Text(context.l10n.chatCopy),
+                    onTap: () => Navigator.pop(sheetContext, 'copy'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.share_rounded),
+                    title: Text(context.l10n.chatShare),
+                    onTap: () => Navigator.pop(sheetContext, 'share'),
+                  ),
+                ],
+              ),
+            ),
+          );
+    if (!mounted || action == null) return;
+    final text = _messageText(message);
+    if (text.isEmpty) return;
+    if (action == 'copy') {
+      await Clipboard.setData(ClipboardData(text: text));
+    } else if (action == 'share') {
+      await _shareMessage(message);
+    }
+  }
+
   Widget _buildMessages() {
     final messages = _viewModel.messages;
+    final current = _viewModel.session;
+    if (!identical(current, _observedSession)) {
+      _observedSession?.removeListener(_keepReadingPosition);
+      _observedSession = current;
+      current?.addListener(_keepReadingPosition);
+    }
     return ListView.builder(
+      controller: _messageScroll,
       reverse: true,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      itemCount: messages.length,
+      itemCount: messages.length + (_questionContext == null ? 0 : 1),
       itemBuilder: (context, index) {
+        if (index == messages.length) {
+          return _messageItem(
+            _questionContext!,
+            streaming: false,
+            retryable: false,
+          );
+        }
         final message = messages[messages.length - 1 - index];
         final isLast = index == 0;
         final session = _viewModel.session;
         if (!isLast || session == null) {
-          return _Bubble(message: message, streaming: false);
+          return _messageItem(message, streaming: false, retryable: false);
         }
 
         return AnimatedBuilder(
           animation: session,
-          builder: (context, _) =>
-              _Bubble(message: message, streaming: _viewModel.streaming),
+          builder: (context, _) => _messageItem(
+            message,
+            streaming: _viewModel.streaming,
+            retryable: _viewModel.retryPrompt != null,
+          ),
         );
       },
     );
@@ -337,6 +544,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    final session = _observedSession;
+    if (session != null) _detachObservedSession(session);
+    _messageScroll.dispose();
     _input.dispose();
     _inputFocus.dispose();
     _viewModel.dispose();

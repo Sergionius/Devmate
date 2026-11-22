@@ -4,6 +4,25 @@ All notable changes to Devmate are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [semver](https://semver.org/).
 
+## [1.2.0] - 2026-11-22
+
+### Added
+
+- Vacancy import: paste a job posting, AI turns it into interview questions;
+  edit each question inline and save them to a new or an existing topic.
+  iOS uses action sheets for the destination picker and the editor dialogs.
+- Question chat now opens with the question itself as the first message and
+  prefills your draft answer without auto-sending it.
+
+### Changed
+
+- Home header on mobile hides when scrolling down and reappears on scroll up;
+  the web layout keeps the static in-content header (smoother web scrolling).
+- iOS app bar titles are centered; disabled multiline fields keep the
+  rounded border on iOS instead of the Material underline.
+- Chat robustness: leaving the chat or opening AI settings mid-stream no
+  longer hits disposed sessions; vacancy editor keeps validated drafts.
+
 ## [1.1.0] - 2026-11-21
 
 ### Added

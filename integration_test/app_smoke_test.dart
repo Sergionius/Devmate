@@ -38,35 +38,42 @@ void main() {
         viewModel: model,
         llmSettings: LlmSettingsRepository(),
         catalog: catalog,
+        // Pin English: the assertions below match the en strings and must
+        // not depend on the host device's system locale.
+        locale: const Locale('en'),
       ),
     );
     await tester.pumpAndSettle();
 
-    // Home shows the library with built-in topics (the section eyebrow is
-    // rendered uppercase).
+    // Home shows the intro first; the library section builds lazily,
+    // so scroll down until its heading appears.
     await _waitFor(
       tester,
-      () => find.text('PICK A TOPIC').evaluate().isNotEmpty,
+      () => find.text('TECH INTERVIEW PREP').evaluate().isNotEmpty,
     );
-    // Diagnostics for CI: dump what is actually on screen if the wait
-    // succeeded or not — makes the first failing run interpretable.
-    final screenTexts = find
-        .byType(Text)
-        .evaluate()
-        .take(60)
-        .map((element) {
-          final widget = element.widget as Text;
-          return widget.data ?? widget.textSpan?.toPlainText() ?? '<rich>';
-        })
-        .join(' | ');
-    // ignore: avoid_print
-    print('HOME TEXTS: $screenTexts');
-    expect(find.text('PICK A TOPIC'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Pick a topic'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Pick a topic'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Frontend').first,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Frontend').first);
     await tester.pumpAndSettle();
 
     // Topic screen → the first unanswered question.
-    await tester.ensureVisible(find.text('Continue training'));
+    await tester.scrollUntilVisible(
+      find.text('Continue training'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Continue training'));
     await tester.pumpAndSettle();
     expect(find.byType(PracticeScreen), findsOneWidget);
@@ -78,10 +85,24 @@ void main() {
       'an HTTP request, the server responds with HTML, the browser renders '
       'the page and runs JavaScript.',
     );
-    await tester.ensureVisible(find.text('Compare with reference'));
+    // Dismiss the simulator keyboard so drag targets and hit testing are
+    // not affected by the shrunken viewport.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Compare with reference'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Compare with reference'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Knew it · +10 XP'));
+    await tester.scrollUntilVisible(
+      find.text('Knew it · +10 XP'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Knew it · +10 XP'));
 
     // The score is persisted (10 XP for a confident answer).
