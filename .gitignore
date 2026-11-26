@@ -54,7 +54,9 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# Android/Gradle build output and Kotlin compiler state
+/android/build/
+/android/.kotlin/
 /android/app/debug
 /android/app/profile
 /android/app/release
