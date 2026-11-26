@@ -41,7 +41,13 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v5
         with:
+          name: github-pages-${{ github.run_attempt }}
           path: build/web
+
+      # Artifact uploads can take a moment to appear in the Pages API.
+      - run: sleep 10
 
       - id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
