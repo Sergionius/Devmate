@@ -61,8 +61,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      const title = 'New chat';
-      expect(find.text(title), findsOneWidget);
+      const action = 'New chat';
+      expect(find.byTooltip(action), findsOneWidget);
 
       final gesture = await tester.startGesture(const Offset(2, 300));
       await gesture.moveBy(const Offset(60, 0));
@@ -72,7 +72,7 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      expect(find.text(title), findsNothing);
+      expect(find.byTooltip(action), findsNothing);
       expect(router.routeInformationProvider.value.uri.path, '/');
     } finally {
       debugDefaultTargetPlatformOverride = null;

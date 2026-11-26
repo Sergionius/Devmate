@@ -1,3 +1,6 @@
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -76,14 +79,93 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
     }
   }
 
+  bool _isIos(BuildContext context) =>
+      !kIsWeb && Theme.of(context).platform == TargetPlatform.iOS;
+
+  bool _isAndroid(BuildContext context) =>
+      !kIsWeb && Theme.of(context).platform == TargetPlatform.android;
+
+  Widget _chatTile(BuildContext context, SavedChat chat, String date) {
+    final tile = ListTile(
+      title: Text(
+        chat.title.isEmpty ? context.l10n.chatNew : chat.title,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(date),
+      onTap: () => _open(chat),
+      trailing: _isIos(context)
+          ? null
+          : IconButton(
+              icon: const Icon(Icons.delete_outline_rounded),
+              tooltip: context.l10n.chatDeleteTitle,
+              onPressed: () => _delete(chat),
+            ),
+    );
+    if (!_isIos(context)) return Card(child: tile);
+
+    return Semantics(
+      customSemanticsActions: {
+        CustomSemanticsAction(label: context.l10n.chatDeleteTitle): () =>
+            _delete(chat),
+      },
+      child: Dismissible(
+        key: ValueKey(chat.id),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (_) async {
+          await _delete(chat);
+          return false; // The repository reload removes the row after confirmation.
+        },
+        background: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsetsDirectional.only(end: 20),
+          alignment: AlignmentDirectional.centerEnd,
+          decoration: BoxDecoration(
+            color: context.colors.error,
+            borderRadius: DevmateRadii.cardBorder,
+          ),
+          child: const Icon(CupertinoIcons.delete, color: Colors.white),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Material(
+            color: context.colors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: DevmateRadii.cardBorder,
+              side: BorderSide(color: context.colors.border),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: tile,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(context.l10n.freeChatTitle)),
-    floatingActionButton: FloatingActionButton.extended(
-      onPressed: _busy ? null : _newChat,
-      icon: const Icon(Icons.add_rounded),
-      label: Text(context.l10n.chatNew),
+    appBar: AppBar(
+      title: Text(context.l10n.freeChatTitle),
+      actions: [
+        if (!_isAndroid(context))
+          IconButton(
+            tooltip: context.l10n.chatNew,
+            onPressed: _busy ? null : _newChat,
+            icon: Icon(
+              _isIos(context)
+                  ? CupertinoIcons.square_pencil
+                  : Icons.add_rounded,
+            ),
+          ),
+      ],
     ),
+    floatingActionButton: _isAndroid(context)
+        ? FloatingActionButton.extended(
+            onPressed: _busy ? null : _newChat,
+            icon: const Icon(Icons.add_rounded),
+            label: Text(context.l10n.chatNew),
+          )
+        : null,
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
@@ -122,28 +204,18 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
               );
             }
             return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
+              padding: EdgeInsets.fromLTRB(
+                12,
+                12,
+                12,
+                _isAndroid(context) ? 88 : 16,
+              ),
               itemCount: chats.length,
               itemBuilder: (context, index) {
                 final chat = chats[index];
                 final date = MaterialLocalizations.of(context)
                     .formatMediumDate(chat.updatedAt.toLocal());
-                return Card(
-                  child: ListTile(
-                    title: Text(
-                      chat.title.isEmpty ? context.l10n.chatNew : chat.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(date),
-                    onTap: () => _open(chat),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded),
-                      tooltip: context.l10n.chatDeleteTitle,
-                      onPressed: () => _delete(chat),
-                    ),
-                  ),
-                );
+                return _chatTile(context, chat, date);
               },
             );
           },
