@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:devmate/data/chat_history_repository.dart';
 import 'package:devmate/data/llm_chat_provider.dart';
 import 'package:devmate/data/llm_settings.dart';
 import 'package:devmate/data/topic_catalog.dart';
@@ -7,6 +8,7 @@ import 'package:devmate/ui/chat_view_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sembast/sembast_memory.dart';
 
 import '../support/memory_secure_storage.dart';
 
@@ -128,6 +130,41 @@ const _draftJson =
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('free chat hydrates saved messages and rejects unknown ID', () async {
+    final history = ChatHistoryRepository(
+      openDatabase: () =>
+          databaseFactoryMemory.openDatabase('view-model-history'),
+    );
+    final chat = await history.create();
+    await history.saveMessages(chat.id, [
+      LlmChatMessage(LlmRole.user, 'Saved prompt'),
+      LlmChatMessage(LlmRole.assistant, 'Saved answer'),
+    ]);
+    final settings = await _configuredRepo();
+    final model = ChatViewModel(
+      settingsRepository: settings,
+      historyRepository: history,
+      chatId: chat.id,
+    );
+    await model.loadSettings();
+    model.ensureSession();
+    expect(model.messages.map((message) => message.text), [
+      'Saved prompt',
+      'Saved answer',
+    ]);
+    model.dispose();
+
+    final missing = ChatViewModel(
+      settingsRepository: settings,
+      historyRepository: history,
+      chatId: 'unknown',
+    );
+    await missing.loadSettings();
+    expect(missing.settingsPhase, ChatSettingsPhase.error);
+    expect(missing.historyLoadFailed, isTrue);
+    missing.dispose();
+  });
 
   test('send consumes the stream to the end and fills the history', () async {
     final repo = await _configuredRepo();

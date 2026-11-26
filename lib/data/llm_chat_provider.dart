@@ -163,11 +163,12 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
   OpenAiCompatibleProvider({
     required this._settings,
     required this._systemPrompt,
-  });
+    List<LlmChatMessage> initialHistory = const [],
+  }) : _history = List.of(initialHistory);
 
   final LlmSettings _settings;
   final String _systemPrompt;
-  final List<LlmChatMessage> _history = [];
+  final List<LlmChatMessage> _history;
 
   bool _active = true;
   Completer<void>? _abort;

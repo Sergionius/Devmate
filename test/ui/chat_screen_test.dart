@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:devmate/data/chat_history_repository.dart';
 import 'package:devmate/data/llm_chat_provider.dart';
 import 'package:devmate/data/llm_settings.dart';
 import 'package:devmate/data/progress_repository.dart';
@@ -14,6 +15,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:sembast/sembast_memory.dart';
 
 import '../support/memory_secure_storage.dart';
 
@@ -41,6 +43,9 @@ void main() {
       model,
       LlmSettingsRepository(storage: MemorySecureStorage()),
       TopicCatalog(),
+      chatHistory: ChatHistoryRepository(
+        openDatabase: () => databaseFactoryMemory.openDatabase('chat-cta-test'),
+      ),
     );
     addTearDown(router.dispose);
     await tester.pumpWidget(
@@ -53,6 +58,8 @@ void main() {
       ),
     );
     unawaited(router.push('/chat/free'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New chat'));
     await tester.pumpAndSettle();
 
     // Without a key the chat offers settings; the CTA leads straight to the
@@ -78,7 +85,10 @@ void main() {
     // ready with the input field instead of the no-key CTA.
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(router.routeInformationProvider.value.uri.path, '/chat/free');
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      startsWith('/chat/free/'),
+    );
     expect(find.byType(TextField), findsOneWidget);
     expect(find.text('Open settings'), findsNothing);
   });

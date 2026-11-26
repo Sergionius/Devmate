@@ -13,6 +13,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatRetry => 'Retry';
 
   @override
+  String get chatNew => 'New chat';
+
+  @override
+  String get chatHistoryEmpty =>
+      'No conversations yet. Start a new chat to save your conversation.';
+
+  @override
+  String get chatHistoryReadError => 'Could not load chat history';
+
+  @override
+  String get chatHistorySaveError => 'Could not save this conversation';
+
+  @override
+  String get chatDeleteTitle => 'Delete conversation';
+
+  @override
+  String get chatDeleteWarning =>
+      'This conversation and all its messages will be permanently deleted.';
+
+  @override
+  String get backupIncludeChats => 'Include general chat history';
+
+  @override
+  String backupChatsInFile(int count) {
+    return 'Conversations in file: $count. Replacing this backup will delete your current chat history and replace it with these conversations.';
+  }
+
+  @override
+  String get chatHistoryWriteError => 'Could not update chat history';
+
+  @override
   String get chatCopy => 'Copy';
 
   @override

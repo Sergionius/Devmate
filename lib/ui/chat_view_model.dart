@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../data/chat_history_repository.dart';
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
 import '../data/topic_catalog.dart';
@@ -17,6 +18,8 @@ class ChatViewModel extends ChangeNotifier {
     this.appendToTopic,
     this.editQuestionId,
     this.onSessionDetached,
+    this.historyRepository,
+    this.chatId,
     ChatSession Function(LlmSettings settings, String systemPrompt)?
     sessionFactory,
   }) : _sessionFactory =
@@ -36,6 +39,10 @@ class ChatViewModel extends ChangeNotifier {
   final String? editQuestionId;
 
   final void Function(ChatSession session)? onSessionDetached;
+  final ChatHistoryRepository? historyRepository;
+  final String? chatId;
+  List<LlmChatMessage> _savedMessages = const [];
+  Object? persistenceError;
 
   final ChatSession Function(LlmSettings settings, String systemPrompt)
   _sessionFactory;
@@ -44,6 +51,7 @@ class ChatViewModel extends ChangeNotifier {
   ChatSettingsPhase _settingsPhase = ChatSettingsPhase.loading;
   LlmSettings? _settings;
   Object? _settingsError;
+  bool historyLoadFailed = false;
   bool _streaming = false;
   bool _draftSaving = false;
   TopicDraft? _draft;
@@ -73,6 +81,14 @@ class ChatViewModel extends ChangeNotifier {
     _notify();
     try {
       _settings = await settingsRepository.load();
+      historyLoadFailed = true;
+      if (historyRepository != null && chatId != null) {
+        if (await historyRepository!.get(chatId!) == null) {
+          throw StateError('Conversation not found');
+        }
+        _savedMessages = await historyRepository!.loadMessages(chatId!);
+      }
+      historyLoadFailed = false;
       _settingsError = null;
       _settingsPhase = ChatSettingsPhase.ready;
     } catch (error) {
@@ -89,7 +105,15 @@ class ChatViewModel extends ChangeNotifier {
     if (_session != null || settings == null || !settings.isConfigured) {
       return;
     }
-    _attachSession(_sessionFactory(settings, systemPrompt));
+    _attachSession(
+      historyRepository != null && chatId != null
+          ? OpenAiCompatibleProvider(
+              settings: settings,
+              systemPrompt: systemPrompt,
+              initialHistory: _savedMessages,
+            )
+          : _sessionFactory(settings, systemPrompt),
+    );
   }
 
   Future<void> reloadSettings() async {
@@ -157,6 +181,27 @@ class ChatViewModel extends ChangeNotifier {
       _streaming = false;
       _parseReplyActions();
       _notify();
+    }
+
+    if (historyRepository != null && chatId != null) {
+      if (_disposed &&
+          session.history.isNotEmpty &&
+          session.history.last.role == LlmRole.assistant &&
+          session.history.last.text.isEmpty &&
+          !session.history.last.failed) {
+        session.history.last
+          ..failed = true
+          ..errorKind = LlmErrorKind.emptyReply;
+      }
+      try {
+        await historyRepository!.saveMessages(chatId!, session.history);
+        persistenceError = null;
+        _savedMessages = session.history;
+      } catch (error) {
+        persistenceError = error;
+        debugPrint('ChatViewModel: failed to save history: $error');
+        _notify();
+      }
     }
 
     if (_reloadPending) {

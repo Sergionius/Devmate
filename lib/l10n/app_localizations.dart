@@ -104,6 +104,60 @@ abstract class AppLocalizations {
   /// **'Повторить'**
   String get chatRetry;
 
+  /// No description provided for @chatNew.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый чат'**
+  String get chatNew;
+
+  /// No description provided for @chatHistoryEmpty.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока нет бесед. Начните новый чат, чтобы сохранить разговор.'**
+  String get chatHistoryEmpty;
+
+  /// No description provided for @chatHistoryReadError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить историю чатов'**
+  String get chatHistoryReadError;
+
+  /// No description provided for @chatHistorySaveError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сохранить переписку'**
+  String get chatHistorySaveError;
+
+  /// No description provided for @chatDeleteTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить беседу'**
+  String get chatDeleteTitle;
+
+  /// No description provided for @chatDeleteWarning.
+  ///
+  /// In ru, this message translates to:
+  /// **'Беседа и все её сообщения будут удалены без возможности восстановления.'**
+  String get chatDeleteWarning;
+
+  /// No description provided for @backupIncludeChats.
+  ///
+  /// In ru, this message translates to:
+  /// **'Включить историю общего чата'**
+  String get backupIncludeChats;
+
+  /// No description provided for @backupChatsInFile.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бесед в файле: {count}. При замене текущая история чатов будет удалена и заменена беседами из файла.'**
+  String backupChatsInFile(int count);
+
+  /// No description provided for @chatHistoryWriteError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось изменить историю чатов'**
+  String get chatHistoryWriteError;
+
   /// No description provided for @chatCopy.
   ///
   /// In ru, this message translates to:

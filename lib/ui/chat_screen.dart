@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../data/chat_history_repository.dart';
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
 import '../data/topic_catalog.dart';
@@ -35,6 +36,8 @@ class ChatScreen extends StatefulWidget {
     this.initialQuestion,
     this.initialInput,
     this.sessionFactory,
+    this.historyRepository,
+    this.chatId,
   });
 
   final String title;
@@ -53,6 +56,8 @@ class ChatScreen extends StatefulWidget {
 
   final ChatSession Function(LlmSettings settings, String systemPrompt)?
   sessionFactory;
+  final ChatHistoryRepository? historyRepository;
+  final String? chatId;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -85,6 +90,8 @@ class _ChatScreenState extends State<ChatScreen> {
       appendToTopic: widget.appendToTopic,
       editQuestionId: widget.editQuestionId,
       onSessionDetached: _detachObservedSession,
+      historyRepository: widget.historyRepository,
+      chatId: widget.chatId,
       sessionFactory: widget.sessionFactory,
     )..loadSettings();
   }
@@ -110,7 +117,15 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
     _input.clear();
-    _viewModel.send(trimmed);
+    _viewModel.send(trimmed).then((_) {
+      if (mounted && _viewModel.persistenceError != null) {
+        showDevmateNotice(
+          context,
+          context.l10n.chatHistorySaveError,
+          kind: DevmateNoticeKind.error,
+        );
+      }
+    });
   }
 
   KeyEventResult _inputKeyHandler(FocusNode node, KeyEvent event) {
@@ -130,6 +145,17 @@ class _ChatScreenState extends State<ChatScreen> {
     _sendFromInput(_input.text);
     _inputFocus.unfocus();
     return KeyEventResult.handled;
+  }
+
+  Future<void> _retry() async {
+    await _viewModel.retry();
+    if (mounted && _viewModel.persistenceError != null) {
+      showDevmateNotice(
+        context,
+        context.l10n.chatHistorySaveError,
+        kind: DevmateNoticeKind.error,
+      );
+    }
   }
 
   Future<void> _applyDraft() async {
@@ -168,6 +194,12 @@ class _ChatScreenState extends State<ChatScreen> {
       title: Text(widget.title, overflow: TextOverflow.ellipsis),
       automaticallyImplyLeading: !kIsWeb,
       actions: [
+        if (kIsWeb && widget.chatId != null)
+          IconButton(
+            tooltip: context.l10n.freeChatTitle,
+            onPressed: () => context.go('/chat/free'),
+            icon: const Icon(Icons.list_rounded),
+          ),
         IconButton(
           tooltip: context.l10n.aiSettings,
           onPressed: _openSettings,
@@ -185,7 +217,11 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              context.l10n.chatSettingsReadError('${_viewModel.settingsError}'),
+              _viewModel.historyLoadFailed
+                  ? context.l10n.chatHistoryReadError
+                  : context.l10n.chatSettingsReadError(
+                      '${_viewModel.settingsError}',
+                    ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -357,7 +393,7 @@ class _ChatScreenState extends State<ChatScreen> {
         Align(
           alignment: AlignmentDirectional.centerEnd,
           child: TextButton.icon(
-            onPressed: _viewModel.retry,
+            onPressed: _retry,
             icon: const Icon(Icons.refresh_rounded),
             label: Text(context.l10n.chatRetry),
             style: TextButton.styleFrom(foregroundColor: context.colors.error),

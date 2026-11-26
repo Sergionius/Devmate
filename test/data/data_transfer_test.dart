@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:devmate/data/chat_history_repository.dart';
 import 'package:devmate/data/data_transfer.dart';
+import 'package:devmate/data/llm_chat_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -49,6 +51,78 @@ void main() {
       expect(encoded.containsKey('exportedAt'), isFalse);
       expect(encoded.containsKey('preferences'), isFalse);
       expect(encoded.containsKey('ai'), isFalse);
+      expect(encoded.containsKey('chats'), isFalse);
+    });
+  });
+
+  group('chat history in backup', () {
+    test(
+      'opt-in exports messages, empty list is explicit, absent preserves',
+      () {
+        final chat = ChatArchive(
+          SavedChat(id: 'id', title: 'Hi', updatedAt: DateTime.utc(2026)),
+          [LlmChatMessage(LlmRole.user, 'Hi')],
+        );
+        final backup = DevmateBackup(
+          catalog: sampleCatalog(),
+          scores: const {},
+          chats: [chat],
+        );
+        expect(
+          DevmateBackup.parse(backup.encode())
+              .chats!
+              .single
+              .messages
+              .single
+              .text,
+          'Hi',
+        );
+        final empty = DevmateBackup(
+          catalog: sampleCatalog(),
+          scores: const {},
+          chats: [],
+        );
+        expect(DevmateBackup.parse(empty.encode()).chats, isEmpty);
+        expect(DevmateBackup.parse(sampleBackup().encode()).chats, isNull);
+      },
+    );
+
+    test(
+      'provider error details are not included in exported chat history',
+      () {
+        final failed = LlmChatMessage(LlmRole.assistant, '', failed: true)
+          ..errorDetail = 'secret request URL';
+        final backup = DevmateBackup(
+          catalog: sampleCatalog(),
+          scores: const {},
+          chats: [
+            ChatArchive(
+              SavedChat(id: '1', title: 'Hi', updatedAt: DateTime.utc(2026)),
+              [failed],
+            ),
+          ],
+        );
+        expect(backup.encode(), isNot(contains('secret request URL')));
+      },
+    );
+
+    test('invalid chats reject import instead of partially accepting them', () {
+      final source = jsonEncode({
+        'format': 'devmate-backup',
+        'version': 1,
+        'catalog': sampleCatalog(),
+        'chats': [
+          {
+            'id': 'x',
+            'title': 'X',
+            'updatedAt': '2026-01-01',
+            'messages': [
+              {'role': 'system', 'text': 'bad'},
+            ],
+          },
+        ],
+      });
+      expect(() => DevmateBackup.parse(source), throwsFormatException);
     });
   });
 

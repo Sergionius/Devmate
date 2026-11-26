@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../data/app_preferences.dart';
+import '../data/chat_history_repository.dart';
 import '../data/data_transfer.dart';
 import '../data/llm_settings.dart';
 import '../data/topic_catalog.dart';
@@ -37,6 +38,10 @@ class _BackupImportDialog extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(l10n.backupSummary(topicCount, backup.scores.length)),
+        if (backup.chats != null) ...[
+          const SizedBox(height: DevmateSpacing.sm),
+          Text(l10n.backupChatsInFile(backup.chats!.length)),
+        ],
         const SizedBox(height: DevmateSpacing.lg),
         if (!kIsWeb && Theme.of(context).platform == TargetPlatform.iOS)
           Column(
@@ -201,6 +206,7 @@ class DataSettingsScreen extends StatefulWidget {
     required this.catalog,
     required this.viewModel,
     this.appPreferences,
+    this.chatHistory,
     this.pickJsonFile = defaultPickJsonFile,
     this.shareJsonFile = defaultShareJsonFile,
   });
@@ -209,6 +215,7 @@ class DataSettingsScreen extends StatefulWidget {
   final TopicCatalog catalog;
   final TrainingViewModel viewModel;
   final AppPreferencesRepository? appPreferences;
+  final ChatHistoryRepository? chatHistory;
 
   /// Reads JSON from a user-picked file; `null` means the user canceled.
   final Future<String?> Function() pickJsonFile;
@@ -334,6 +341,34 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
   }
 
   Future<void> _exportBackup() async {
+    var includeChats = false;
+    final choice = await showDevmateForm<bool>(
+      context: context,
+      title: context.l10n.exportBackup,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CheckboxListTile(
+              title: Text(context.l10n.backupIncludeChats),
+              value: includeChats,
+              onChanged: (value) =>
+                  setDialogState(() => includeChats = value ?? false),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, includeChats),
+              child: Text(context.l10n.exportBackup),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(context.l10n.cancelAction),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
     setState(() => _working = true);
     try {
       final now = DateTime.now();
@@ -344,6 +379,7 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
         scores: widget.viewModel.scores,
         exportedAt: now.toUtc().toIso8601String(),
         preferences: await widget.appPreferences?.exportBackup(),
+        chats: choice ? await widget.chatHistory?.export() : null,
         ai: {
           if (ai.baseUrl.isNotEmpty) 'baseUrl': ai.baseUrl,
           if (ai.model.isNotEmpty) 'model': ai.model,
@@ -422,6 +458,9 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
     await widget.catalog.restoreJson(jsonEncode(backup.catalog));
     await widget.viewModel.restoreProgress(backup.scores);
     await widget.appPreferences?.restoreBackup(backup.preferences ?? const {});
+    if (backup.chats != null) {
+      await widget.chatHistory?.import(backup.chats!, merge: false);
+    }
     final ai = backup.ai;
     if (ai != null && (ai.containsKey('baseUrl') || ai.containsKey('model'))) {
       final current = await widget.settingsRepository.load();
@@ -440,6 +479,9 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
       await widget.catalog.addJson(jsonEncode(backup.catalog));
     }
     await widget.viewModel.restoreProgress(backup.scores, merge: true);
+    if (backup.chats != null) {
+      await widget.chatHistory?.import(backup.chats!, merge: true);
+    }
   }
 
   Future<void> _resetProgress() async {

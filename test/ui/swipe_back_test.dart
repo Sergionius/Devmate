@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:devmate/data/chat_history_repository.dart';
 import 'package:devmate/data/llm_settings.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
@@ -10,6 +11,7 @@ import 'package:devmate/ui/training_view_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:sembast/sembast_memory.dart';
 
 import '../support/memory_secure_storage.dart';
 
@@ -36,6 +38,10 @@ void main() {
         model,
         LlmSettingsRepository(storage: storage),
         TopicCatalog(),
+        chatHistory: ChatHistoryRepository(
+          openDatabase: () =>
+              databaseFactoryMemory.openDatabase('swipe-back-test'),
+        ),
       );
       addTearDown(router.dispose);
       await tester.pumpWidget(
@@ -50,10 +56,13 @@ void main() {
       await tester.pumpAndSettle();
 
       unawaited(router.push('/chat/free'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle();
 
-      const inputHint = 'Ask anything…';
-      expect(find.text(inputHint), findsOneWidget);
+      const title = 'New chat';
+      expect(find.text(title), findsOneWidget);
 
       final gesture = await tester.startGesture(const Offset(2, 300));
       await gesture.moveBy(const Offset(60, 0));
@@ -63,7 +72,7 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      expect(find.text(inputHint), findsNothing);
+      expect(find.text(title), findsNothing);
       expect(router.routeInformationProvider.value.uri.path, '/');
     } finally {
       debugDefaultTargetPlatformOverride = null;
