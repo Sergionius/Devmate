@@ -3,9 +3,11 @@ import 'package:material_ui/material_ui.dart';
 
 import '../l10n/l10n.dart';
 import 'data/app_preferences.dart';
+import 'data/chat_history_repository.dart';
 import 'data/llm_settings.dart';
 import 'data/topic_catalog.dart';
 import 'ui/ai_settings_screen.dart';
+import 'ui/chat_history_screen.dart';
 import 'ui/chat_screen.dart';
 import 'ui/data_settings_screen.dart';
 import 'ui/design_system.dart';
@@ -68,7 +70,9 @@ GoRouter createRouter(
   ValueNotifier<bool>? aiDisabled,
   ValueNotifier<ThemeMode>? themeMode,
   AppPreferencesRepository? appPreferences,
+  ChatHistoryRepository? chatHistory,
 }) {
+  chatHistory ??= ChatHistoryRepository();
   GoRouter.optionURLReflectsImperativeAPIs = true;
   return GoRouter(
     initialLocation: '/',
@@ -116,23 +120,33 @@ GoRouter createRouter(
               catalog: catalog,
               viewModel: viewModel,
               appPreferences: appPreferences,
+              chatHistory: chatHistory,
             ),
           ),
         ],
       ),
       _route(
         path: '/chat/free',
-        builder: (context, state) => ChatScreen(
-          title: context.l10n.freeChatTitle,
-          systemPrompt: context.l10n.freeSystemPrompt,
-          intro: context.l10n.freeChatIntro,
-          settingsRepository: llmSettings,
-          suggestions: [
-            context.l10n.freeSuggestionIcebreaker,
-            context.l10n.freeSuggestionCareer,
-            context.l10n.freeSuggestionFun,
-          ],
-        ),
+        builder: (context, state) =>
+            ChatHistoryScreen(repository: chatHistory!),
+        routes: [
+          _route(
+            path: ':chatId',
+            builder: (context, state) => ChatScreen(
+              title: context.l10n.freeChatTitle,
+              systemPrompt: context.l10n.freeSystemPrompt,
+              intro: context.l10n.freeChatIntro,
+              settingsRepository: llmSettings,
+              historyRepository: chatHistory,
+              chatId: state.pathParameters['chatId'],
+              suggestions: [
+                context.l10n.freeSuggestionIcebreaker,
+                context.l10n.freeSuggestionCareer,
+                context.l10n.freeSuggestionFun,
+              ],
+            ),
+          ),
+        ],
       ),
       _route(
         path: '/chat/create/:topicId',

@@ -1,10 +1,11 @@
 import 'dart:async';
-
 import 'dart:convert';
 
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:devmate/data/app_preferences.dart';
+import 'package:devmate/data/chat_history_repository.dart';
 import 'package:devmate/data/data_transfer.dart';
+import 'package:devmate/data/llm_chat_provider.dart';
 import 'package:devmate/data/llm_settings.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
@@ -22,6 +23,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:sembast/sembast_memory.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
@@ -860,6 +862,7 @@ void main() {
       WidgetTester tester, {
       Future<String?> Function()? pickJsonFile,
       void Function(String fileName, String content)? onShare,
+      ChatHistoryRepository? chatHistory,
     }) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -871,6 +874,7 @@ void main() {
             catalog: catalog,
             viewModel: model,
             appPreferences: appPreferences,
+            chatHistory: chatHistory,
             pickJsonFile: pickJsonFile ?? () async => null,
             shareJsonFile: (fileName, content) async =>
                 onShare?.call(fileName, content),
@@ -966,6 +970,9 @@ void main() {
       await scrollTo(tester, 'Export everything');
       await tester.tap(find.text('Export everything'));
       await tester.pumpAndSettle();
+      expect(find.text('Include general chat history'), findsOneWidget);
+      await tester.tap(find.text('Export everything').last);
+      await tester.pumpAndSettle();
 
       expect(shared, hasLength(1));
       final parts = shared.single.split('|');
@@ -978,6 +985,38 @@ void main() {
       expect(ai['model'], 'current-model');
       expect(ai.containsKey('apiKey'), isFalse);
       expect(backup.preferences!['theme'], 'dark');
+    });
+
+    testWidgets('opt-in export includes stored chat, default does not', (
+      tester,
+    ) async {
+      final history = ChatHistoryRepository(
+        openDatabase: () =>
+            databaseFactoryMemory.openDatabase('settings-export-history'),
+      );
+      await tester.runAsync(() async {
+        final chat = await history.create();
+        await history.saveMessages(chat.id, [
+          LlmChatMessage(LlmRole.user, 'Private note'),
+        ]);
+      });
+      final shared = <String>[];
+      await pumpScreen(
+        tester,
+        chatHistory: history,
+        onShare: (_, content) => shared.add(content),
+      );
+      await scrollTo(tester, 'Export everything');
+      await tester.tap(find.text('Export everything'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Include general chat history'));
+      await tester.pump();
+      await tester.tap(find.text('Export everything').last);
+      await pumpUntil(tester, () => shared.isNotEmpty);
+      expect(
+        DevmateBackup.parse(shared.single).chats!.single.messages.single.text,
+        'Private note',
+      );
     });
 
     testWidgets('backup import replace restores IDs, progress and settings', (

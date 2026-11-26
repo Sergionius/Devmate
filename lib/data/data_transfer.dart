@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'chat_history_repository.dart';
+
 /// Envelope format for a full Devmate backup file: the user topic catalog,
-/// training progress, and preferences. API keys are never included — they
+/// training progress, preferences, and optionally general chat history.
+/// API keys are never included — they
 /// stay in the platform secret store of each device.
 ///
 /// Envelope layout (version 1):
@@ -13,7 +16,8 @@ import 'dart:convert';
 ///   "catalog": {"version": 1, "topics": [...]},
 ///   "progress": {"scores": {"<questionId>": 5|10}},
 ///   "preferences": {"theme": "dark", "language": "ru", "aiDisabled": false},
-///   "ai": {"baseUrl": "…", "model": "…"}
+///   "ai": {"baseUrl": "…", "model": "…"},
+///   "chats": [{"id": "…", "title": "…", "updatedAt": "…", "messages": […]}]
 /// }
 /// ```
 class DevmateBackup {
@@ -23,6 +27,7 @@ class DevmateBackup {
     this.exportedAt,
     Map<String, dynamic>? preferences,
     Map<String, String>? ai,
+    this.chats,
   }) : preferences = _nonEmpty(preferences),
        ai = _nonEmpty(ai);
 
@@ -41,6 +46,9 @@ class DevmateBackup {
   final Map<String, dynamic>? preferences;
   final Map<String, String>? ai;
 
+  /// Null means the export excluded history; an empty list explicitly replaces it.
+  final List<ChatArchive>? chats;
+
   static T? _nonEmpty<T extends Map>(T? map) =>
       map == null || map.isEmpty ? null : map;
 
@@ -52,6 +60,7 @@ class DevmateBackup {
     'progress': {'scores': scores},
     if (preferences != null) 'preferences': preferences,
     if (ai != null) 'ai': ai,
+    if (chats != null) 'chats': [for (final chat in chats!) chat.toJson()],
   });
 
   /// Strict about the envelope identity and shape, tolerant about entry
@@ -86,7 +95,19 @@ class DevmateBackup {
           : null,
       preferences: _typedMap(decoded['preferences']),
       ai: _stringMap(decoded['ai']),
+      chats: decoded.containsKey('chats')
+          ? _parseChats(decoded['chats'])
+          : null,
     );
+  }
+
+  static List<ChatArchive> _parseChats(Object? raw) {
+    if (raw is! List) throw const FormatException('Invalid chat history');
+    final chats = [for (final item in raw) ChatArchive.parse(item)];
+    if (chats.map((chat) => chat.chat.id).toSet().length != chats.length) {
+      throw const FormatException('Duplicate chat IDs');
+    }
+    return chats;
   }
 
   static Map<String, dynamic>? _typedMap(dynamic raw) =>

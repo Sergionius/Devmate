@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/app_preferences.dart';
+import 'data/chat_history_repository.dart';
 import 'data/llm_settings.dart';
 import 'data/progress_repository.dart';
 import 'data/question_catalog.dart';
@@ -58,6 +59,7 @@ Future<void> main() async {
       aiDisabled: ValueNotifier<bool>(aiDisabled),
       themeMode: ValueNotifier<ThemeMode>(savedTheme.mode),
       appPreferences: appPreferences,
+      chatHistory: ChatHistoryRepository(),
     ),
   );
   WidgetsBinding.instance.addPostFrameCallback((_) => environment.ready());
@@ -83,6 +85,7 @@ class DevmateApp extends StatelessWidget {
     this.aiDisabled,
     this.themeMode,
     this.appPreferences,
+    this.chatHistory,
     this.environment,
   }) : router = createRouter(
          viewModel,
@@ -92,6 +95,7 @@ class DevmateApp extends StatelessWidget {
          aiDisabled: aiDisabled,
          themeMode: themeMode,
          appPreferences: appPreferences,
+         chatHistory: chatHistory,
        ) {
     environment?.attachRouter(router);
   }
@@ -107,6 +111,7 @@ class DevmateApp extends StatelessWidget {
   final ValueNotifier<ThemeMode>? themeMode;
 
   final AppPreferencesRepository? appPreferences;
+  final ChatHistoryRepository? chatHistory;
 
   @override
   Widget build(BuildContext context) {

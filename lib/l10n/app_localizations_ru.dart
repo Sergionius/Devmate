@@ -13,6 +13,37 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatRetry => 'Повторить';
 
   @override
+  String get chatNew => 'Новый чат';
+
+  @override
+  String get chatHistoryEmpty =>
+      'Пока нет бесед. Начните новый чат, чтобы сохранить разговор.';
+
+  @override
+  String get chatHistoryReadError => 'Не удалось загрузить историю чатов';
+
+  @override
+  String get chatHistorySaveError => 'Не удалось сохранить переписку';
+
+  @override
+  String get chatDeleteTitle => 'Удалить беседу';
+
+  @override
+  String get chatDeleteWarning =>
+      'Беседа и все её сообщения будут удалены без возможности восстановления.';
+
+  @override
+  String get backupIncludeChats => 'Включить историю общего чата';
+
+  @override
+  String backupChatsInFile(int count) {
+    return 'Бесед в файле: $count. При замене текущая история чатов будет удалена и заменена беседами из файла.';
+  }
+
+  @override
+  String get chatHistoryWriteError => 'Не удалось изменить историю чатов';
+
+  @override
   String get chatCopy => 'Копировать';
 
   @override
