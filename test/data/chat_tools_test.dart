@@ -35,11 +35,12 @@ void main() {
         catalog: catalog,
         exaKey: '',
         progress: _Progress(),
+        allowedEditQuestionId: 'q1',
       );
       addTearDown(tools.dispose);
       expect(
         tools.definitions.map((tool) => tool.function.name),
-        contains('get_progress'),
+        contains('get_questions'),
       );
       expect(
         tools.definitions.map((tool) => tool.function.name),
@@ -58,9 +59,25 @@ void main() {
         'Dart',
       );
       expect(
+        jsonDecode(
+          await tools.execute('get_questions', '{"topic_id":"t1","offset":0}'),
+        )['questions'],
+        hasLength(1),
+      );
+      expect(
         jsonDecode(await tools.execute('get_progress', '{}'))[0]['reviewed'],
         1,
       );
+      expect(
+        jsonDecode(
+          await tools.execute(
+            'propose_questions',
+            '{"topic":"Dart","questions":[{"prompt":"New question","answer":"New answer"}]}',
+          ),
+        )['status'],
+        'pending_user_confirmation',
+      );
+      expect(tools.proposedDraft?.questions.single.$1, 'New question');
       expect(
         jsonDecode(
           await tools.execute(
@@ -68,8 +85,12 @@ void main() {
             '{"question_id":"q1","answer":"New"}',
           ),
         )['status'],
-        'proposal_only',
+        'pending_user_confirmation',
       );
+      expect(tools.proposedAnswerUpdate?.answer, 'New');
+      tools.resetProposals();
+      expect(tools.proposedDraft, isNull);
+      expect(tools.proposedAnswerUpdate, isNull);
       expect(
         catalog.topicById('t1')!.questions.single.answer,
         'A separate Dart memory heap.',

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'progress_repository.dart';
 import 'topic_catalog.dart';
+import 'topic_draft.dart';
 
 /// Read-only context and proposal tools. No tool writes user data.
 class ChatTools {
@@ -15,6 +16,7 @@ class ChatTools {
     this.braveKey = '',
     this.tavilyKey = '',
     this.searchProvider = 'exa',
+    this.allowedEditQuestionId,
     http.Client? client,
     this._progress,
   }) : _client = client ?? http.Client(),
@@ -25,6 +27,15 @@ class ChatTools {
   final String braveKey;
   final String tavilyKey;
   final String searchProvider;
+  final String? allowedEditQuestionId;
+  TopicDraft? proposedDraft;
+  AnswerUpdate? proposedAnswerUpdate;
+
+  void resetProposals() {
+    proposedDraft = null;
+    proposedAnswerUpdate = null;
+  }
+
   String get _searchKey => switch (searchProvider) {
     'brave' => braveKey,
     'tavily' => tavilyKey,
@@ -67,6 +78,15 @@ class ChatTools {
         ['topic_id'],
       ),
       _tool(
+        'get_questions',
+        'List questions and reference answers for a local topic by topic ID.',
+        {
+          'topic_id': _string,
+          'offset': {'type': 'integer'},
+        },
+        ['topic_id'],
+      ),
+      _tool(
         'get_progress',
         'Read local training scores and identify topics to review.',
         {},
@@ -77,16 +97,24 @@ class ChatTools {
         'Propose interview questions for user review; never saves them.',
         {
           'topic': _string,
-          'questions': {'type': 'array', 'items': _string},
+          'questions': {
+            'type': 'array',
+            'items': {
+              'type': 'object',
+              'properties': {'prompt': _string, 'answer': _string},
+              'required': ['prompt', 'answer'],
+            },
+          },
         },
         ['topic', 'questions'],
       ),
-      _tool(
-        'propose_answer_edit',
-        'Propose an answer edit for user review; never saves it.',
-        {'question_id': _string, 'answer': _string},
-        ['question_id', 'answer'],
-      ),
+      if (allowedEditQuestionId != null)
+        _tool(
+          'propose_answer_edit',
+          'Propose a replacement answer for the currently edited question; user confirmation is required.',
+          {'question_id': _string, 'answer': _string},
+          ['question_id', 'answer'],
+        ),
     ],
     if (_searchKey.trim().isNotEmpty) ...[
       _tool(
@@ -97,7 +125,7 @@ class ChatTools {
       ),
       _tool(
         'get_documentation',
-        'Find current official documentation with Exa. Cite source URLs.',
+        'Search for current documentation and cite source URLs. Verify that sources are official.',
         {'query': _string},
         ['query'],
       ),
@@ -155,6 +183,26 @@ class ChatTools {
                 },
             ],
           });
+        case 'get_questions':
+          final topic = catalog?.topicById(argument('topic_id'));
+          if (topic == null) return _error('Topic not found');
+          final rawOffset = value['offset'];
+          final offset = rawOffset is int
+              ? rawOffset.clamp(0, topic.questions.length)
+              : 0;
+          return jsonEncode({
+            'topic_id': topic.id,
+            'offset': offset,
+            'total': topic.questions.length,
+            'questions': [
+              for (final q in topic.questions.skip(offset).take(20))
+                {
+                  'id': q.id,
+                  'question': q.prompt,
+                  'answer': _limit(q.answer, 1200),
+                },
+            ],
+          });
         case 'get_progress':
           if (catalog == null) return _error('Catalog unavailable');
           final scores =
@@ -178,34 +226,59 @@ class ChatTools {
         case 'propose_questions':
           if (catalog == null) return _error('Catalog unavailable');
           final questions = value['questions'];
-          if (argument('topic').isEmpty ||
+          final title = argument('topic');
+          if (title.isEmpty ||
+              title.length > 200 ||
               questions is! List ||
               questions.isEmpty ||
-              questions.length > 20 ||
-              questions.any((q) => q is! String || q.length > 500)) {
+              questions.length > 20) {
             return _error('Invalid proposal');
           }
+          final pairs = <(String, String)>[];
+          for (final item in questions) {
+            if (item is! Map<String, dynamic> ||
+                item['prompt'] is! String ||
+                item['answer'] is! String) {
+              return _error('Invalid proposal');
+            }
+            final prompt = (item['prompt'] as String).trim();
+            final answer = (item['answer'] as String).trim();
+            if (prompt.isEmpty ||
+                answer.isEmpty ||
+                prompt.length > 500 ||
+                answer.length > 6000) {
+              return _error('Invalid proposal');
+            }
+            pairs.add((prompt, answer));
+          }
+          proposedDraft = TopicDraft(title, null, pairs);
           return jsonEncode({
-            'status': 'proposal_only',
-            'topic': argument('topic'),
-            'questions': questions,
-            'message':
-                'Show this proposal to the user. Nothing has been saved.',
+            'status': 'pending_user_confirmation',
+            'topic': title,
+            'question_count': pairs.length,
+            'message': 'The application displays an approval card. Do not claim the content was saved.',
           });
         case 'propose_answer_edit':
           if (catalog == null) return _error('Catalog unavailable');
           final id = argument('question_id');
-          if (!catalog!.topics.any((t) => t.questions.any((q) => q.id == id)) ||
+          final question = catalog!.topics
+              .expand((topic) => topic.questions)
+              .where((q) => q.id == id)
+              .firstOrNull;
+          if (id != allowedEditQuestionId ||
+              question == null ||
               argument('answer').isEmpty ||
               argument('answer').length > 6000) {
             return _error('Invalid proposal');
           }
+          proposedAnswerUpdate = AnswerUpdate(
+            question.prompt,
+            argument('answer'),
+          );
           return jsonEncode({
-            'status': 'proposal_only',
+            'status': 'pending_user_confirmation',
             'question_id': id,
-            'answer': argument('answer'),
-            'message':
-                'Show this proposal to the user. Nothing has been saved.',
+            'message': 'The application displays an approval card. Do not claim the edit was saved.',
           });
         case 'search_web':
         case 'get_documentation':

@@ -4,6 +4,7 @@ import 'package:devmate/data/chat_history_repository.dart';
 import 'package:devmate/data/llm_chat_provider.dart';
 import 'package:devmate/data/llm_settings.dart';
 import 'package:devmate/data/topic_catalog.dart';
+import 'package:devmate/data/topic_draft.dart';
 import 'package:devmate/ui/chat_view_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -96,6 +97,35 @@ class _FakeSession extends ChangeNotifier implements ChatSession {
     _pending = null;
     unawaited(pending?.close());
     super.dispose();
+  }
+}
+
+class _ProposalSession extends OpenAiCompatibleProvider {
+  _ProposalSession({this.topic, this.answer})
+    : super(
+        settings: const LlmSettings(
+          baseUrl: 'https://api.test/v1',
+          model: 'm',
+          apiKey: 'k',
+        ),
+        systemPrompt: '',
+      );
+  final TopicDraft? topic;
+  final AnswerUpdate? answer;
+  final List<LlmChatMessage> _messages = [];
+  @override
+  TopicDraft? get proposedDraft => topic;
+  @override
+  AnswerUpdate? get proposedAnswerUpdate => answer;
+  @override
+  List<LlmChatMessage> get history => List.unmodifiable(_messages);
+  @override
+  Stream<String> sendMessageStream(String prompt, {bool retry = false}) async* {
+    _messages.addAll([
+      LlmChatMessage(LlmRole.user, prompt),
+      LlmChatMessage(LlmRole.assistant, 'Here is my proposal.'),
+    ]);
+    yield 'Here is my proposal.';
   }
 }
 
@@ -217,6 +247,33 @@ void main() {
     },
   );
 
+  test('structured tool proposal uses the existing approval flow', () async {
+    final repo = _MemoryTopicsRepository();
+    final catalog = TopicCatalog(userTopicsRepository: repo, baseTopics: []);
+    final session = _ProposalSession(
+      topic: const TopicDraft('Dart', null, [
+        ('What is an isolate?', 'A separate memory heap.'),
+      ]),
+    );
+    final model = ChatViewModel(
+      settingsRepository: await _configuredRepo(),
+      catalog: catalog,
+      sessionFactory: (_, _) => session,
+    );
+    addTearDown(model.dispose);
+    await model.loadSettings();
+    model.ensureSession();
+    await model.send('Add a question');
+    expect(model.draft?.title, 'Dart');
+    expect(catalog.topics, isEmpty);
+    expect(repo.savedTopics, isEmpty);
+    expect(await model.applyDraft(), ChatSaveOutcome.contentAdded);
+    expect(
+      catalog.topicById(catalog.topics.single.id)?.questions.single.prompt,
+      'What is an isolate?',
+    );
+  });
+
   test('a topic draft is parsed and added as a new topic', () async {
     final repo = await _configuredRepo();
     final topics = _MemoryTopicsRepository();
@@ -283,6 +340,29 @@ void main() {
     final outcome = await viewModel.applyDraft();
     expect(outcome, ChatSaveOutcome.contentAdded);
     expect(topics.savedExtra, hasLength(1));
+  });
+
+  test('answer-edit tool proposal waits for approval', () async {
+    final topics = _MemoryTopicsRepository();
+    final catalog = TopicCatalog(userTopicsRepository: topics);
+    final question = catalog.topics.first.questions.first;
+    final session = _ProposalSession(
+      answer: AnswerUpdate(question.prompt, 'Updated answer'),
+    );
+    final model = ChatViewModel(
+      settingsRepository: await _configuredRepo(),
+      catalog: catalog,
+      editQuestionId: question.id,
+      sessionFactory: (_, _) => session,
+    );
+    addTearDown(model.dispose);
+    await model.loadSettings();
+    model.ensureSession();
+    await model.send('Improve the answer');
+    expect(model.answerUpdate?.answer, 'Updated answer');
+    expect(catalog.topics.first.questions.first.answer, question.answer);
+    expect(await model.replaceAnswer(), ChatSaveOutcome.answerReplaced);
+    expect(catalog.topics.first.questions.first.answer, 'Updated answer');
   });
 
   test('update_answer shows the edit and replaceAnswer applies it', () async {

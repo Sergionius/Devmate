@@ -5,6 +5,7 @@ import 'package:openai_dart/openai_dart.dart' as oai;
 
 import 'chat_tools.dart';
 import 'llm_settings.dart';
+import 'topic_draft.dart';
 
 class LlmConnectionException implements Exception {
   LlmConnectionException(this.message);
@@ -179,6 +180,8 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
 
   @override
   List<LlmChatMessage> get history => List.unmodifiable(_history);
+  TopicDraft? get proposedDraft => _tools?.proposedDraft;
+  AnswerUpdate? get proposedAnswerUpdate => _tools?.proposedAnswerUpdate;
 
   @override
   Stream<String> sendMessageStream(String prompt, {bool retry = false}) {
@@ -227,6 +230,7 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
             ..add(assistant);
         }
         if (_active) notifyListeners();
+        _tools?.resetProposals();
         try {
           final client = _clientFor(_settings);
           if (_tools case final tools? when tools.definitions.isNotEmpty) {

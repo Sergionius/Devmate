@@ -128,6 +128,7 @@ class ChatViewModel extends ChangeNotifier {
                 braveKey: _braveKey,
                 tavilyKey: _tavilyKey,
                 searchProvider: _searchProvider,
+                allowedEditQuestionId: editQuestionId,
               ),
             )
           : !_customSessionFactory
@@ -140,6 +141,7 @@ class ChatViewModel extends ChangeNotifier {
                 braveKey: _braveKey,
                 tavilyKey: _tavilyKey,
                 searchProvider: _searchProvider,
+                allowedEditQuestionId: editQuestionId,
               ),
             )
           : _sessionFactory(settings, systemPrompt),
@@ -250,7 +252,13 @@ class ChatViewModel extends ChangeNotifier {
       return;
     }
     final reply = session.history.last.text;
+    final toolSession = session is OpenAiCompatibleProvider ? session : null;
     if (editQuestionId != null) {
+      if (toolSession?.proposedAnswerUpdate case final update?) {
+        _answerUpdate = update;
+        _draft = null;
+        return;
+      }
       final update = parseAnswerUpdate(reply);
       if (update != null) {
         _answerUpdate = update;
@@ -258,7 +266,7 @@ class ChatViewModel extends ChangeNotifier {
       }
       return;
     }
-    final draft = parseTopicDraft(reply);
+    final draft = toolSession?.proposedDraft ?? parseTopicDraft(reply);
     if (draft == null) {
       _draft = null;
     } else if (appendToTopic != null || draft.title != null) {
