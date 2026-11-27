@@ -762,6 +762,25 @@ class _Bubble extends StatelessWidget {
           ),
         ),
         a: TextStyle(color: context.colors.lavender),
+        tableHead: TextStyle(
+          color: context.colors.primary,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          height: 1.35,
+        ),
+        tableBody: TextStyle(
+          color: context.colors.primary,
+          fontSize: 14,
+          height: 1.35,
+        ),
+        tableBorder: TableBorder.all(color: context.colors.border),
+        tableCellsPadding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 9,
+        ),
+        tableHeadCellsDecoration: BoxDecoration(
+          color: context.colors.surfaceRaised,
+        ),
         blockSpacing: 10,
       );
 }

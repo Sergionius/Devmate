@@ -11,6 +11,7 @@ import 'package:devmate/ui/chat_screen.dart';
 import 'package:devmate/ui/design_system.dart';
 import 'package:devmate/ui/training_view_model.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -59,8 +60,14 @@ void main() {
     );
     unawaited(router.push('/chat/free'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('New chat'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
     await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      startsWith('/chat/free/'),
+    );
 
     // Without a key the chat offers settings; the CTA leads straight to the
     // AI provider section, not to the overview.
@@ -326,6 +333,51 @@ void main() {
 
     expect(editable.focusNode.hasFocus, isFalse);
   });
+
+  for (final theme in [devmateTheme(), devmateLightTheme()]) {
+    testWidgets(
+      'markdown table cells remain legible in ${theme.brightness.name} theme',
+      (tester) async {
+        const reply =
+            '| Variant | Time | Memory |\n'
+            '| --- | --- | --- |\n'
+            '| With Set | O(n) | O(n) |';
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ChatScreen(
+              title: 'AI',
+              systemPrompt: 'sys',
+              intro: 'Intro',
+              settingsRepository: repoWith(configuredStorage),
+              sessionFactory: (_, _) => _FakeSession(reply, splitChunks: false),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'Compare variants');
+        await tester.tap(find.byIcon(Icons.arrow_upward_rounded));
+        await tester.pumpAndSettle();
+        expect(find.byType(MarkdownBody), findsWidgets);
+        final markdown = tester.widget<MarkdownBody>(
+          find.byType(MarkdownBody).last,
+        );
+        expect(markdown.data, contains('| Variant | Time | Memory |'));
+        expect(find.byType(Table), findsWidgets);
+        expect(
+          find.textContaining('With Set', findRichText: true),
+          findsWidgets,
+        );
+        final expected = theme.extension<DevmatePalette>()!.primary;
+        expect(markdown.styleSheet!.tableHead!.color, expected);
+        expect(markdown.styleSheet!.tableBody!.color, expected);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('model JSON reply renders as a readable list', (tester) async {
     const reply =
@@ -622,9 +674,10 @@ class _MemoryProgressRepository implements ProgressRepository {
 }
 
 class _FakeSession extends ChangeNotifier implements ChatSession {
-  _FakeSession(this._reply);
+  _FakeSession(this._reply, {this.splitChunks = true});
 
   final String _reply;
+  final bool splitChunks;
   final List<LlmChatMessage> _history = [];
 
   @override
@@ -636,7 +689,7 @@ class _FakeSession extends ChangeNotifier implements ChatSession {
       ..add(LlmChatMessage(LlmRole.user, prompt))
       ..add(LlmChatMessage(LlmRole.assistant, ''));
     notifyListeners();
-    for (final chunk in _reply.split('|')) {
+    for (final chunk in splitChunks ? _reply.split('|') : [_reply]) {
       _history.last.text += chunk;
       notifyListeners();
       yield chunk;

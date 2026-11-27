@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:devmate/data/chat_history_repository.dart';
+import 'package:devmate/data/llm_chat_provider.dart';
 import 'package:devmate/data/llm_settings.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
@@ -34,14 +35,21 @@ void main() {
       );
 
       unawaited(model.load());
+      final history = ChatHistoryRepository(
+        openDatabase: () =>
+            databaseFactoryMemory.openDatabase('swipe-back-test'),
+      );
+      await tester.runAsync(() async {
+        final chat = await history.create();
+        await history.saveMessages(chat.id, [
+          LlmChatMessage(LlmRole.user, 'Existing conversation'),
+        ]);
+      });
       final router = createRouter(
         model,
         LlmSettingsRepository(storage: storage),
         TopicCatalog(),
-        chatHistory: ChatHistoryRepository(
-          openDatabase: () =>
-              databaseFactoryMemory.openDatabase('swipe-back-test'),
-        ),
+        chatHistory: history,
       );
       addTearDown(router.dispose);
       await tester.pumpWidget(
@@ -56,6 +64,7 @@ void main() {
       await tester.pumpAndSettle();
 
       unawaited(router.push('/chat/free'));
+      await tester.pump();
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
