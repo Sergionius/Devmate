@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../data/chat_history_repository.dart';
+import '../data/chat_tools.dart';
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
 import '../data/topic_catalog.dart';
@@ -22,7 +23,8 @@ class ChatViewModel extends ChangeNotifier {
     this.chatId,
     ChatSession Function(LlmSettings settings, String systemPrompt)?
     sessionFactory,
-  }) : _sessionFactory =
+  }) : _customSessionFactory = sessionFactory != null,
+       _sessionFactory =
            sessionFactory ??
            ((settings, prompt) => OpenAiCompatibleProvider(
              settings: settings,
@@ -44,12 +46,17 @@ class ChatViewModel extends ChangeNotifier {
   List<LlmChatMessage> _savedMessages = const [];
   Object? persistenceError;
 
+  final bool _customSessionFactory;
   final ChatSession Function(LlmSettings settings, String systemPrompt)
   _sessionFactory;
 
   ChatSession? _session;
   ChatSettingsPhase _settingsPhase = ChatSettingsPhase.loading;
   LlmSettings? _settings;
+  String _exaKey = '';
+  String _braveKey = '';
+  String _tavilyKey = '';
+  String _searchProvider = 'exa';
   Object? _settingsError;
   bool historyLoadFailed = false;
   bool _streaming = false;
@@ -81,6 +88,10 @@ class ChatViewModel extends ChangeNotifier {
     _notify();
     try {
       _settings = await settingsRepository.load();
+      _exaKey = await settingsRepository.loadExaKey();
+      _braveKey = await settingsRepository.loadBraveKey();
+      _tavilyKey = await settingsRepository.loadTavilyKey();
+      _searchProvider = await settingsRepository.loadSearchProvider();
       historyLoadFailed = true;
       if (historyRepository != null && chatId != null) {
         if (await historyRepository!.get(chatId!) == null) {
@@ -111,6 +122,25 @@ class ChatViewModel extends ChangeNotifier {
               settings: settings,
               systemPrompt: systemPrompt,
               initialHistory: _savedMessages,
+              tools: ChatTools(
+                catalog: catalog,
+                exaKey: _exaKey,
+                braveKey: _braveKey,
+                tavilyKey: _tavilyKey,
+                searchProvider: _searchProvider,
+              ),
+            )
+          : !_customSessionFactory
+          ? OpenAiCompatibleProvider(
+              settings: settings,
+              systemPrompt: systemPrompt,
+              tools: ChatTools(
+                catalog: catalog,
+                exaKey: _exaKey,
+                braveKey: _braveKey,
+                tavilyKey: _tavilyKey,
+                searchProvider: _searchProvider,
+              ),
             )
           : _sessionFactory(settings, systemPrompt),
     );

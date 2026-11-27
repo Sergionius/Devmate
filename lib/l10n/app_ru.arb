@@ -389,5 +389,13 @@
   "presetZaiCodingLabel": "z.ai GLM Coding (подписка)",
   "presetZaiLabel": "z.ai API (оплата за токены)",
   "presetOllamaLabel": "Ollama (локально)",
-  "presetCustomLabel": "Свой endpoint"
+  "presetCustomLabel": "Свой endpoint",
+  "braveWebNote": "Brave Search сейчас отклоняет CORS-проверку браузера. На web используйте Exa или Tavily, а Brave — на iOS/Android.",
+  "searchProviderLabel": "Поисковый провайдер",
+  "searchKeyLabel": "Ключ поискового API",
+  "searchKeyHint": "Ключ выбранного провайдера",
+  "exaKeyMissing": "Введите ключ поискового API",
+  "exaTestFailed": "Поиск недоступен. Проверьте провайдера, ключ и соединение.",
+  "exaPrivacyNote": "Поиск необязателен. Ваш ключ отправляется только выбранному поисковому провайдеру; результаты передаются выбранной модели. На web работа зависит от CORS провайдера. Не распространяйте сборки с ключами из config/local.json.",
+  "testSearchConnection": "Проверить веб-поиск"
 }

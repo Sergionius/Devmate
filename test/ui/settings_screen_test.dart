@@ -157,7 +157,10 @@ void main() {
     await tester.tap(find.byType(DropdownButtonFormField<LlmPreset>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('OpenAI').last);
-    await tester.enterText(find.byType(TextField).last, 'test-key');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'API key'),
+      'test-key',
+    );
     await tester.scrollUntilVisible(
       find.text('Save'),
       120,
@@ -377,6 +380,11 @@ void main() {
     await tester.tap(find.text('AI provider'));
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.path, '/settings/ai');
+    await tester.scrollUntilVisible(
+      find.text('Save'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Save'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Back'));

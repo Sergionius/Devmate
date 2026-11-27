@@ -862,4 +862,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get presetCustomLabel => 'Custom endpoint';
+
+  @override
+  String get braveWebNote =>
+      'Brave Search currently rejects browser preflight requests. Use Exa or Tavily on web, or use Brave on iOS/Android.';
+
+  @override
+  String get searchProviderLabel => 'Search provider';
+
+  @override
+  String get searchKeyLabel => 'Search API key';
+
+  @override
+  String get searchKeyHint => 'Your search provider API key';
+
+  @override
+  String get exaKeyMissing => 'Enter your search API key';
+
+  @override
+  String get exaTestFailed =>
+      'Search is unavailable. Check your provider, key, and connection.';
+
+  @override
+  String get exaPrivacyNote =>
+      'Search is optional. Your key is sent only to the selected search provider; results go to your selected model. Web support depends on provider CORS. Do not distribute builds containing keys from config/local.json.';
+
+  @override
+  String get testSearchConnection => 'Test web search';
 }

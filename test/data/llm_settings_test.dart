@@ -4,6 +4,23 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/memory_secure_storage.dart';
 
 void main() {
+  test(
+    'search keys and selected provider persist independently of LLM settings',
+    () async {
+      final repo = LlmSettingsRepository(storage: MemorySecureStorage());
+      await repo.saveExaKey(' exa ');
+      await repo.saveBraveKey(' brave ');
+      await repo.saveTavilyKey(' tavily ');
+      await repo.saveSearchProvider('brave');
+      expect(await repo.loadExaKey(), 'exa');
+      expect(await repo.loadBraveKey(), 'brave');
+      expect(await repo.loadTavilyKey(), 'tavily');
+      expect(await repo.loadSearchProvider(), 'brave');
+      await repo.saveBraveKey('');
+      expect(await repo.loadBraveKey(), isEmpty);
+    },
+  );
+
   test('settings start empty and preserve deliberately empty values', () async {
     final storage = MemorySecureStorage();
     final repo = LlmSettingsRepository(storage: storage);

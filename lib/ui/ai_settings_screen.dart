@@ -2,6 +2,7 @@ import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../data/chat_tools.dart';
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
 import '../l10n/l10n.dart';
@@ -23,6 +24,15 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
   late final TextEditingController _baseUrl;
   late final TextEditingController _model;
   late final TextEditingController _apiKey;
+  late final TextEditingController _exaKey;
+  late final TextEditingController _braveKey;
+  late final TextEditingController _tavilyKey;
+  String _searchProvider = 'exa';
+  TextEditingController get _selectedSearchKey => switch (_searchProvider) {
+    'brave' => _braveKey,
+    'tavily' => _tavilyKey,
+    _ => _exaKey,
+  };
   bool _loading = true;
   bool _saving = false;
   bool _testing = false;
@@ -34,12 +44,20 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
     _baseUrl = TextEditingController();
     _model = TextEditingController();
     _apiKey = TextEditingController();
+    _exaKey = TextEditingController();
+    _braveKey = TextEditingController();
+    _tavilyKey = TextEditingController();
     _load();
   }
 
   Future<void> _load() async {
     try {
       final settings = await widget.settingsRepository.load();
+      final exaKey = await widget.settingsRepository.loadExaKey();
+      final braveKey = await widget.settingsRepository.loadBraveKey();
+      final tavilyKey = await widget.settingsRepository.loadTavilyKey();
+      final searchProvider = await widget.settingsRepository
+          .loadSearchProvider();
       if (!mounted) return;
       setState(() {
         _preset =
@@ -47,6 +65,12 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
         _baseUrl.text = settings.baseUrl;
         _model.text = settings.model;
         _apiKey.text = settings.apiKey;
+        _exaKey.text = exaKey;
+        _braveKey.text = braveKey;
+        _tavilyKey.text = tavilyKey;
+        _searchProvider = ['exa', 'brave', 'tavily'].contains(searchProvider)
+            ? searchProvider
+            : 'exa';
         _loading = false;
       });
     } catch (_) {
@@ -64,6 +88,9 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
     _baseUrl.dispose();
     _model.dispose();
     _apiKey.dispose();
+    _exaKey.dispose();
+    _braveKey.dispose();
+    _tavilyKey.dispose();
     super.dispose();
   }
 
@@ -133,6 +160,10 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
     });
     try {
       await widget.settingsRepository.save(_collect());
+      await widget.settingsRepository.saveExaKey(_exaKey.text);
+      await widget.settingsRepository.saveBraveKey(_braveKey.text);
+      await widget.settingsRepository.saveTavilyKey(_tavilyKey.text);
+      await widget.settingsRepository.saveSearchProvider(_searchProvider);
       if (!mounted) return;
       showDevmateNotice(
         context,
@@ -166,6 +197,38 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
           ? context.l10n.connectionOk
           : context.llmErrorText(error);
     });
+  }
+
+  Future<void> _testSearch() async {
+    if (_selectedSearchKey.text.trim().isEmpty) {
+      setState(() => _testResult = context.l10n.exaKeyMissing);
+      return;
+    }
+    setState(() {
+      _testing = true;
+      _testResult = null;
+    });
+    final tools = ChatTools(
+      exaKey: _exaKey.text.trim(),
+      braveKey: _braveKey.text.trim(),
+      tavilyKey: _tavilyKey.text.trim(),
+      searchProvider: _searchProvider,
+    );
+    try {
+      final result = await tools.execute(
+        'search_web',
+        '{"query":"Flutter documentation"}',
+      );
+      if (!mounted) return;
+      setState(
+        () => _testResult = result.contains('"error"')
+            ? context.l10n.exaTestFailed
+            : context.l10n.connectionOk,
+      );
+    } finally {
+      tools.dispose();
+      if (mounted) setState(() => _testing = false);
+    }
   }
 
   @override
@@ -254,6 +317,49 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
                       hint: context.l10n.apiKeyHint,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _searchProvider,
+                    decoration: InputDecoration(
+                      labelText: context.l10n.searchProviderLabel,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'exa', child: Text('Exa')),
+                      DropdownMenuItem(
+                        value: 'brave',
+                        child: Text('Brave Search'),
+                      ),
+                      DropdownMenuItem(value: 'tavily', child: Text('Tavily')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _searchProvider = value ?? 'exa'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    key: ValueKey(_searchProvider),
+                    controller: _selectedSearchKey,
+                    obscureText: true,
+                    decoration: devmateFieldDecoration(
+                      context,
+                      label: context.l10n.searchKeyLabel,
+                      hint: context.l10n.searchKeyHint,
+                    ),
+                  ),
+                  if (kIsWeb && _searchProvider == 'brave') ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      context.l10n.braveWebNote,
+                      style: TextStyle(
+                        color: context.colors.lavender,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Text(
+                    context.l10n.exaPrivacyNote,
+                    style: TextStyle(color: context.colors.muted, height: 1.5),
+                  ),
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: _saving ? null : _save,
@@ -269,6 +375,11 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
                           ? context.l10n.testing
                           : context.l10n.testConnection,
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _testing ? null : _testSearch,
+                    child: Text(context.l10n.testSearchConnection),
                   ),
                   if (_testResult != null) ...[
                     const SizedBox(height: 16),
