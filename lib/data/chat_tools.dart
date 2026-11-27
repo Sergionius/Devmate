@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:openai_dart/openai_dart.dart' as oai;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -282,6 +283,7 @@ class ChatTools {
           });
         case 'search_web':
         case 'get_documentation':
+          debugPrint('Search tool: $name, provider: $searchProvider');
           final query = argument('query');
           if (query.isEmpty || query.length > 300) {
             return _error('Invalid query');
@@ -311,7 +313,8 @@ class ChatTools {
         default:
           return _error('Unknown tool');
       }
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Search/tool request failed: ${error.runtimeType}');
       return _error('Tool unavailable or request failed');
     }
   }
@@ -404,6 +407,11 @@ class ChatTools {
           body: jsonEncode(body),
         )
         .timeout(const Duration(seconds: 15));
+    debugPrint(
+      'Exa $endpoint: HTTP ${response.statusCode}; '
+      'content-type=${response.headers['content-type'] ?? 'unknown'}; '
+      'cf-ray=${response.headers['cf-ray'] ?? 'none'}',
+    );
     if (response.statusCode != 200) {
       return _error('Exa returned HTTP ${response.statusCode}');
     }

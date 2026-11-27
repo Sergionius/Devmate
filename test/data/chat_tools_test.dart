@@ -4,6 +4,7 @@ import 'package:devmate/data/chat_tools.dart';
 import 'package:devmate/data/progress_repository.dart';
 import 'package:devmate/data/topic_catalog.dart';
 import 'package:devmate/domain/question.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -246,9 +247,20 @@ void main() {
     );
     final tools = ChatTools(exaKey: 'private-key', client: client);
     addTearDown(client.close);
-    final result = await tools.execute('search_web', '{"query":"Flutter"}');
+    final messages = <String>[];
+    final previous = debugPrint;
+    debugPrint = (message, {wrapWidth}) {
+      if (message != null) messages.add(message);
+    };
+    late final String result;
+    try {
+      result = await tools.execute('search_web', '{"query":"Flutter"}');
+    } finally {
+      debugPrint = previous;
+    }
     expect(result, contains('HTTP 401'));
-    expect(result, isNot(contains('private-key')));
-    expect(result, isNot(contains('invalid secret')));
+    expect(messages.join(' '), contains('Exa /search: HTTP 401'));
+    expect('${messages.join(' ')} $result', isNot(contains('private-key')));
+    expect('${messages.join(' ')} $result', isNot(contains('invalid secret')));
   });
 }

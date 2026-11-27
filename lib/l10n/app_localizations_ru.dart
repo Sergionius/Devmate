@@ -899,4 +899,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get testSearchConnection => 'Проверить веб-поиск';
+
+  @override
+  String get llmTestOk => 'Соединение с моделью работает ✓';
+
+  @override
+  String get searchTestOk => 'Веб-поиск работает ✓';
+
+  @override
+  String searchTestHttpError(String provider, String status) {
+    return 'Веб-поиск ($provider): HTTP $status';
+  }
 }

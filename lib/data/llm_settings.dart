@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LlmSettings {
@@ -128,14 +129,28 @@ class LlmSettingsRepository {
     defaultValue: 'exa',
   );
 
-  Future<String> loadExaKey() async =>
-      await _storage.read(key: _exaKeyKey) ?? exaBuildDefault;
+  Future<String> loadExaKey() async {
+    final saved = await _storage.read(key: _exaKeyKey);
+    debugPrint(
+      'Exa key source: ${saved == null ? 'build default' : 'device storage'}; '
+      'configured: ${(saved ?? exaBuildDefault).trim().isNotEmpty}; '
+      'matches build default: ${saved == null || saved == exaBuildDefault}',
+    );
+    return saved ?? exaBuildDefault;
+  }
+
   Future<String> loadBraveKey() async =>
       await _storage.read(key: _braveKeyKey) ?? braveBuildDefault;
   Future<String> loadTavilyKey() async =>
       await _storage.read(key: _tavilyKeyKey) ?? tavilyBuildDefault;
-  Future<String> loadSearchProvider() async =>
-      await _storage.read(key: _searchProviderKey) ?? searchProviderDefault;
+  Future<String> loadSearchProvider() async {
+    final selected = await _storage.read(key: _searchProviderKey);
+    final provider = selected ?? searchProviderDefault;
+    debugPrint(
+      'Search provider: $provider (${selected == null ? 'build default' : 'device storage'})',
+    );
+    return provider;
+  }
 
   Future<void> saveExaKey(String key) =>
       _storage.write(key: _exaKeyKey, value: key.trim());

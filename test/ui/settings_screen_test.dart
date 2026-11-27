@@ -174,6 +174,41 @@ void main() {
     expect(find.text('ChatGPT Codex (subscription)'), findsNothing);
   });
 
+  testWidgets('LLM and web search checks show separate results', (
+    tester,
+  ) async {
+    final repo = LlmSettingsRepository(storage: MemorySecureStorage());
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AiSettingsScreen(settingsRepository: repo),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final scrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('Test connection'),
+      120,
+      scrollable: scrollable,
+    );
+    await tester.tap(find.text('Test connection'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fill in the URL, model and API key.'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Test web search'),
+      120,
+      scrollable: scrollable,
+    );
+    await tester.tap(find.text('Test web search'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter your search API key'), findsOneWidget);
+    expect(find.text('Fill in the URL, model and API key.'), findsOneWidget);
+    expect(find.text('Model connection works ✓'), findsNothing);
+    expect(find.text('Web search works ✓'), findsNothing);
+  });
+
   testWidgets(
     'iOS search provider uses the same selection field and action sheet',
     (tester) async {

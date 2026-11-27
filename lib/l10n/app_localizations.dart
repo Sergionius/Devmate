@@ -1633,6 +1633,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Проверить веб-поиск'**
   String get testSearchConnection;
+
+  /// No description provided for @llmTestOk.
+  ///
+  /// In ru, this message translates to:
+  /// **'Соединение с моделью работает ✓'**
+  String get llmTestOk;
+
+  /// No description provided for @searchTestOk.
+  ///
+  /// In ru, this message translates to:
+  /// **'Веб-поиск работает ✓'**
+  String get searchTestOk;
+
+  /// No description provided for @searchTestHttpError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Веб-поиск ({provider}): HTTP {status}'**
+  String searchTestHttpError(String provider, String status);
 }
 
 class _AppLocalizationsDelegate

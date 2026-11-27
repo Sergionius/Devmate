@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
@@ -37,6 +39,8 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
   bool _saving = false;
   bool _testing = false;
   String? _testResult;
+  String? _llmTestResult;
+  String? _searchTestResult;
 
   @override
   void initState() {
@@ -106,6 +110,7 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
         _model.text = preset.defaultModel;
       }
       _testResult = null;
+      _llmTestResult = null;
     });
   }
 
@@ -160,7 +165,7 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
     }
     setState(() {
       _searchProvider = provider;
-      _testResult = null;
+      _searchTestResult = null;
     });
   }
 
@@ -212,6 +217,8 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
     setState(() {
       _saving = true;
       _testResult = null;
+      _llmTestResult = null;
+      _searchTestResult = null;
     });
     try {
       await widget.settingsRepository.save(_collect());
@@ -236,49 +243,60 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
   Future<void> _test() async {
     final settings = _collect();
     if (!settings.isConfigured) {
-      setState(() => _testResult = context.l10n.fillAllFields);
+      setState(() => _llmTestResult = context.l10n.fillAllFields);
       return;
     }
     setState(() {
       _testing = true;
-      _testResult = null;
+      _llmTestResult = null;
     });
 
     final error = await testLlmConnection(settings);
     if (!mounted) return;
     setState(() {
       _testing = false;
-      _testResult = error == null
-          ? context.l10n.connectionOk
+      _llmTestResult = error == null
+          ? context.l10n.llmTestOk
           : context.llmErrorText(error);
     });
   }
 
   Future<void> _testSearch() async {
+    final provider = _searchProvider;
     if (_selectedSearchKey.text.trim().isEmpty) {
-      setState(() => _testResult = context.l10n.exaKeyMissing);
+      setState(() => _searchTestResult = context.l10n.exaKeyMissing);
       return;
     }
     setState(() {
       _testing = true;
-      _testResult = null;
+      _searchTestResult = null;
     });
     final tools = ChatTools(
       exaKey: _exaKey.text.trim(),
       braveKey: _braveKey.text.trim(),
       tavilyKey: _tavilyKey.text.trim(),
-      searchProvider: _searchProvider,
+      searchProvider: provider,
     );
     try {
       final result = await tools.execute(
         'search_web',
         '{"query":"Flutter documentation"}',
       );
-      if (!mounted) return;
+      if (!mounted || provider != _searchProvider) return;
+      final decoded = jsonDecode(result);
+      final error = decoded is Map<String, dynamic> ? decoded['error'] : null;
+      final status = error is String
+          ? RegExp(r'HTTP (\d{3})').firstMatch(error)?.group(1)
+          : null;
       setState(
-        () => _testResult = result.contains('"error"')
+        () => _searchTestResult = error == null
+            ? context.l10n.searchTestOk
+            : status == null
             ? context.l10n.exaTestFailed
-            : context.l10n.connectionOk,
+            : context.l10n.searchTestHttpError(
+                _searchProviders[provider]!,
+                status,
+              ),
       );
     } finally {
       tools.dispose();
@@ -437,11 +455,33 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
                           : context.l10n.testConnection,
                     ),
                   ),
+                  if (_llmTestResult != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _llmTestResult!,
+                      style: TextStyle(
+                        color: _llmTestResult!.endsWith('✓')
+                            ? context.colors.accent
+                            : context.colors.error,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   OutlinedButton(
                     onPressed: _testing ? null : _testSearch,
                     child: Text(context.l10n.testSearchConnection),
                   ),
+                  if (_searchTestResult != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _searchTestResult!,
+                      style: TextStyle(
+                        color: _searchTestResult!.endsWith('✓')
+                            ? context.colors.accent
+                            : context.colors.error,
+                      ),
+                    ),
+                  ],
                   if (_testResult != null) ...[
                     const SizedBox(height: 16),
                     Text(

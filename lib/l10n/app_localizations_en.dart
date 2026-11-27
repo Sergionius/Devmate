@@ -889,4 +889,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get testSearchConnection => 'Test web search';
+
+  @override
+  String get llmTestOk => 'Model connection works ✓';
+
+  @override
+  String get searchTestOk => 'Web search works ✓';
+
+  @override
+  String searchTestHttpError(String provider, String status) {
+    return 'Web search ($provider): HTTP $status';
+  }
 }
