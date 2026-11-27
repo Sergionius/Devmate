@@ -147,6 +147,61 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
     if (selected != null && mounted) _applyPreset(selected);
   }
 
+  static const _searchProviders = <String, String>{
+    'exa': 'Exa',
+    'brave': 'Brave Search',
+    'tavily': 'Tavily',
+  };
+
+  void _applySearchProvider(String provider) {
+    if (provider == _searchProvider) return;
+    if (!kIsWeb && Theme.of(context).platform == TargetPlatform.iOS) {
+      DevmateHaptics.selection();
+    }
+    setState(() {
+      _searchProvider = provider;
+      _testResult = null;
+    });
+  }
+
+  Future<void> _chooseSearchProvider() async {
+    final selected = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (sheetContext) => CupertinoTheme(
+        data: CupertinoThemeData(
+          brightness: Theme.of(sheetContext).brightness,
+          primaryColor: context.colors.accent,
+          scaffoldBackgroundColor: context.colors.canvas,
+          barBackgroundColor: context.colors.surfaceRaised,
+        ),
+        child: CupertinoActionSheet(
+          title: Text(context.l10n.searchProviderLabel),
+          actions: [
+            for (final entry in _searchProviders.entries)
+              CupertinoActionSheetAction(
+                onPressed: () => Navigator.pop(sheetContext, entry.key),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(child: Text(entry.value)),
+                    if (entry.key == _searchProvider) ...[
+                      const SizedBox(width: 8),
+                      const Icon(CupertinoIcons.check_mark, size: 18),
+                    ],
+                  ],
+                ),
+              ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(sheetContext),
+            child: Text(context.l10n.cancelAction),
+          ),
+        ),
+      ),
+    );
+    if (selected != null && mounted) _applySearchProvider(selected);
+  }
+
   LlmSettings _collect() => LlmSettings(
     baseUrl: _baseUrl.text,
     model: _model.text,
@@ -318,22 +373,28 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: _searchProvider,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.searchProviderLabel,
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'exa', child: Text('Exa')),
-                      DropdownMenuItem(
-                        value: 'brave',
-                        child: Text('Brave Search'),
+                  if (!kIsWeb &&
+                      Theme.of(context).platform == TargetPlatform.iOS)
+                    DevmateSelectionField(
+                      label: context.l10n.searchProviderLabel,
+                      value: _searchProviders[_searchProvider]!,
+                      onPressed: _chooseSearchProvider,
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      initialValue: _searchProvider,
+                      items: [
+                        for (final entry in _searchProviders.entries)
+                          DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(entry.value),
+                          ),
+                      ],
+                      onChanged: (value) => _applySearchProvider(value!),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.searchProviderLabel,
                       ),
-                      DropdownMenuItem(value: 'tavily', child: Text('Tavily')),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _searchProvider = value ?? 'exa'),
-                  ),
+                    ),
                   const SizedBox(height: 16),
                   TextField(
                     key: ValueKey(_searchProvider),

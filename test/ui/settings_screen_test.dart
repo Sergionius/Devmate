@@ -174,6 +174,54 @@ void main() {
     expect(find.text('ChatGPT Codex (subscription)'), findsNothing);
   });
 
+  testWidgets(
+    'iOS search provider uses the same selection field and action sheet',
+    (tester) async {
+      await withPlatform(tester, TargetPlatform.iOS, () async {
+        final repo = LlmSettingsRepository(storage: MemorySecureStorage());
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: devmateTheme(),
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AiSettingsScreen(settingsRepository: repo),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+        final searchField = find.widgetWithText(
+          DevmateSelectionField,
+          'Search provider',
+        );
+        await tester.scrollUntilVisible(
+          searchField,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(searchField);
+        await tester.pumpAndSettle();
+        expect(find.byType(CupertinoActionSheet), findsOneWidget);
+        expect(find.text('Exa').last, findsOneWidget);
+        await tester.tap(find.text('Brave Search').last);
+        await tester.pumpAndSettle();
+        expect(find.byType(CupertinoActionSheet), findsNothing);
+        expect(
+          find.widgetWithText(DevmateSelectionField, 'Brave Search'),
+          findsOneWidget,
+        );
+        await tester.scrollUntilVisible(
+          find.text('Save'),
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+        expect(await repo.loadSearchProvider(), 'brave');
+      });
+    },
+  );
+
   testWidgets('iOS provider uses an action sheet and applies the preset', (
     tester,
   ) async {
