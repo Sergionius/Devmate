@@ -157,7 +157,10 @@ void main() {
     await tester.tap(find.byType(DropdownButtonFormField<LlmPreset>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('OpenAI').last);
-    await tester.enterText(find.byType(TextField).last, 'test-key');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'API key'),
+      'test-key',
+    );
     await tester.scrollUntilVisible(
       find.text('Save'),
       120,
@@ -170,6 +173,89 @@ void main() {
     expect(loaded.apiKey, 'test-key');
     expect(find.text('ChatGPT Codex (subscription)'), findsNothing);
   });
+
+  testWidgets('LLM and web search checks show separate results', (
+    tester,
+  ) async {
+    final repo = LlmSettingsRepository(storage: MemorySecureStorage());
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AiSettingsScreen(settingsRepository: repo),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final scrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('Test connection'),
+      120,
+      scrollable: scrollable,
+    );
+    await tester.tap(find.text('Test connection'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fill in the URL, model and API key.'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Test web search'),
+      120,
+      scrollable: scrollable,
+    );
+    await tester.tap(find.text('Test web search'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter your search API key'), findsOneWidget);
+    expect(find.text('Fill in the URL, model and API key.'), findsOneWidget);
+    expect(find.text('Model connection works ✓'), findsNothing);
+    expect(find.text('Web search works ✓'), findsNothing);
+  });
+
+  testWidgets(
+    'iOS search provider uses the same selection field and action sheet',
+    (tester) async {
+      await withPlatform(tester, TargetPlatform.iOS, () async {
+        final repo = LlmSettingsRepository(storage: MemorySecureStorage());
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: devmateTheme(),
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AiSettingsScreen(settingsRepository: repo),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+        final searchField = find.widgetWithText(
+          DevmateSelectionField,
+          'Search provider',
+        );
+        await tester.scrollUntilVisible(
+          searchField,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(searchField);
+        await tester.pumpAndSettle();
+        expect(find.byType(CupertinoActionSheet), findsOneWidget);
+        expect(find.text('Exa').last, findsOneWidget);
+        await tester.tap(find.text('Brave Search').last);
+        await tester.pumpAndSettle();
+        expect(find.byType(CupertinoActionSheet), findsNothing);
+        expect(
+          find.widgetWithText(DevmateSelectionField, 'Brave Search'),
+          findsOneWidget,
+        );
+        await tester.scrollUntilVisible(
+          find.text('Save'),
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+        expect(await repo.loadSearchProvider(), 'brave');
+      });
+    },
+  );
 
   testWidgets('iOS provider uses an action sheet and applies the preset', (
     tester,
@@ -377,6 +463,11 @@ void main() {
     await tester.tap(find.text('AI provider'));
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.path, '/settings/ai');
+    await tester.scrollUntilVisible(
+      find.text('Save'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Save'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Back'));

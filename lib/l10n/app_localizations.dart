@@ -1585,6 +1585,72 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Свой endpoint'**
   String get presetCustomLabel;
+
+  /// No description provided for @braveWebNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Brave Search сейчас отклоняет CORS-проверку браузера. На web используйте Exa или Tavily, а Brave — на iOS/Android.'**
+  String get braveWebNote;
+
+  /// No description provided for @searchProviderLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поисковый провайдер'**
+  String get searchProviderLabel;
+
+  /// No description provided for @searchKeyLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ключ поискового API'**
+  String get searchKeyLabel;
+
+  /// No description provided for @searchKeyHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ключ выбранного провайдера'**
+  String get searchKeyHint;
+
+  /// No description provided for @exaKeyMissing.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите ключ поискового API'**
+  String get exaKeyMissing;
+
+  /// No description provided for @exaTestFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поиск недоступен. Проверьте провайдера, ключ и соединение.'**
+  String get exaTestFailed;
+
+  /// No description provided for @exaPrivacyNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поиск необязателен. Ваш ключ отправляется только выбранному поисковому провайдеру; результаты передаются выбранной модели. На web работа зависит от CORS провайдера. Не распространяйте сборки с ключами из config/local.json.'**
+  String get exaPrivacyNote;
+
+  /// No description provided for @testSearchConnection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверить веб-поиск'**
+  String get testSearchConnection;
+
+  /// No description provided for @llmTestOk.
+  ///
+  /// In ru, this message translates to:
+  /// **'Соединение с моделью работает ✓'**
+  String get llmTestOk;
+
+  /// No description provided for @searchTestOk.
+  ///
+  /// In ru, this message translates to:
+  /// **'Веб-поиск работает ✓'**
+  String get searchTestOk;
+
+  /// No description provided for @searchTestHttpError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Веб-поиск ({provider}): HTTP {status}'**
+  String searchTestHttpError(String provider, String status);
 }
 
 class _AppLocalizationsDelegate

@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:openai_dart/openai_dart.dart' as oai;
 
+import 'chat_tools.dart';
 import 'llm_settings.dart';
+import 'topic_draft.dart';
 
 class LlmConnectionException implements Exception {
   LlmConnectionException(this.message);
@@ -164,11 +166,13 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
     required this._settings,
     required this._systemPrompt,
     List<LlmChatMessage> initialHistory = const [],
+    this._tools,
   }) : _history = List.of(initialHistory);
 
   final LlmSettings _settings;
   final String _systemPrompt;
   final List<LlmChatMessage> _history;
+  final ChatTools? _tools;
 
   bool _active = true;
   Completer<void>? _abort;
@@ -176,6 +180,8 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
 
   @override
   List<LlmChatMessage> get history => List.unmodifiable(_history);
+  TopicDraft? get proposedDraft => _tools?.proposedDraft;
+  AnswerUpdate? get proposedAnswerUpdate => _tools?.proposedAnswerUpdate;
 
   @override
   Stream<String> sendMessageStream(String prompt, {bool retry = false}) {
@@ -224,8 +230,42 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
             ..add(assistant);
         }
         if (_active) notifyListeners();
+        _tools?.resetProposals();
         try {
           final client = _clientFor(_settings);
+          if (_tools case final tools? when tools.definitions.isNotEmpty) {
+            _completeWithTools(
+              client,
+              tools,
+              _requestMessages(
+                _systemPrompt,
+                _history.sublist(0, _history.length - 2),
+                prompt,
+              ),
+              abort,
+            ).listen(
+              (delta) {
+                if (!_active || abort.isCompleted) return;
+                received = true;
+                assistant.text += delta;
+                notifyListeners();
+                controller.add(delta);
+              },
+              onError: fail,
+              onDone: () {
+                if (identical(_abort, abort)) _abort = null;
+                if (identical(_controller, controller)) _controller = null;
+                if (_active && !received) {
+                  assistant
+                    ..failed = true
+                    ..errorKind = LlmErrorKind.emptyReply;
+                  notifyListeners();
+                }
+                closeBridge();
+              },
+            );
+            return;
+          }
           final stream = client.chat.completions.createStream(
             oai.ChatCompletionCreateRequest(
               model: _settings.model.trim(),
@@ -281,8 +321,67 @@ class OpenAiCompatibleProvider extends ChangeNotifier implements ChatSession {
     return controller.stream;
   }
 
+  Stream<String> _completeWithTools(
+    oai.OpenAIClient client,
+    ChatTools tools,
+    List<oai.ChatMessage> messages,
+    Completer<void> abort,
+  ) async* {
+    for (var round = 0; round < 4; round++) {
+      if (abort.isCompleted || !_active) return;
+      final accumulator = oai.ChatStreamAccumulator();
+      final stream = client.chat.completions.createStream(
+        oai.ChatCompletionCreateRequest(
+          model: _settings.model.trim(),
+          messages: messages,
+          temperature: 0.6,
+          tools: tools.definitions,
+        ),
+        abortTrigger: abort.future,
+      );
+      await for (final event in stream) {
+        if (abort.isCompleted || !_active) return;
+        accumulator.add(event);
+        if (event.textDelta case final text? when text.isNotEmpty) yield text;
+      }
+      if (abort.isCompleted || !_active) return;
+      final calls = accumulator.toolCalls;
+      if (calls.isEmpty) return;
+      messages.add(
+        oai.ChatMessage.assistant(
+          content: accumulator.content,
+          toolCalls: calls,
+        ),
+      );
+      for (final call in calls.take(4)) {
+        if (abort.isCompleted || !_active) return;
+        messages.add(
+          oai.ChatMessage.tool(
+            toolCallId: call.id,
+            content: await tools.execute(
+              call.function.name,
+              call.function.arguments,
+            ),
+          ),
+        );
+      }
+      // Every tool call must receive a matching result before the next request.
+      for (final call in calls.skip(4)) {
+        messages.add(
+          oai.ChatMessage.tool(
+            toolCallId: call.id,
+            content: '{"error":"Too many tool calls"}',
+          ),
+        );
+      }
+    }
+    // Never return raw tool output as a user-facing answer.
+    yield 'Too many tool calls. Please narrow the request and try again.';
+  }
+
   @override
   void dispose() {
+    _tools?.dispose();
     _active = false;
 
     if (!(_abort?.isCompleted ?? true)) _abort?.complete();

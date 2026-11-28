@@ -10,6 +10,68 @@ import 'package:material_ui/material_ui.dart';
 import 'package:sembast/sembast_memory.dart';
 
 void main() {
+  testWidgets('empty history opens a new chat and back does not loop', (
+    tester,
+  ) async {
+    final history = ChatHistoryRepository(
+      openDatabase: () => databaseFactoryMemory.openDatabase('empty-history'),
+    );
+    final router = GoRouter(
+      initialLocation: '/home',
+      routes: [
+        GoRoute(
+          path: '/home',
+          builder: (context, _) => Scaffold(
+            body: TextButton(
+              onPressed: () => context.push('/chat/free'),
+              child: const Text('Open chats'),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/chat/free',
+          builder: (_, _) => ChatHistoryScreen(repository: history),
+        ),
+        GoRoute(
+          path: '/chat/free/:chatId',
+          builder: (_, _) => const Scaffold(body: Text('Conversation')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      MaterialApp.router(
+        theme: devmateTheme(),
+        routerConfig: router,
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
+    );
+    await tester.tap(find.text('Open chats'));
+    await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Conversation'), findsOneWidget);
+    final id = GoRouterState.of(tester.element(find.text('Conversation')))
+        .pathParameters['chatId']!;
+    expect(await tester.runAsync(() => history.get(id)), isNotNull);
+
+    router.pop();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Open chats'), findsOneWidget);
+    expect(await tester.runAsync(history.list), isEmpty);
+  });
+
   testWidgets('lists conversations and confirms deletion on Android', (
     tester,
   ) async {

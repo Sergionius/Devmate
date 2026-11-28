@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LlmSettings {
@@ -115,6 +116,50 @@ class LlmSettingsRepository {
   static const _baseUrlKey = 'llm.baseUrl';
   static const _modelKey = 'llm.model';
   static const _apiKeyKey = 'llm.apiKey';
+  static const _exaKeyKey = 'search.exaApiKey';
+  static const _braveKeyKey = 'search.braveApiKey';
+  static const _tavilyKeyKey = 'search.tavilyApiKey';
+  static const _searchProviderKey = 'search.provider';
+
+  static const exaBuildDefault = String.fromEnvironment('EXA_API_KEY');
+  static const braveBuildDefault = String.fromEnvironment('BRAVE_API_KEY');
+  static const tavilyBuildDefault = String.fromEnvironment('TAVILY_API_KEY');
+  static const searchProviderDefault = String.fromEnvironment(
+    'SEARCH_PROVIDER',
+    defaultValue: 'exa',
+  );
+
+  Future<String> loadExaKey() async {
+    final saved = await _storage.read(key: _exaKeyKey);
+    debugPrint(
+      'Exa key source: ${saved == null ? 'build default' : 'device storage'}; '
+      'configured: ${(saved ?? exaBuildDefault).trim().isNotEmpty}; '
+      'matches build default: ${saved == null || saved == exaBuildDefault}',
+    );
+    return saved ?? exaBuildDefault;
+  }
+
+  Future<String> loadBraveKey() async =>
+      await _storage.read(key: _braveKeyKey) ?? braveBuildDefault;
+  Future<String> loadTavilyKey() async =>
+      await _storage.read(key: _tavilyKeyKey) ?? tavilyBuildDefault;
+  Future<String> loadSearchProvider() async {
+    final selected = await _storage.read(key: _searchProviderKey);
+    final provider = selected ?? searchProviderDefault;
+    debugPrint(
+      'Search provider: $provider (${selected == null ? 'build default' : 'device storage'})',
+    );
+    return provider;
+  }
+
+  Future<void> saveExaKey(String key) =>
+      _storage.write(key: _exaKeyKey, value: key.trim());
+  Future<void> saveBraveKey(String key) =>
+      _storage.write(key: _braveKeyKey, value: key.trim());
+  Future<void> saveTavilyKey(String key) =>
+      _storage.write(key: _tavilyKeyKey, value: key.trim());
+  Future<void> saveSearchProvider(String provider) =>
+      _storage.write(key: _searchProviderKey, value: provider);
   static const _legacyAuthModeKey = 'llm.authMode';
   static const _legacyCodexTokenKey = 'codex.auth';
   final FlutterSecureStorage _storage;
@@ -166,6 +211,10 @@ class LlmSettingsRepository {
     await _storage.write(key: _baseUrlKey, value: '');
     await _storage.write(key: _modelKey, value: '');
     await _storage.write(key: _apiKeyKey, value: '');
+    await _storage.write(key: _exaKeyKey, value: '');
+    await _storage.write(key: _braveKeyKey, value: '');
+    await _storage.write(key: _tavilyKeyKey, value: '');
+    await _storage.delete(key: _searchProviderKey);
     await _storage.delete(key: _legacyAuthModeKey);
     await _storage.delete(key: _legacyCodexTokenKey);
   }

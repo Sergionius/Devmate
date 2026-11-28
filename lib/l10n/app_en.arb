@@ -388,5 +388,22 @@
   "presetZaiCodingLabel": "z.ai GLM Coding (subscription)",
   "presetZaiLabel": "z.ai API (pay-as-you-go)",
   "presetOllamaLabel": "Ollama (local)",
-  "presetCustomLabel": "Custom endpoint"
+  "presetCustomLabel": "Custom endpoint",
+  "braveWebNote": "Brave Search currently rejects browser preflight requests. Use Exa or Tavily on web, or use Brave on iOS/Android.",
+  "searchProviderLabel": "Search provider",
+  "searchKeyLabel": "Search API key",
+  "searchKeyHint": "Your search provider API key",
+  "exaKeyMissing": "Enter your search API key",
+  "exaTestFailed": "Search is unavailable. Check your provider, key, and connection.",
+  "exaPrivacyNote": "Search is optional. Your key is sent only to the selected search provider; results go to your selected model. Web support depends on provider CORS. Do not distribute builds containing keys from config/local.json.",
+  "testSearchConnection": "Test web search",
+  "llmTestOk": "Model connection works ✓",
+  "searchTestOk": "Web search works ✓",
+  "searchTestHttpError": "Web search ({provider}): HTTP {status}",
+  "@searchTestHttpError": {
+    "placeholders": {
+      "provider": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  }
 }

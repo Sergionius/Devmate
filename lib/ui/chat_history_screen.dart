@@ -21,22 +21,27 @@ class ChatHistoryScreen extends StatefulWidget {
 class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
   late Future<List<SavedChat>> _chats = widget.repository.list();
   bool _busy = false;
+  bool _checkedInitialHistory = false;
 
   void _reload() => setState(() {
     _chats = widget.repository.list();
   });
 
-  Future<void> _newChat() async {
+  Future<void> _newChat({bool fromEmptyHistory = false}) async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
       final chat = await widget.repository.create();
       if (!mounted) return;
       await context.push('/chat/free/${chat.id}');
-      if ((await widget.repository.loadMessages(chat.id)).isEmpty) {
-        await widget.repository.delete(chat.id);
+      final isEmpty = (await widget.repository.loadMessages(chat.id)).isEmpty;
+      if (isEmpty) await widget.repository.delete(chat.id);
+      if (!mounted) return;
+      if (fromEmptyHistory && isEmpty && context.canPop()) {
+        context.pop();
+      } else {
+        _reload();
       }
-      if (mounted) _reload();
     } catch (_) {
       if (mounted) {
         showDevmateNotice(
@@ -192,7 +197,20 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
               );
             }
             final chats = snapshot.data!;
+            if (!_checkedInitialHistory) {
+              _checkedInitialHistory = true;
+              if (chats.isEmpty) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) _newChat(fromEmptyHistory: true);
+                });
+              }
+            }
             if (chats.isEmpty) {
+              if (_busy) {
+                return const Center(
+                  child: DevmateSpinner(size: 28, strokeWidth: 2.5),
+                );
+              }
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),

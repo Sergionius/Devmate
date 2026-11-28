@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../data/chat_tools.dart';
 import '../data/llm_chat_provider.dart';
 import '../data/llm_settings.dart';
 import '../l10n/l10n.dart';
@@ -23,10 +26,21 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
   late final TextEditingController _baseUrl;
   late final TextEditingController _model;
   late final TextEditingController _apiKey;
+  late final TextEditingController _exaKey;
+  late final TextEditingController _braveKey;
+  late final TextEditingController _tavilyKey;
+  String _searchProvider = 'exa';
+  TextEditingController get _selectedSearchKey => switch (_searchProvider) {
+    'brave' => _braveKey,
+    'tavily' => _tavilyKey,
+    _ => _exaKey,
+  };
   bool _loading = true;
   bool _saving = false;
   bool _testing = false;
   String? _testResult;
+  String? _llmTestResult;
+  String? _searchTestResult;
 
   @override
   void initState() {
@@ -34,12 +48,20 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
     _baseUrl = TextEditingController();
     _model = TextEditingController();
     _apiKey = TextEditingController();
+    _exaKey = TextEditingController();
+    _braveKey = TextEditingController();
+    _tavilyKey = TextEditingController();
     _load();
   }
 
   Future<void> _load() async {
     try {
       final settings = await widget.settingsRepository.load();
+      final exaKey = await widget.settingsRepository.loadExaKey();
+      final braveKey = await widget.settingsRepository.loadBraveKey();
+      final tavilyKey = await widget.settingsRepository.loadTavilyKey();
+      final searchProvider = await widget.settingsRepository
+          .loadSearchProvider();
       if (!mounted) return;
       setState(() {
         _preset =
@@ -47,6 +69,12 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
         _baseUrl.text = settings.baseUrl;
         _model.text = settings.model;
         _apiKey.text = settings.apiKey;
+        _exaKey.text = exaKey;
+        _braveKey.text = braveKey;
+        _tavilyKey.text = tavilyKey;
+        _searchProvider = ['exa', 'brave', 'tavily'].contains(searchProvider)
+            ? searchProvider
+            : 'exa';
         _loading = false;
       });
     } catch (_) {
@@ -64,6 +92,9 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
     _baseUrl.dispose();
     _model.dispose();
     _apiKey.dispose();
+    _exaKey.dispose();
+    _braveKey.dispose();
+    _tavilyKey.dispose();
     super.dispose();
   }
 
@@ -79,6 +110,7 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
         _model.text = preset.defaultModel;
       }
       _testResult = null;
+      _llmTestResult = null;
     });
   }
 
@@ -120,6 +152,61 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
     if (selected != null && mounted) _applyPreset(selected);
   }
 
+  static const _searchProviders = <String, String>{
+    'exa': 'Exa',
+    'brave': 'Brave Search',
+    'tavily': 'Tavily',
+  };
+
+  void _applySearchProvider(String provider) {
+    if (provider == _searchProvider) return;
+    if (!kIsWeb && Theme.of(context).platform == TargetPlatform.iOS) {
+      DevmateHaptics.selection();
+    }
+    setState(() {
+      _searchProvider = provider;
+      _searchTestResult = null;
+    });
+  }
+
+  Future<void> _chooseSearchProvider() async {
+    final selected = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (sheetContext) => CupertinoTheme(
+        data: CupertinoThemeData(
+          brightness: Theme.of(sheetContext).brightness,
+          primaryColor: context.colors.accent,
+          scaffoldBackgroundColor: context.colors.canvas,
+          barBackgroundColor: context.colors.surfaceRaised,
+        ),
+        child: CupertinoActionSheet(
+          title: Text(context.l10n.searchProviderLabel),
+          actions: [
+            for (final entry in _searchProviders.entries)
+              CupertinoActionSheetAction(
+                onPressed: () => Navigator.pop(sheetContext, entry.key),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(child: Text(entry.value)),
+                    if (entry.key == _searchProvider) ...[
+                      const SizedBox(width: 8),
+                      const Icon(CupertinoIcons.check_mark, size: 18),
+                    ],
+                  ],
+                ),
+              ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(sheetContext),
+            child: Text(context.l10n.cancelAction),
+          ),
+        ),
+      ),
+    );
+    if (selected != null && mounted) _applySearchProvider(selected);
+  }
+
   LlmSettings _collect() => LlmSettings(
     baseUrl: _baseUrl.text,
     model: _model.text,
@@ -130,9 +217,15 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
     setState(() {
       _saving = true;
       _testResult = null;
+      _llmTestResult = null;
+      _searchTestResult = null;
     });
     try {
       await widget.settingsRepository.save(_collect());
+      await widget.settingsRepository.saveExaKey(_exaKey.text);
+      await widget.settingsRepository.saveBraveKey(_braveKey.text);
+      await widget.settingsRepository.saveTavilyKey(_tavilyKey.text);
+      await widget.settingsRepository.saveSearchProvider(_searchProvider);
       if (!mounted) return;
       showDevmateNotice(
         context,
@@ -150,22 +243,65 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
   Future<void> _test() async {
     final settings = _collect();
     if (!settings.isConfigured) {
-      setState(() => _testResult = context.l10n.fillAllFields);
+      setState(() => _llmTestResult = context.l10n.fillAllFields);
       return;
     }
     setState(() {
       _testing = true;
-      _testResult = null;
+      _llmTestResult = null;
     });
 
     final error = await testLlmConnection(settings);
     if (!mounted) return;
     setState(() {
       _testing = false;
-      _testResult = error == null
-          ? context.l10n.connectionOk
+      _llmTestResult = error == null
+          ? context.l10n.llmTestOk
           : context.llmErrorText(error);
     });
+  }
+
+  Future<void> _testSearch() async {
+    final provider = _searchProvider;
+    if (_selectedSearchKey.text.trim().isEmpty) {
+      setState(() => _searchTestResult = context.l10n.exaKeyMissing);
+      return;
+    }
+    setState(() {
+      _testing = true;
+      _searchTestResult = null;
+    });
+    final tools = ChatTools(
+      exaKey: _exaKey.text.trim(),
+      braveKey: _braveKey.text.trim(),
+      tavilyKey: _tavilyKey.text.trim(),
+      searchProvider: provider,
+    );
+    try {
+      final result = await tools.execute(
+        'search_web',
+        '{"query":"Flutter documentation"}',
+      );
+      if (!mounted || provider != _searchProvider) return;
+      final decoded = jsonDecode(result);
+      final error = decoded is Map<String, dynamic> ? decoded['error'] : null;
+      final status = error is String
+          ? RegExp(r'HTTP (\d{3})').firstMatch(error)?.group(1)
+          : null;
+      setState(
+        () => _searchTestResult = error == null
+            ? context.l10n.searchTestOk
+            : status == null
+            ? context.l10n.exaTestFailed
+            : context.l10n.searchTestHttpError(
+                _searchProviders[provider]!,
+                status,
+              ),
+      );
+    } finally {
+      tools.dispose();
+      if (mounted) setState(() => _testing = false);
+    }
   }
 
   @override
@@ -254,6 +390,55 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
                       hint: context.l10n.apiKeyHint,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  if (!kIsWeb &&
+                      Theme.of(context).platform == TargetPlatform.iOS)
+                    DevmateSelectionField(
+                      label: context.l10n.searchProviderLabel,
+                      value: _searchProviders[_searchProvider]!,
+                      onPressed: _chooseSearchProvider,
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      initialValue: _searchProvider,
+                      items: [
+                        for (final entry in _searchProviders.entries)
+                          DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(entry.value),
+                          ),
+                      ],
+                      onChanged: (value) => _applySearchProvider(value!),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.searchProviderLabel,
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    key: ValueKey(_searchProvider),
+                    controller: _selectedSearchKey,
+                    obscureText: true,
+                    decoration: devmateFieldDecoration(
+                      context,
+                      label: context.l10n.searchKeyLabel,
+                      hint: context.l10n.searchKeyHint,
+                    ),
+                  ),
+                  if (kIsWeb && _searchProvider == 'brave') ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      context.l10n.braveWebNote,
+                      style: TextStyle(
+                        color: context.colors.lavender,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Text(
+                    context.l10n.exaPrivacyNote,
+                    style: TextStyle(color: context.colors.muted, height: 1.5),
+                  ),
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: _saving ? null : _save,
@@ -270,6 +455,33 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
                           : context.l10n.testConnection,
                     ),
                   ),
+                  if (_llmTestResult != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _llmTestResult!,
+                      style: TextStyle(
+                        color: _llmTestResult!.endsWith('✓')
+                            ? context.colors.accent
+                            : context.colors.error,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _testing ? null : _testSearch,
+                    child: Text(context.l10n.testSearchConnection),
+                  ),
+                  if (_searchTestResult != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _searchTestResult!,
+                      style: TextStyle(
+                        color: _searchTestResult!.endsWith('✓')
+                            ? context.colors.accent
+                            : context.colors.error,
+                      ),
+                    ),
+                  ],
                   if (_testResult != null) ...[
                     const SizedBox(height: 16),
                     Text(

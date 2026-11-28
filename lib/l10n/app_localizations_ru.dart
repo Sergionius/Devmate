@@ -872,4 +872,42 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get presetCustomLabel => 'Свой endpoint';
+
+  @override
+  String get braveWebNote =>
+      'Brave Search сейчас отклоняет CORS-проверку браузера. На web используйте Exa или Tavily, а Brave — на iOS/Android.';
+
+  @override
+  String get searchProviderLabel => 'Поисковый провайдер';
+
+  @override
+  String get searchKeyLabel => 'Ключ поискового API';
+
+  @override
+  String get searchKeyHint => 'Ключ выбранного провайдера';
+
+  @override
+  String get exaKeyMissing => 'Введите ключ поискового API';
+
+  @override
+  String get exaTestFailed =>
+      'Поиск недоступен. Проверьте провайдера, ключ и соединение.';
+
+  @override
+  String get exaPrivacyNote =>
+      'Поиск необязателен. Ваш ключ отправляется только выбранному поисковому провайдеру; результаты передаются выбранной модели. На web работа зависит от CORS провайдера. Не распространяйте сборки с ключами из config/local.json.';
+
+  @override
+  String get testSearchConnection => 'Проверить веб-поиск';
+
+  @override
+  String get llmTestOk => 'Соединение с моделью работает ✓';
+
+  @override
+  String get searchTestOk => 'Веб-поиск работает ✓';
+
+  @override
+  String searchTestHttpError(String provider, String status) {
+    return 'Веб-поиск ($provider): HTTP $status';
+  }
 }

@@ -139,6 +139,7 @@ GoRouter createRouter(
               settingsRepository: llmSettings,
               historyRepository: chatHistory,
               chatId: state.pathParameters['chatId'],
+              catalog: catalog,
               suggestions: [
                 context.l10n.freeSuggestionIcebreaker,
                 context.l10n.freeSuggestionCareer,
@@ -199,6 +200,7 @@ GoRouter createRouter(
             ),
             intro: context.l10n.topicChatIntro,
             settingsRepository: llmSettings,
+            catalog: catalog,
             suggestions: [
               context.l10n.topicSuggestionStart,
               context.l10n.topicSuggestionQuiz,
